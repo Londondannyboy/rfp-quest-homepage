@@ -6,16 +6,12 @@ import { ExampleCanvas } from "@/components/example-canvas";
 import { useGenerativeUIExamples, useExampleSuggestions } from "@/hooks";
 
 import { CopilotChat } from "@copilotkit/react-core/v2";
-// import { HeadlessChat } from "@/components/headless-chat";
 
 export default function HomePage() {
-  // 🪁 Generative UI Examples
   useGenerativeUIExamples();
-
-  // 🪁 Example Suggestions
   useExampleSuggestions();
 
-  // 🪁 Widget bridge: handle sendPrompt and openLink from widget iframes
+  // Widget bridge: handle openLink from widget iframes
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === "open-link" && typeof e.data.url === "string") {
@@ -27,10 +23,63 @@ export default function HomePage() {
   }, []);
 
   return (
-    <ExampleLayout
-      chatContent={<CopilotChat />}
-      // chatContent={<HeadlessChat />}
-      appContent={<ExampleCanvas />}
-    />
+    <>
+      {/* Animated background */}
+      <div className="abstract-bg">
+        <div className="blob-3" />
+      </div>
+
+      {/* App shell */}
+      <div className="brand-shell" style={{ position: "relative", zIndex: 1 }}>
+        <div className="brand-glass-container">
+          {/* CTA Banner */}
+          <div
+            className="shrink-0 border-b border-white/30 dark:border-white/8"
+            style={{
+              background: "linear-gradient(135deg, rgba(190,194,255,0.08) 0%, rgba(133,224,206,0.06) 100%)",
+            }}
+          >
+            <div className="flex items-center justify-between gap-4 px-5 py-2.5">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div
+                  className="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg text-white"
+                  style={{
+                    background: "linear-gradient(135deg, var(--color-lilac), var(--color-mint))",
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
+                </div>
+                <p className="text-[13px] font-semibold m-0 leading-snug" style={{ color: "var(--text-primary)" }}>
+                  Open Generative UI
+                  <span className="font-normal" style={{ color: "var(--text-secondary)" }}> — powered by CopilotKit</span>
+                </p>
+              </div>
+              <a
+                href="https://github.com/CopilotKit/OpenGenerativeUI.git"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold text-white no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
+                style={{
+                  background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))",
+                  boxShadow: "0 1px 4px rgba(149,153,204,0.3)",
+                  fontFamily: "var(--font-family)",
+                }}
+              >
+                Get started
+              </a>
+            </div>
+          </div>
+
+          <ExampleLayout
+            chatContent={<CopilotChat />}
+            appContent={<ExampleCanvas />}
+          />
+        </div>
+      </div>
+    </>
   );
 }
