@@ -58,6 +58,33 @@ apps/
 | Human-in-the-loop | `useHumanInTheLoop` | Meeting scheduler |
 | Default tool render | `useDefaultRenderTool` | Tool execution status |
 
+## Decision Matrix — Picking the Right Visual
+
+| User asks about...          | Output type              | Technology          |
+|-----------------------------|--------------------------|---------------------|
+| How X works (physical)      | Illustrative diagram     | SVG                 |
+| How X works (abstract)      | Interactive explainer    | HTML + inline SVG   |
+| Process / steps             | Flowchart                | SVG                 |
+| Architecture / containment  | Structural diagram       | SVG                 |
+| Database schema / ERD       | Relationship diagram     | Mermaid             |
+| Trends over time            | Line chart               | Chart.js            |
+| Category comparison         | Bar chart                | Chart.js            |
+| Part of whole               | Doughnut chart           | Chart.js            |
+| KPIs / metrics              | Dashboard                | HTML metric cards   |
+| Design a UI                 | Mockup                   | HTML                |
+| Choose between options      | Comparison cards         | HTML grid           |
+| Cyclic process              | Step-through             | HTML stepper        |
+| Physics / math              | Simulation               | Canvas + JS         |
+| Function / equation         | Plotter                  | SVG + JS            |
+| Data exploration            | Sortable table           | HTML + JS           |
+| Creative / decorative       | Art / illustration       | SVG                 |
+| 3D visualization            | 3D scene                 | Three.js            |
+| Music / audio               | Synthesizer              | Tone.js             |
+| Network / graph             | Force layout             | D3.js               |
+| Quick factual answer        | Plain text               | None                |
+| Code solution               | Code block               | None                |
+| Emotional support           | Warm text                | None                |
+
 ## Tech Stack
 
 Next.js 16, React 19, Tailwind CSS 4, LangGraph, CopilotKit v2, Turborepo, Recharts
