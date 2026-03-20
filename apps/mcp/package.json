@@ -6,8 +6,10 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:stdio": "tsx src/stdio.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:stdio": "node dist/stdio.js",
     "lint": "tsc --noEmit"
   },
   "keywords": ["mcp", "model-context-protocol", "generative-ui", "design-system"],
