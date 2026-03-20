@@ -346,6 +346,28 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// Listen for streaming content updates from parent
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'update-content') {
+    var content = document.getElementById('content');
+    if (content) {
+      content.innerHTML = e.data.html;
+      // Re-run any inline scripts (new ones added by streaming)
+      var scripts = content.querySelectorAll('script');
+      scripts.forEach(function(oldScript) {
+        var newScript = document.createElement('script');
+        if (oldScript.src) {
+          newScript.src = oldScript.src;
+        } else {
+          newScript.textContent = oldScript.textContent;
+        }
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+      reportHeight();
+    }
+  }
+});
+
 // Auto-resize: report content height to host
 function reportHeight() {
   var content = document.getElementById('content');
@@ -361,7 +383,13 @@ setTimeout(function() { clearInterval(_resizeInterval); }, 15000);
 `;
 
 // ─── Document Assembly ───────────────────────────────────────────────
+/** Full document with content — used for final/complete renders */
 function assembleDocument(html: string): string {
+  return assembleShell(html);
+}
+
+/** Empty shell or shell with initial content — iframe loads once, content streamed via postMessage */
+function assembleShell(initialHtml: string = ""): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -387,7 +415,7 @@ function assembleDocument(html: string): string {
 </head>
 <body>
   <div id="content">
-    ${html}
+    ${initialHtml}
   </div>
   <script>
     ${BRIDGE_JS}
@@ -429,8 +457,15 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [templateName, setTemplateName] = useState("");
-  // Track what html has been committed to the iframe to avoid redundant reloads
+  // Whether the iframe shell has been initialized
+  const shellReadyRef = useRef(false);
+  // Track the last html sent to the iframe to avoid redundant updates
   const committedHtmlRef = useRef("");
+  // Whether streaming has started (html is arriving but may not be complete)
+  const [streaming, setStreaming] = useState(false);
+  // Tracks whether html content has settled (stopped changing)
+  const [htmlSettled, setHtmlSettled] = useState(false);
+  const settledTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMessage = useCallback((e: MessageEvent) => {
     // Only handle messages from our own iframe
@@ -449,20 +484,49 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
 
-  // Write to iframe imperatively — bypasses React reconciliation so the
-  // iframe only reloads when the html *content* truly changes, preserving
-  // internal JS state (Three.js scenes, step counters, etc.) across
-  // CopilotKit re-renders.
+  // Initialize the iframe shell once when html first appears.
+  // After that, stream content updates via postMessage — no iframe reload.
   useEffect(() => {
     if (!html || !iframeRef.current) return;
+
+    if (!shellReadyRef.current) {
+      // First time: load the full document so the shell (styles, bridge JS) is ready
+      shellReadyRef.current = true;
+      committedHtmlRef.current = html;
+      iframeRef.current.srcdoc = assembleShell(html);
+      setStreaming(true);
+      return;
+    }
+
+    // Subsequent updates: stream content into existing iframe via postMessage
     if (html === committedHtmlRef.current) return;
     committedHtmlRef.current = html;
-    iframeRef.current.srcdoc = assembleDocument(html);
-    setLoaded(false);
-    setHeight(0);
+
+    const iframe = iframeRef.current;
+    if (iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        { type: "update-content", html },
+        "*"
+      );
+    }
   }, [html]);
 
-  // Fallback: if iframe has html but hasn't reported ready after 4s, force-show
+  // Detect when html has stopped changing (streaming complete).
+  // Resets a debounce timer on every html update — settles after 800ms of no changes.
+  useEffect(() => {
+    if (!html) {
+      setHtmlSettled(false);
+      return;
+    }
+    setHtmlSettled(false);
+    if (settledTimerRef.current) clearTimeout(settledTimerRef.current);
+    settledTimerRef.current = setTimeout(() => setHtmlSettled(true), 800);
+    return () => {
+      if (settledTimerRef.current) clearTimeout(settledTimerRef.current);
+    };
+  }, [html]);
+
+  // Fallback: if iframe has html but hasn't reported a height after 4s, force-show
   useEffect(() => {
     if (!html || (loaded && height > 0)) return;
     const timeout = setTimeout(() => {
@@ -472,10 +536,27 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
     return () => clearTimeout(timeout);
   }, [html, loaded, height]);
 
-  // Iframe is ready when it has loaded AND reported a valid height
+  // Content is "complete" when iframe has loaded and reported a valid height
   const ready = loaded && height > 0;
-  const showLoading = !!html && !ready;
-  const loadingPhrase = useLoadingPhrase(showLoading);
+  // Show the iframe (even partially) as soon as we have content streaming
+  const showIframe = !!html && (streaming || ready);
+  // Streaming is active until html has stopped changing
+  const isStreaming = !!html && !htmlSettled;
+  // Save template only available when fully rendered AND streaming is done
+  const showSaveTemplate = ready && htmlSettled;
+  const loadingPhrase = useLoadingPhrase(isStreaming);
+
+  // Keep the streaming indicator mounted long enough to fade out
+  const [showStreamingIndicator, setShowStreamingIndicator] = useState(false);
+  useEffect(() => {
+    if (isStreaming) {
+      setShowStreamingIndicator(true);
+    } else if (showStreamingIndicator) {
+      // Keep mounted for fade-out, then unmount
+      const timeout = setTimeout(() => setShowStreamingIndicator(false), 600);
+      return () => clearTimeout(timeout);
+    }
+  }, [isStreaming, showStreamingIndicator]);
 
   const handleSaveTemplate = useCallback(() => {
     const name = templateName.trim() || title || "Untitled Template";
@@ -494,10 +575,49 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
   }, [templateName, title, description, html]);
 
   return (
-    <div className="w-full my-3 relative">
-      {/* Save as Template — only shown when widget is ready */}
-      {ready && html && (
-        <div className="absolute top-2 right-2 z-10">
+    <div className="w-full my-3">
+      {/* Loading phrases — sits above the widget, fades out when ready */}
+      {showStreamingIndicator && (
+        <div
+          className="mb-2 transition-all duration-500 ease-out"
+          style={{
+            opacity: isStreaming ? 1 : 0,
+            maxHeight: isStreaming ? 32 : 0,
+            overflow: "hidden",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                border: "2px solid var(--color-border-light, rgba(0,0,0,0.1))",
+                borderTopColor: "var(--color-lilac-dark, #6366f1)",
+                animation: "spin 0.8s linear infinite",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              className="text-[12px] font-medium"
+              style={{ color: "var(--text-secondary, #666)" }}
+            >
+              {loadingPhrase}...
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="relative">
+      {/* Save as Template — fades in once widget is fully ready */}
+      {html && (
+        <div
+          className="absolute top-2 right-2 z-10 transition-opacity duration-500"
+          style={{
+            opacity: showSaveTemplate ? 1 : 0,
+            pointerEvents: showSaveTemplate ? "auto" : "none",
+          }}
+        >
           {/* ── Saved confirmation ── */}
           {saveState === "saved" && (
             <div
@@ -610,64 +730,24 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
           )}
         </div>
       )}
-      {/* Loading indicator: visible until iframe is fully ready */}
-      {showLoading && (
-        <div
-          className="overflow-hidden rounded-xl"
-          style={{
-            border: "1px solid var(--color-border-glass)",
-            background: "var(--surface-primary)",
-          }}
-        >
-          {/* Animated gradient border top */}
-          <div
-            style={{
-              height: 2,
-              background: "linear-gradient(90deg, var(--color-lilac), var(--color-mint), var(--color-lilac))",
-              backgroundSize: "200% 100%",
-              animation: "shimmer 1.5s ease-in-out infinite",
-            }}
-          />
-          <div className="flex items-center gap-3 px-4 py-3">
-            {/* Spinning icon */}
-            <div
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: "50%",
-                border: "2px solid var(--color-border-light)",
-                borderTopColor: "var(--color-lilac-dark)",
-                animation: "spin 0.8s linear infinite",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              className="text-[13px] font-medium"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {loadingPhrase}...
-            </span>
-          </div>
-        </div>
-      )}
-      {/* Iframe: always mounted so ref is stable; srcdoc set imperatively.
-          No srcDoc React prop — prevents React from reloading the iframe
-          on parent re-renders. */}
+      {/* Iframe: always mounted so ref is stable; srcdoc set once,
+          content streamed via postMessage for progressive rendering. */}
       <iframe
         ref={iframeRef}
         sandbox="allow-scripts allow-same-origin"
         className="w-full border-0"
         onLoad={() => setLoaded(true)}
         style={{
-          height: ready ? height : 0,
+          height: showIframe ? (height > 0 ? height : 300) : 0,
           overflow: "hidden",
           background: "transparent",
-          opacity: ready ? 1 : 0,
-          transition: "opacity 300ms ease-in",
+          opacity: showIframe ? 1 : 0,
+          transition: "height 200ms ease-out",
           display: html ? undefined : "none",
         }}
         title={title}
       />
+      </div>
     </div>
   );
 }
