@@ -155,13 +155,87 @@ If you're rendering inside a system that supports CSS variables, prefer:
 - Use different color ramps for parent vs child to show hierarchy.
 
 ### 3. Illustrative Diagram
-**When**: Building intuition. "How does X actually work?"
+**When**: Building intuition. "How does X actually work?" (engines, airplanes, circuits, load paths)
 **Layout**: Freeform — follows the subject's natural geometry.
-**Rules**:
+
+**Composition Zones** (divide the 680px viewBox):
+- **Main illustration**: x=40 to x=480, full height. This is where the primary subject lives.
+- **Annotation margin**: x=490 to x=640. Primary and secondary labels go here with leader lines pointing into the illustration.
+- **Sub-diagram zone** (optional): bottom 25% of height. For detail callouts (e.g., pedal arrangement, control surface close-up).
+- Never let the main illustration bleed into the annotation margin.
+
+**Depth Layering Order** (draw in this sequence for proper stacking):
+1. Background/context shapes (low opacity, large, sets the scene)
+2. Main subject silhouette (the recognizable outline — car body, airplane fuselage)
+3. Internal components (engine, transmission, etc. — positioned where they physically exist)
+4. Connectors and flow lines (driveshafts, force arrows, data paths)
+5. Labels and annotations (always on top, never occluded)
+
+**Shape Construction** (critical for recognizable real-world objects):
+- **Never draw a complex object as a single `<path>`**. LLMs cannot reliably produce accurate freehand SVG paths.
+- Instead, **compose from 4-8 geometric primitives**: a car = body rect with rounded corners + hood slope path + windshield trapezoid + 2 wheel circles + bumper rects.
+- Each primitive should be a separate SVG element so it can be individually styled and labeled.
+- Test: "Would someone recognize what this is without labels?" If not, add more defining features.
+- Key features that make objects recognizable:
+  - **Car**: wheel wells, hood slope, windshield angle, roof line, distinct front/rear
+  - **Airplane**: fuselage taper, wing sweep, tail fin, engine nacelles
+  - **Building**: floor lines, window grid, foundation, roof pitch
+
+**Force & Motion Arrows**:
+- Use larger arrowheads for force arrows: `markerWidth="8" markerHeight="8"` (vs default 6 for connectors).
+- Color-code by type: warm (coral/red) for resistance/friction, cool (blue/teal) for propulsion/thrust, gray for gravity/neutral forces.
+- Scale arrow stroke width to indicate magnitude: 1.5px normal, 2.5px for dominant forces.
+- Always label force arrows with both name and direction.
+
+**Annotation Hierarchy**:
+- **Primary labels** (14px, font-weight 500, solid leader lines at 1px stroke): main components being explained. Max 5 per diagram.
+- **Secondary labels** (12px, font-weight 400, dashed leader lines at 0.5px stroke): supporting details and dimensions.
+- **Tertiary labels** (11px, font-weight 400, inline with no leader line): minor callouts, units, values.
+- Leader lines should be angled (not purely horizontal/vertical) and must never cross each other.
+
+**Cross-Section vs Side View**:
+- Use **side profile** for: force diagrams, motion paths, external appearance, spatial relationships between subsystems.
+- Use **cross-section (cut-away)** for: internal mechanisms, flow paths through chambers, layered structures.
+- When using cross-section, draw a dashed line indicating the cut plane and label it (e.g., "section A-A").
+
+**Sub-Diagram Standards**:
+- Minimum viewBox area: 150×100 units.
+- Visually connect to the main diagram with a dotted leader line or a "zoom" callout bracket.
+- Sub-diagrams must meet the same shape quality standards as the main illustration — no placeholder rectangles.
+
+**General Rules**:
 - Shapes can be freeform (paths, ellipses, polygons), not just rects.
 - Color encodes intensity, not category (warm = active, cool = dormant).
 - Overlap shapes for depth, but never let strokes cross text.
-- Labels go in margins with leader lines pointing to the relevant part.
+- Components must be positioned where they physically exist in the real object — don't float an engine in the trunk.
+- Max 5-7 labeled components per diagram. If more, use the multi-diagram approach.
+
+---
+
+## Diagram Planning Protocol
+
+Before generating any illustrative or mechanical diagram, **stop and plan**. Work through these steps mentally before writing any SVG:
+
+1. **Subject decomposition**: What are the 3-5 key subsystems? Which are primary (must be visually prominent) vs secondary (annotation-level detail)?
+
+2. **Educational priority**: What is the ONE most important concept to convey? Everything else supports this. (e.g., for "how cars work" the key insight is energy conversion: fuel → spin → motion)
+
+3. **Spatial layout**: Where does each component physically sit relative to others? Mentally assign components to a rough coordinate grid:
+   - Left/right positioning (e.g., engine front, differential rear)
+   - Top/bottom positioning (e.g., wing above fuselage, wheels below body)
+   - Overlap relationships (e.g., pistons inside cylinders)
+
+4. **Composition sketch**: Define bounding rectangles before writing SVG:
+   - Main illustration: `x=__, y=__, w=__, h=__`
+   - Annotation margin: `x=490, y=40, w=150, h=__`
+   - Sub-diagram zone (if needed): `x=__, y=__, w=__, h=__`
+   - Controls area (if interactive): below the SVG
+
+5. **Shape fidelity check**: For the primary subject, list 4-6 defining visual features that make it recognizable. Each must appear in the final SVG.
+
+6. **Control-to-visual mapping** (if interactive): For each slider/button, identify which SVG element IDs it will modify and what attribute changes (fill, transform, text content, path d, etc.).
+
+This planning step prevents the most common illustrative diagram failures: unrecognizable shapes, spatially inaccurate component placement, and disconnected interactive controls.
 
 ---
 

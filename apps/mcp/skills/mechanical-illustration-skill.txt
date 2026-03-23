@@ -1,0 +1,350 @@
+# Mechanical & Illustrative Diagram Skill
+
+This skill extends the SVG Diagram Skill with specific guidance for mechanical and physical-world illustrations — cars, airplanes, engines, circuits, buildings, and similar real-world objects where **shape fidelity** and **spatial accuracy** matter.
+
+Use this skill whenever you need to illustrate something that exists in the physical world and has a recognizable form.
+
+---
+
+## Shape Construction Method
+
+LLMs cannot reliably produce accurate freehand SVG paths. Instead, **compose recognizable shapes from geometric primitives**.
+
+### The Primitive Composition Rule
+
+Break every real-world object into 4-8 simple SVG elements:
+
+| Primitive | SVG Element | Use For |
+|-----------|------------|---------|
+| Rectangle | `<rect>` with `rx` | Bodies, blocks, panels, frames |
+| Circle/Ellipse | `<circle>`, `<ellipse>` | Wheels, gears, dials, ports |
+| Trapezoid | `<polygon>` or `<path>` | Windshields, tapered sections |
+| Arc/Curve | `<path>` with cubic bezier | Hood slopes, fuselage tapers, airfoils |
+| Line | `<line>` | Axles, shafts, structural members |
+| Rounded path | `<path>` with Q/C commands | Organic contours, fenders |
+
+### Example: Car Side Profile (Composed from Primitives)
+
+```svg
+<!-- 1. Body — main rectangle with rounded corners -->
+<rect x="100" y="160" width="400" height="80" rx="12"
+      fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- 2. Hood slope — trapezoid connecting front to windshield -->
+<path d="M140 160 L200 120 L340 120 L340 160"
+      fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- 3. Cabin/windshield — trapezoid for glass area -->
+<path d="M200 120 L230 90 L380 90 L340 120"
+      fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+
+<!-- 4. Roof — gentle arc -->
+<path d="M230 90 Q300 75 380 90"
+      fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- 5. Rear trunk slope -->
+<path d="M380 90 L420 120 L460 140 L460 160"
+      fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- 6. Front wheel -->
+<circle cx="190" cy="240" r="30" fill="#444441" stroke="#5F5E5A" stroke-width="0.5"/>
+<circle cx="190" cy="240" r="18" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- 7. Rear wheel -->
+<circle cx="410" cy="240" r="30" fill="#444441" stroke="#5F5E5A" stroke-width="0.5"/>
+<circle cx="410" cy="240" r="18" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- 8. Wheel wells — arcs cut into body -->
+<path d="M155 240 A35 35 0 0 1 225 240" fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+<path d="M375 240 A35 35 0 0 1 445 240" fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+```
+
+**Key principle**: Each primitive is a separate element that can be individually styled, labeled, or animated. The composition reads top-to-bottom as: body → hood → cabin → roof → trunk → wheels.
+
+---
+
+## Spatial Accuracy Rules
+
+### Grid Overlay Technique
+
+Before placing components, mentally divide the main subject into a grid:
+
+1. **Horizontal zones** — for a car: front bumper (0-15%), engine bay (15-35%), cabin (35-65%), trunk (65-85%), rear bumper (85-100%)
+2. **Vertical zones** — roof (0-25%), windows (25-40%), body (40-70%), undercarriage (70-85%), wheels (85-100%)
+
+Place components within their correct grid cell. An engine MUST be in the front 15-35% zone. A differential MUST be in the rear 65-85% zone.
+
+### Spatial Rules
+
+- **Components must be positioned where they physically exist** in the real object. Never float a component outside its container.
+- **Overlapping indicates containment**: pistons overlap with cylinders, gears mesh with each other, wires run through conduits.
+- **Connection lines must follow physical paths**: a driveshaft runs horizontally from transmission to differential, not diagonally through the cabin.
+- **Scale matters**: an engine block is larger than a spark plug. Maintain approximate relative proportions.
+
+---
+
+## Annotation Hierarchy
+
+Use three distinct tiers so the viewer's eye finds the most important information first.
+
+### Tier 1: Primary Labels (max 5 per diagram)
+```svg
+<!-- Primary: 14px, weight 500, solid leader line -->
+<line x1="300" y1="180" x2="500" y2="140"
+      stroke="#085041" stroke-width="1" fill="none"/>
+<circle cx="300" cy="180" r="3" fill="#085041"/>
+<text x="506" y="144" font-size="14" font-weight="500" fill="#085041">Engine</text>
+<text x="506" y="162" font-size="12" fill="#0F6E56">power source</text>
+```
+
+### Tier 2: Secondary Labels
+```svg
+<!-- Secondary: 12px, weight 400, dashed leader line -->
+<line x1="350" y1="200" x2="500" y2="200"
+      stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 3" fill="none"/>
+<circle cx="350" cy="200" r="2" fill="#5F5E5A" opacity="0.6"/>
+<text x="506" y="204" font-size="12" fill="#5F5E5A">driveshaft</text>
+```
+
+### Tier 3: Tertiary Labels (inline, no leader)
+```svg
+<!-- Tertiary: 11px, weight 400, placed directly on/near the element -->
+<text x="190" y="275" text-anchor="middle" font-size="11" fill="#5F5E5A" opacity="0.7">front wheel</text>
+```
+
+**Placement rules**:
+- All Tier 1 and 2 labels go in the annotation margin (x=490 to x=640).
+- Leader lines must be angled — never purely horizontal. Angle conveys which element they point to.
+- Leader lines must never cross each other. If they would, reorder vertically.
+- Tier 3 labels sit directly below or beside the element they describe.
+
+---
+
+## Sub-Diagram Quality Standards
+
+Sub-diagrams appear in the sub-diagram zone (bottom 25% of the SVG or in a separate card below). They zoom into a specific subsystem.
+
+### Requirements
+
+1. **Minimum viewBox**: 150×100 units. Anything smaller is unreadable.
+2. **Same shape standards**: Sub-diagrams must use the primitive composition method. No placeholder rectangles.
+3. **Visual connection**: Link the sub-diagram to the main illustration with one of:
+   - A dotted leader line from the relevant area to the sub-diagram
+   - A "zoom bracket" — a dashed rectangle around the area in the main diagram, with a line to the sub-diagram
+   - A matching color that ties the sub-diagram to its parent region
+
+### Example: Pedal Sub-Diagram (Good vs Bad)
+
+**Bad** (oversimplified):
+```svg
+<!-- Three plain rectangles — no recognizable form -->
+<rect x="10" y="10" width="40" height="60" fill="#E6F1FB"/>
+<rect x="60" y="10" width="40" height="60" fill="#E6F1FB"/>
+<rect x="110" y="10" width="40" height="60" fill="#FAECE7"/>
+```
+
+**Good** (recognizable pedal shapes):
+```svg
+<!-- Pedals with proper proportions and distinct shapes -->
+<!-- Clutch — wide, tall -->
+<path d="M15 70 L15 20 Q15 10 25 10 L45 10 Q55 10 55 20 L55 70"
+      fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="35" y="85" text-anchor="middle" font-size="11" fill="#0C447C">clutch</text>
+
+<!-- Brake — medium, shorter travel indicator -->
+<path d="M75 70 L75 25 Q75 15 85 15 L105 15 Q115 15 115 25 L115 70"
+      fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="95" y="85" text-anchor="middle" font-size="11" fill="#0C447C">brake</text>
+
+<!-- Throttle — narrow, small -->
+<path d="M140 70 L140 35 Q140 25 148 25 L162 25 Q170 25 170 35 L170 70"
+      fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+<text x="155" y="85" text-anchor="middle" font-size="11" fill="#712B13">throttle</text>
+
+<!-- Pivot bar connecting pedals -->
+<line x1="10" y1="70" x2="175" y2="70" stroke="#5F5E5A" stroke-width="0.5"/>
+```
+
+---
+
+## Interactive Control Binding
+
+When a diagram has interactive controls (sliders, buttons), every control must produce a visible change in the SVG.
+
+### Binding Pattern
+
+```javascript
+// 1. Define state with meaningful defaults
+const state = { throttle: 30, gear: 2, steering: 0 };
+
+// 2. Physics/logic model — compute derived values from state
+function compute() {
+  const rpm = state.throttle * 40 + state.gear * 200;
+  const speed = rpm / (state.gear * 25 + 50);
+  const force = state.throttle * (7 - state.gear) * 0.5;
+  return { rpm, speed: Math.round(speed), force: Math.round(force) };
+}
+
+// 3. Render — apply computed values to SVG elements
+function render() {
+  const v = compute();
+
+  // Update text readouts
+  setText('viz-rpm', v.rpm.toLocaleString() + ' rpm');
+  setText('viz-speed', v.speed + ' mph');
+  setText('viz-force', v.force);
+
+  // Update visual indicators
+  setAttr('viz-engine-glow', 'opacity', 0.2 + state.throttle * 0.008);
+  setAttr('viz-force-arrow', 'x2',
+    getAttr('viz-force-arrow', 'x1') + v.force * 2);
+
+  // Highlight active preset button
+  document.querySelectorAll('.preset-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.preset === state.mode));
+}
+
+// Helpers
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function setAttr(id, attr, val) {
+  const el = document.getElementById(id);
+  if (el) el.setAttribute(attr, val);
+}
+function getAttr(id, attr) {
+  const el = document.getElementById(id);
+  return el ? +el.getAttribute(attr) : 0;
+}
+```
+
+### What "Visible Change" Means
+
+For each control, at least one of these must change in the SVG:
+- **Fill opacity/color** — e.g., engine glows brighter at higher RPM
+- **Element position** — e.g., piston moves up/down, needle rotates
+- **Path length/size** — e.g., force arrow grows/shrinks
+- **Text content** — e.g., speed readout updates
+- **Stroke dash animation speed** — e.g., flow particles speed up
+
+If a control doesn't change anything visual, remove it.
+
+---
+
+## Worked Reference: Car Drivetrain Composition
+
+This shows the complete planning-to-SVG process for a "how do cars work?" response.
+
+### Planning Step
+
+1. **Subject decomposition**: Engine (primary), Transmission (primary), Differential (primary), Driveshaft (secondary), Wheels (secondary), Brakes (secondary)
+2. **Educational priority**: Energy conversion chain — fuel burns → crankshaft spins → gears trade speed for force → wheels push road
+3. **Spatial layout**: Left-to-right: Engine (x=100-200) → Transmission (x=220-320) → Driveshaft (x=320-400) → Differential (x=400-480) → Wheels (x=480-540)
+4. **Shape fidelity**: Car needs: body rectangle, hood slope, windshield, roof arc, 2 wheels with hubs, wheel wells
+5. **Control mapping**: Throttle slider → viz-engine-glow opacity + viz-rpm text; Gear slider → viz-gear-text + viz-force text
+
+### SVG Structure Outline
+
+```
+Car silhouette (composed from 8 primitives)
+  └─ Engine block (teal rect, positioned in front 20%)
+  └─ Transmission (purple rect, positioned at 35%)
+  └─ Driveshaft (line connecting transmission to differential)
+  └─ Differential (blue rect, positioned at 70%)
+  └─ Flow arrows: engine → transmission → driveshaft → differential → wheels
+Annotation margin (x=490):
+  └─ "Engine" — primary label with leader
+  └─ "Transmission" — primary label with leader
+  └─ "Differential" — primary label with leader
+  └─ "brakes squeeze rotors" — secondary label
+Sub-diagram zone:
+  └─ Pedal arrangement (clutch/brake/throttle with proper shapes)
+  └─ Steering wheel indicator
+Controls:
+  └─ Throttle slider, Gear slider
+  └─ Preset buttons: City, Highway, Braking
+Stats:
+  └─ Engine speed (rpm), Wheel force, Road speed (mph)
+```
+
+---
+
+## Worked Reference: Airfoil / Airplane Composition
+
+### Planning Step
+
+1. **Subject decomposition**: Wing/airfoil (primary), Forces — lift/weight/thrust/drag (primary), Control surfaces (secondary), Engine (secondary)
+2. **Educational priority**: Lift generation — wing shape creates pressure difference, net upward force
+3. **Spatial layout**: Airplane centered horizontally. Forces as arrows: Lift (up from wing center), Weight (down from fuselage center), Thrust (right from engine), Drag (left from nose)
+4. **Shape fidelity**: Airplane needs: fuselage cylinder, wing cross-section (NACA-style curve), tail fin, engine nacelle, cockpit windows
+5. **Control mapping**: Engine power → viz-thrust-arrow length + viz-thrust-text; Wing angle → viz-lift-arrow length + airfoil rotation
+
+### Airfoil Cross-Section Shape
+
+The airfoil is the most important shape for airplane diagrams. Use this NACA-style profile:
+
+```svg
+<!-- Airfoil cross-section — asymmetric teardrop -->
+<path d="M100 200
+         C100 200, 120 175, 200 172
+         C280 169, 350 178, 380 192
+         C385 196, 388 200, 380 204
+         C350 212, 280 218, 200 216
+         C120 213, 100 200, 100 200Z"
+      fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+
+<!-- Chord line (reference) -->
+<line x1="100" y1="200" x2="380" y2="200"
+      stroke="#185FA5" stroke-width="0.5" stroke-dasharray="4 3" opacity="0.4"/>
+
+<!-- Airflow arrows over top surface (faster, curved) -->
+<path d="M80 190 Q200 160 400 185"
+      fill="none" stroke="#0F6E56" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- Airflow arrows under bottom surface (slower, straighter) -->
+<path d="M80 210 Q200 222 400 208"
+      fill="none" stroke="#993C1D" stroke-width="1" marker-end="url(#arrow)"/>
+```
+
+### Control Surfaces Sub-Diagram
+
+```svg
+<!-- Airplane top-down view showing control surfaces -->
+<!-- Fuselage -->
+<ellipse cx="100" cy="60" rx="80" ry="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- Wings -->
+<path d="M60 60 L30 35 L40 35 L80 55" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<path d="M60 60 L30 85 L40 85 L80 65" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+
+<!-- Ailerons — highlighted at wing tips -->
+<rect x="30" y="33" width="15" height="4" rx="1" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<rect x="30" y="83" width="15" height="4" rx="1" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+
+<!-- Tail fin -->
+<path d="M175 60 L190 45 L195 45 L180 60" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+
+<!-- Rudder — highlighted on tail -->
+<rect x="188" y="44" width="4" height="12" rx="1" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+
+<!-- Elevator — horizontal tail surfaces -->
+<rect x="170" y="56" width="12" height="3" rx="1" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<rect x="170" y="61" width="12" height="3" rx="1" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+
+<!-- Labels -->
+<text x="22" y="30" font-size="10" fill="#3C3489">ailerons: roll</text>
+<text x="192" y="40" font-size="10" fill="#712B13">rudder: yaw</text>
+<text x="165" y="73" font-size="10" fill="#633806">elevator: pitch</text>
+```
+
+---
+
+## Common Mistakes to Avoid
+
+1. **Single-path silhouettes**: Don't draw `<path d="M... (50 control points)">` for a car outline. It will look wrong. Use primitives.
+2. **Floating components**: An engine drawn at x=400 in a car that spans x=100-500 is in the trunk. Check your grid.
+3. **Placeholder rectangles**: Three identical rectangles labeled "clutch", "brake", "throttle" convey nothing. Give them distinct shapes and proportions.
+4. **Disconnected controls**: A "throttle" slider that doesn't change anything in the SVG is useless. Every control needs a visible effect.
+5. **Label soup**: 10 primary labels at the same font size creates visual noise. Use the 3-tier hierarchy.
+6. **Missing physics**: Force arrows without labels or with wrong directions are worse than no arrows. Double-check: lift points UP, weight points DOWN, thrust points FORWARD, drag points BACKWARD.

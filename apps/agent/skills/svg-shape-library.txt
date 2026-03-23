@@ -1,0 +1,317 @@
+# SVG Shape Library
+
+Pre-designed SVG path fragments for common objects in mechanical and illustrative diagrams. Use these as **starting points** — adapt proportions, add/remove details, and recolor to match your diagram's needs. Never paste verbatim without adapting to context.
+
+All shapes use a **normalized coordinate space** (noted per shape). Use `transform="translate(x,y) scale(s)"` to position and resize within your diagram.
+
+---
+
+## Vehicles
+
+### Sedan Side Profile
+**Coordinate space**: 0-400 wide, 0-120 tall. Origin at top-left.
+
+```svg
+<g id="sedan" transform="translate(TX,TY) scale(S)">
+  <!-- Body -->
+  <rect x="20" y="50" width="360" height="50" rx="10"
+        fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Hood slope -->
+  <path d="M30 50 L80 25 L200 25 L200 50"
+        fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Windshield -->
+  <path d="M80 25 L110 8 L210 8 L200 25"
+        fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3" opacity="0.6"/>
+  <!-- Roof -->
+  <path d="M110 8 Q180 0 280 8" fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Rear window + trunk -->
+  <path d="M280 8 L310 25 L350 40 L370 50"
+        fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Front wheel -->
+  <circle cx="90" cy="100" r="22" fill="#444" stroke="#5F5E5A" stroke-width="0.5"/>
+  <circle cx="90" cy="100" r="13" fill="#ddd" stroke="#5F5E5A" stroke-width="0.3"/>
+  <!-- Rear wheel -->
+  <circle cx="310" cy="100" r="22" fill="#444" stroke="#5F5E5A" stroke-width="0.5"/>
+  <circle cx="310" cy="100" r="13" fill="#ddd" stroke="#5F5E5A" stroke-width="0.3"/>
+  <!-- Wheel wells -->
+  <path d="M64 100 A26 26 0 0 1 116 100" fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+  <path d="M284 100 A26 26 0 0 1 336 100" fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Headlight -->
+  <ellipse cx="25" cy="65" rx="6" ry="4" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.3"/>
+  <!-- Taillight -->
+  <rect x="372" y="58" width="6" height="10" rx="2" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.3"/>
+</g>
+```
+**Customization**: Adjust roof arc control point for sportier/boxier look. Change wheel size for SUV (r=28). Remove hood slope for van/bus.
+
+---
+
+### Airplane Side Profile
+**Coordinate space**: 0-420 wide, 0-140 tall.
+
+```svg
+<g id="airplane" transform="translate(TX,TY) scale(S)">
+  <!-- Fuselage -->
+  <ellipse cx="200" cy="70" rx="180" ry="22"
+           fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Nose cone -->
+  <path d="M20 70 Q10 70 18 65 Q24 58 35 55"
+        fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Cockpit windows -->
+  <path d="M40 60 L65 56 L80 58 L60 64"
+        fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3" opacity="0.6"/>
+  <!-- Cabin windows -->
+  <g opacity="0.4">
+    <circle cx="110" cy="62" r="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3"/>
+    <circle cx="130" cy="61" r="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3"/>
+    <circle cx="150" cy="60" r="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3"/>
+    <circle cx="170" cy="60" r="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3"/>
+    <circle cx="190" cy="60" r="3" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3"/>
+  </g>
+  <!-- Wing -->
+  <path d="M150 70 L120 45 Q115 42 118 42 L220 38 Q225 38 222 42 L200 70"
+        fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <!-- Tail fin (vertical stabilizer) -->
+  <path d="M360 70 L370 25 Q372 20 375 22 L385 50 L380 70"
+        fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Horizontal stabilizer -->
+  <path d="M345 72 L335 58 Q333 56 336 56 L390 54 Q393 54 391 58 L380 72"
+        fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Engine nacelle (under wing) -->
+  <ellipse cx="160" cy="82" rx="18" ry="8"
+           fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <circle cx="143" cy="82" r="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.3"/>
+</g>
+```
+**Customization**: Remove cabin windows for schematic view. Add second engine nacelle at cx=220 for twin-engine. Adjust wing sweep by changing the wing path control points.
+
+---
+
+## Mechanical Parts
+
+### Gear/Cog
+**Coordinate space**: 0-60 wide, 0-60 tall. Center at (30,30).
+
+```svg
+<g id="gear" transform="translate(TX,TY) scale(S)">
+  <!-- Gear body with teeth approximated by a rounded polygon -->
+  <circle cx="30" cy="30" r="22" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <!-- Teeth (8 teeth evenly spaced) -->
+  <g stroke="#534AB7" stroke-width="0.5" fill="#EEEDFE">
+    <rect x="27" y="4" width="6" height="8" rx="1"/>
+    <rect x="27" y="48" width="6" height="8" rx="1"/>
+    <rect x="4" y="27" width="8" height="6" rx="1"/>
+    <rect x="48" y="27" width="8" height="6" rx="1"/>
+    <rect x="11" y="11" width="7" height="5" rx="1" transform="rotate(45,14.5,13.5)"/>
+    <rect x="42" y="11" width="7" height="5" rx="1" transform="rotate(-45,45.5,13.5)"/>
+    <rect x="11" y="44" width="7" height="5" rx="1" transform="rotate(-45,14.5,46.5)"/>
+    <rect x="42" y="44" width="7" height="5" rx="1" transform="rotate(45,45.5,46.5)"/>
+  </g>
+  <!-- Center hole -->
+  <circle cx="30" cy="30" r="6" fill="var(--color-background-primary, white)"
+          stroke="#534AB7" stroke-width="0.5"/>
+</g>
+```
+
+### Piston & Cylinder
+**Coordinate space**: 0-50 wide, 0-100 tall.
+
+```svg
+<g id="piston" transform="translate(TX,TY) scale(S)">
+  <!-- Cylinder wall -->
+  <rect x="5" y="0" width="40" height="80" rx="2"
+        fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Piston head (moves up/down — use transform for animation) -->
+  <rect id="viz-piston-head" x="8" y="40" width="34" height="12" rx="2"
+        fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <!-- Piston rings -->
+  <line x1="8" y1="43" x2="42" y2="43" stroke="#854F0B" stroke-width="0.3"/>
+  <line x1="8" y1="49" x2="42" y2="49" stroke="#854F0B" stroke-width="0.3"/>
+  <!-- Connecting rod -->
+  <line x1="25" y1="52" x2="25" y2="85"
+        stroke="#5F5E5A" stroke-width="1.5"/>
+  <!-- Crankshaft circle -->
+  <circle cx="25" cy="90" r="8" fill="none" stroke="#5F5E5A" stroke-width="0.5"/>
+  <circle cx="25" cy="85" r="3" fill="#5F5E5A"/>
+</g>
+```
+
+### Wheel with Spokes
+**Coordinate space**: 0-80 wide, 0-80 tall. Center at (40,40).
+
+```svg
+<g id="wheel" transform="translate(TX,TY) scale(S)">
+  <!-- Tire -->
+  <circle cx="40" cy="40" r="36" fill="#444" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Rim -->
+  <circle cx="40" cy="40" r="24" fill="#ddd" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Spokes (5) -->
+  <g stroke="#999" stroke-width="1.5">
+    <line x1="40" y1="18" x2="40" y2="34"/>
+    <line x1="19" y1="33" x2="33" y2="38"/>
+    <line x1="25" y1="55" x2="36" y2="44"/>
+    <line x1="55" y1="55" x2="44" y2="44"/>
+    <line x1="61" y1="33" x2="47" y2="38"/>
+  </g>
+  <!-- Hub -->
+  <circle cx="40" cy="40" r="6" fill="#bbb" stroke="#999" stroke-width="0.5"/>
+</g>
+```
+
+---
+
+## Physics Shapes
+
+### Airfoil Cross-Section (NACA-style)
+**Coordinate space**: 0-300 wide, 0-80 tall.
+
+```svg
+<g id="airfoil" transform="translate(TX,TY) scale(S)">
+  <!-- Airfoil body — asymmetric teardrop, upper surface more curved -->
+  <path d="M10 40
+           C10 40, 30 18, 100 14
+           C170 10, 240 20, 275 34
+           C285 38, 290 40, 285 44
+           C240 56, 170 62, 100 58
+           C30 54, 10 40, 10 40Z"
+        fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <!-- Chord line -->
+  <line x1="10" y1="40" x2="285" y2="40"
+        stroke="#185FA5" stroke-width="0.5" stroke-dasharray="4 3" opacity="0.3"/>
+  <!-- Leading edge highlight -->
+  <circle cx="12" cy="40" r="2" fill="#185FA5" opacity="0.5"/>
+  <!-- Trailing edge -->
+  <circle cx="284" cy="40" r="1.5" fill="#185FA5" opacity="0.5"/>
+</g>
+```
+**Customization**: Adjust the upper surface control points (y=18, y=14, y=10) for more/less camber. For a symmetric airfoil, mirror the bottom curve to match the top.
+
+### Force Arrow (Large, Labeled)
+**Coordinate space**: width varies, 0-30 tall.
+
+```svg
+<g id="force-arrow" transform="translate(TX,TY)">
+  <!-- Arrow shaft -->
+  <line x1="0" y1="15" x2="80" y2="15"
+        stroke="#185FA5" stroke-width="2.5" marker-end="url(#force-head)"/>
+  <!-- Label -->
+  <text x="40" y="8" text-anchor="middle" font-size="13" font-weight="500"
+        fill="#0C447C">Thrust</text>
+</g>
+
+<!-- Define larger arrowhead for force arrows (put in <defs>) -->
+<marker id="force-head" viewBox="0 0 12 12" refX="10" refY="6"
+        markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+  <path d="M2 1L10 6L2 11" fill="none" stroke="context-stroke"
+        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+```
+**Color conventions**: Blue/teal for propulsion (thrust, lift). Coral/red for resistance (drag, friction, braking). Gray for gravity (weight). Amber for user-applied forces.
+
+---
+
+## Annotation Elements
+
+### Zoom Callout Box
+Highlights an area in the main diagram and connects it to a sub-diagram.
+
+```svg
+<!-- Dashed box around area of interest -->
+<rect x="150" y="80" width="60" height="40" rx="4"
+      fill="none" stroke="#534AB7" stroke-width="0.5" stroke-dasharray="4 3"/>
+
+<!-- Connecting line to sub-diagram -->
+<path d="M210 100 L260 100 L260 300 L280 300"
+      fill="none" stroke="#534AB7" stroke-width="0.5" stroke-dasharray="4 3"/>
+
+<!-- Small "zoom" icon -->
+<circle cx="215" cy="85" r="6" fill="var(--color-background-primary, white)"
+        stroke="#534AB7" stroke-width="0.5"/>
+<text x="215" y="88" text-anchor="middle" font-size="8" fill="#534AB7">+</text>
+```
+
+### Dimension Line with Tick Marks
+
+```svg
+<g id="dimension" transform="translate(TX,TY)">
+  <!-- Tick marks -->
+  <line x1="0" y1="-4" x2="0" y2="4" stroke="#5F5E5A" stroke-width="0.5"/>
+  <line x1="100" y1="-4" x2="100" y2="4" stroke="#5F5E5A" stroke-width="0.5"/>
+  <!-- Dimension line -->
+  <line x1="0" y1="0" x2="100" y2="0"
+        stroke="#5F5E5A" stroke-width="0.5"
+        marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <!-- Measurement label -->
+  <text x="50" y="-6" text-anchor="middle" font-size="11" fill="#5F5E5A">2.4 m</text>
+</g>
+```
+
+---
+
+## Control Surfaces (Airplane)
+
+### Rudder (Neutral and Deflected)
+
+```svg
+<!-- Neutral -->
+<g id="rudder-neutral">
+  <rect x="0" y="0" width="5" height="20" rx="1"
+        fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+  <text x="12" y="14" font-size="10" fill="#712B13">rudder</text>
+</g>
+
+<!-- Deflected right -->
+<g id="rudder-deflected">
+  <path d="M0 0 L4 3 L4 17 L0 20"
+        fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+  <text x="12" y="14" font-size="10" fill="#712B13">rudder (yaw right)</text>
+</g>
+```
+
+### Aileron (Neutral and Deflected)
+
+```svg
+<!-- Neutral -->
+<g id="aileron-neutral">
+  <rect x="0" y="0" width="24" height="5" rx="1"
+        fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+</g>
+
+<!-- Deflected up -->
+<g id="aileron-up">
+  <path d="M0 5 L0 3 L24 0 L24 5"
+        fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+</g>
+
+<!-- Deflected down -->
+<g id="aileron-down">
+  <path d="M0 0 L24 0 L24 2 L0 5"
+        fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+</g>
+```
+
+### Elevator (Neutral and Deflected)
+
+```svg
+<!-- Neutral -->
+<g id="elevator-neutral">
+  <rect x="0" y="0" width="20" height="4" rx="1"
+        fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+</g>
+
+<!-- Deflected up (nose up) -->
+<g id="elevator-up">
+  <path d="M0 4 L0 2 L20 0 L20 4"
+        fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+</g>
+```
+
+---
+
+## Usage Notes
+
+- **Adapt, don't copy**: These shapes are starting points. Change proportions, colors, and detail level to match your diagram's needs and scale.
+- **Scale with transform**: Use `transform="translate(x,y) scale(factor)"` on the `<g>` wrapper to position within your viewBox. A `scale(0.5)` halves the shape.
+- **Consistent stroke width**: After scaling, stroke widths also scale. If you scale down significantly (< 0.5), increase stroke-width to maintain visibility.
+- **Color adaptation**: Replace the hardcoded fills/strokes with colors from the SVG Diagram Skill color palette that match your diagram's color scheme.
+- **Combine shapes**: Layer these fragments. A car with its hood open = sedan profile + piston visible through hood gap + zoom callout to engine detail.

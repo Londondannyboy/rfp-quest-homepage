@@ -218,6 +218,106 @@ render();
 }
 ```
 
+### Architecture: Progressive Rendering for Complex Interactive Diagrams
+
+When building interactive diagrams with controls (sliders, buttons, presets), use this structured architecture instead of scattered inline handlers. This ensures controls and visuals stay connected.
+
+**HTML Section Structure** — organize your HTML in explicit, commented sections:
+
+```html
+<!-- SECTION 1: Main illustration SVG -->
+<svg id="viz-main" width="100%" viewBox="0 0 680 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Use viz- prefixed IDs for all dynamic elements -->
+  <rect id="viz-engine-fill" .../>
+  <text id="viz-speed-text" ...>0 rpm</text>
+  <line id="viz-force-arrow" .../>
+</svg>
+
+<!-- SECTION 2: Sub-diagram(s) -->
+<div style="display:flex;gap:16px;margin:12px 0">
+  <svg id="viz-sub-controls" viewBox="0 0 200 120">...</svg>
+  <div id="viz-stats">
+    <div>Engine speed: <strong id="viz-rpm">0</strong> rpm</div>
+    <div>Wheel force: <strong id="viz-force">0</strong></div>
+  </div>
+</div>
+
+<!-- SECTION 3: Interactive controls -->
+<div class="controls">
+  <label>Throttle
+    <input type="range" min="0" max="100" value="30"
+           oninput="updateState('throttle', +this.value)">
+  </label>
+  <label>Gear
+    <input type="range" min="1" max="6" value="2"
+           oninput="updateState('gear', +this.value)">
+  </label>
+  <button onclick="applyPreset('city')">City</button>
+  <button onclick="applyPreset('highway')">Highway</button>
+</div>
+
+<!-- SECTION 4: JavaScript state + bindings -->
+<script>
+// Centralized state — single source of truth
+const state = { throttle: 30, gear: 2, mode: 'city' };
+
+// Single update function — all controls call this
+function updateState(key, value) {
+  state[key] = value;
+  render();
+}
+
+// Presets — just state objects applied at once
+const presets = {
+  city:    { throttle: 30, gear: 2 },
+  highway: { throttle: 70, gear: 5 },
+  braking: { throttle: 0,  gear: 3 }
+};
+function applyPreset(name) {
+  Object.assign(state, presets[name]);
+  state.mode = name;
+  // Also update slider positions to match
+  document.querySelectorAll('input[type=range]').forEach(el => {
+    const key = el.closest('label')?.textContent.trim().toLowerCase();
+    if (key && state[key] !== undefined) el.value = state[key];
+  });
+  render();
+}
+
+// Render — reads state, updates ALL visual elements
+function render() {
+  const rpm = Math.round(state.throttle * 40 + state.gear * 200);
+  const force = Math.round(state.throttle * (7 - state.gear) * 0.5);
+
+  // Update SVG elements by ID
+  document.getElementById('viz-rpm').textContent = rpm.toLocaleString();
+  document.getElementById('viz-force').textContent = force;
+  document.getElementById('viz-speed-text').textContent = rpm + ' rpm';
+
+  // Visual feedback — change fills, transforms, etc.
+  const el = document.getElementById('viz-engine-fill');
+  if (el) el.setAttribute('opacity', 0.3 + state.throttle * 0.007);
+}
+
+// Initial render
+render();
+</script>
+```
+
+**Element ID Convention**: `viz-{component}-{property}`
+- `viz-engine-fill` — engine block fill color/opacity
+- `viz-speed-text` — speed readout text content
+- `viz-force-arrow` — force arrow being resized
+- `viz-rpm` — RPM stat display
+
+This convention makes it trivial to trace which control affects which visual element. Every `updateState` call triggers `render()`, which updates every dynamic element from the centralized state.
+
+**Key rules**:
+- Never use anonymous `oninput="document.getElementById(...)"` handlers. Always go through `updateState` → `render`.
+- Every slider/button must produce a visible change in the SVG — if a control doesn't update anything visual, remove it.
+- Preset buttons must also update slider positions to stay in sync.
+- The `render()` function should be idempotent — calling it twice with the same state produces the same output.
+
 ---
 
 ## Part 3: Skill — Data Visualization
