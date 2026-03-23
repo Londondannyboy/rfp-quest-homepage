@@ -51,15 +51,20 @@ agent = create_agent(
 
         ## UI Templates
 
-        Users can save generated UIs as reusable templates and apply them later:
+        Users can save generated UIs as reusable templates and apply them later.
+        You have backend tools: `save_template`, `list_templates`, `apply_template`, `delete_template`.
 
-        - When a user asks to save a widget as a template, call `save_template` with the
-          widget's HTML, a short name, description, and a description of the data shape.
-        - When a user asks to apply a template, first call `list_templates` to find the
-          right one, then call `apply_template` to get its HTML. Adapt the HTML with the
-          user's new data and render via `widgetRenderer`.
-        - When a user asks to see their templates, call `list_templates`.
-        - When a user asks to delete a template, call `delete_template`.
+        **When a user asks to apply/recreate a template with new data:**
+        The message includes the template name and ID in the format: "template name" (template-id)
+        1. Call `apply_template(template_id="...")` with the ID from the message
+        2. Take the returned HTML and COPY IT EXACTLY, only replacing the data values
+           (names, numbers, dates, labels, amounts) to match the user's new data
+        3. Render the modified HTML using `widgetRenderer`
+
+        CRITICAL: Do NOT rewrite or generate HTML from scratch. Take the original HTML string,
+        find-and-replace ONLY the data values, and pass the result to widgetRenderer.
+        This preserves the exact layout and styling of the original template.
+        For bar/pie chart templates, use `barChart` or `pieChart` component instead.
     """,
 )
 

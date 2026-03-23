@@ -1,13 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 import { TemplateCard } from "./template-card";
+
+/** Submit a message through the CopilotChat textarea so it goes through the full rendering pipeline */
+function submitChatPrompt(text: string) {
+  const textarea = document.querySelector<HTMLTextAreaElement>(
+    '[data-testid="copilot-chat-textarea"]'
+  );
+  if (!textarea) return;
+
+  const setter = Object.getOwnPropertyDescriptor(
+    window.HTMLTextAreaElement.prototype, "value"
+  )?.set;
+  setter?.call(textarea, text);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+  setTimeout(() => {
+    const form = textarea.closest("form");
+    if (form) form.requestSubmit();
+  }, 150);
+}
 
 interface TemplateLibraryProps {
   open: boolean;
   onClose: () => void;
-  onSendPrompt: (text: string) => void;
 }
 
 interface Template {
@@ -16,10 +34,11 @@ interface Template {
   description: string;
   html: string;
   data_description: string;
+  component_type?: string;
   version: number;
 }
 
-export function TemplateLibrary({ open, onClose, onSendPrompt }: TemplateLibraryProps) {
+export function TemplateLibrary({ open, onClose }: TemplateLibraryProps) {
   const { agent } = useAgent();
   const templates: Template[] = agent.state?.templates || [];
 
@@ -35,21 +54,26 @@ export function TemplateLibrary({ open, onClose, onSendPrompt }: TemplateLibrary
     }
   };
 
-  const handleApplyConfirm = () => {
+  const handleApplyConfirm = useCallback(() => {
     if (!applyingTemplate) return;
     const dataDesc = applyData.trim();
     if (!dataDesc) return;
 
-    // Send the template HTML directly in the prompt so the agent doesn't
-    // need to look it up from state (frontend setState may not sync to backend)
-    onSendPrompt(
-      `Use this saved template called "${applyingTemplate.name}" as a base layout and adapt it for the following new data: ${dataDesc}\n\n` +
-      `Here is the template HTML to adapt:\n\n${applyingTemplate.html}`
-    );
+    const isChart =
+      applyingTemplate.component_type === "barChart" ||
+      applyingTemplate.component_type === "pieChart";
+
+    const chartType = applyingTemplate.component_type === "pieChart" ? "pie chart" : "bar chart";
+    const message = isChart
+      ? `Apply ${chartType} template "${applyingTemplate.name}" (${applyingTemplate.id}) with: ${dataDesc}`
+      : `Apply template "${applyingTemplate.name}" (${applyingTemplate.id}) with: ${dataDesc}`;
+
+    submitChatPrompt(message);
+
     setApplyingTemplate(null);
     setApplyData("");
     onClose();
-  };
+  }, [applyingTemplate, applyData, onClose]);
 
   const handleApplyCancel = () => {
     setApplyingTemplate(null);
@@ -153,6 +177,8 @@ export function TemplateLibrary({ open, onClose, onSendPrompt }: TemplateLibrary
                   name={t.name}
                   description={t.description}
                   html={t.html}
+                  componentType={(t as unknown as Record<string, unknown>).component_type as string | undefined}
+                  componentData={(t as unknown as Record<string, unknown>).component_data as Record<string, unknown> | undefined}
                   dataDescription={t.data_description}
                   version={t.version}
                   onApply={handleApplyClick}

@@ -77,24 +77,46 @@ def list_templates(runtime: ToolRuntime):
 
 
 @tool
-def apply_template(template_id: str, runtime: ToolRuntime):
+def apply_template(name: str = "", template_id: str = "", runtime: ToolRuntime = None):
     """
     Retrieve a saved template's HTML so you can adapt it with new data.
-    After calling this, modify the HTML to fit the user's new data and render it via widgetRenderer.
+    After calling this, generate a NEW widget in the same style and render via widgetRenderer.
+
+    You can look up by name or ID. If both are provided, ID takes priority.
+    When multiple templates share the same name, returns the most recently created one.
 
     Args:
-        template_id: The ID of the template to apply
+        name: The name of the template to apply (e.g. "Invoice")
+        template_id: The ID of the template to apply (optional)
     """
     templates = runtime.state.get("templates", [])
-    for t in templates:
-        if t["id"] == template_id:
+
+    # Look up by ID first
+    if template_id:
+        for t in templates:
+            if t["id"] == template_id:
+                return {
+                    "name": t["name"],
+                    "description": t["description"],
+                    "html": t["html"],
+                    "data_description": t.get("data_description", ""),
+                }
+        return {"error": f"Template with id '{template_id}' not found"}
+
+    # Look up by name (most recent match)
+    if name:
+        matches = [t for t in templates if t["name"].lower() == name.lower()]
+        if matches:
+            t = max(matches, key=lambda x: x.get("created_at", ""))
             return {
                 "name": t["name"],
                 "description": t["description"],
                 "html": t["html"],
-                "data_description": t["data_description"],
+                "data_description": t.get("data_description", ""),
             }
-    return {"error": f"Template with id '{template_id}' not found"}
+        return {"error": f"No template named '{name}' found"}
+
+    return {"error": "Provide either a name or template_id"}
 
 
 @tool
