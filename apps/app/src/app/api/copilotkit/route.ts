@@ -7,8 +7,8 @@ import { LangGraphAgent } from "@copilotkit/runtime/langgraph";
 import { NextRequest } from "next/server";
 
 // Simple sliding-window rate limiter (per IP)
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 20;           // max requests per window
+const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000;
+const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX) || 40;
 const hits = new Map<string, number[]>();
 
 function isRateLimited(ip: string): boolean {
