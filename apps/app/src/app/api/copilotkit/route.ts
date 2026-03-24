@@ -62,7 +62,7 @@ export const POST = async (req: NextRequest) => {
           servers: [{
             type: "http",
             url: process.env.MCP_SERVER_URL,
-            serverId: "mcp_app",
+            serverId: "example_mcp_app",
           }],
         },
       }),
