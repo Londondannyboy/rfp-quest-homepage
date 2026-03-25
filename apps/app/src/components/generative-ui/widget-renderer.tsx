@@ -700,6 +700,9 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
             content streamed via postMessage for progressive rendering. */}
         <iframe
           ref={iframeRef}
+          // allow-same-origin is required for import maps to work in srcdoc iframes.
+          // Safe here because no auth/session data is exposed client-side.
+          // See: https://github.com/CopilotKit/OpenGenerativeUI/issues/3
           sandbox="allow-scripts allow-same-origin"
           className="w-full border-0"
           onLoad={() => setLoaded(true)}
