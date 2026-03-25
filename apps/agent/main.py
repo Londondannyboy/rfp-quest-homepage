@@ -19,7 +19,7 @@ agent = create_deep_agent(
     model=ChatOpenAI(model=os.environ.get("LLM_MODEL", "gpt-5.4-2026-03-05")),
     tools=[query_data, *todo_tools, generate_form, *template_tools],
     middleware=[CopilotKitMiddleware()],
-    state_schema=AgentState,
+    context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
     system_prompt="""
         You are a helpful assistant that helps users understand CopilotKit and LangGraph used together.
