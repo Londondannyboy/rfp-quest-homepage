@@ -1,17 +1,21 @@
 services:
-  # ── Agent (LangGraph Python) — Docker required for langgraph-api image ──
+  # ── Agent (LangGraph Python) — native Python with FastAPI + uvicorn ──
   - type: web
     name: open-generative-ui-agent
-    runtime: docker
+    runtime: python
     plan: starter
-    dockerfilePath: docker/Dockerfile.agent
-    healthCheckPath: /ok
+    rootDir: apps/agent
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     scaling:
       minInstances: 1
       maxInstances: 3
       targetMemoryPercent: 80
       targetCPUPercent: 70
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
       - key: OPENAI_API_KEY
         sync: false
       - key: LANGSMITH_API_KEY
@@ -21,7 +25,6 @@ services:
     buildFilter:
       paths:
         - apps/agent/**
-        - docker/Dockerfile.agent
 
   # ── Frontend (Next.js) — native Node runtime ──
   - type: web

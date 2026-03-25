@@ -4,16 +4,23 @@ It defines the workflow graph, state, tools, nodes and edges.
 """
 
 import os
+import warnings
 from pathlib import Path
 
-from copilotkit import CopilotKitMiddleware
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from copilotkit import CopilotKitMiddleware, LangGraphAGUIAgent
+from ag_ui_langgraph import add_langgraph_fastapi_endpoint
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 
+from src.bounded_memory_saver import BoundedMemorySaver
 from src.query import query_data
 from src.todos import AgentState, todo_tools
 from src.form import generate_form
 from src.templates import template_tools
+
+load_dotenv()
 
 agent = create_deep_agent(
     model=ChatOpenAI(model=os.environ.get("LLM_MODEL", "gpt-5.4-2026-03-05")),
@@ -21,6 +28,7 @@ agent = create_deep_agent(
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
+    checkpointer=BoundedMemorySaver(max_threads=200),
     system_prompt="""
         You are a helpful assistant that helps users understand CopilotKit and LangGraph used together.
 
@@ -69,4 +77,28 @@ agent = create_deep_agent(
     """,
 )
 
-graph = agent
+app = FastAPI()
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+add_langgraph_fastapi_endpoint(
+    app=app,
+    agent=LangGraphAGUIAgent(
+        name="sample_agent",
+        description="CopilotKit + LangGraph demo agent",
+        graph=agent,
+    ),
+    path="/",
+)
+
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("PORT", "8123"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
