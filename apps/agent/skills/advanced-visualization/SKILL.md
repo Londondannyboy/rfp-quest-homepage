@@ -698,6 +698,50 @@ import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
 ```
 
+### Three.js Coordinate Conventions
+
+Three.js uses a **right-handed Y-up** coordinate system:
+- **X** = right (positive) / left (negative)
+- **Y** = up (positive) / down (negative)
+- **Z** = toward the viewer (positive) / away from the viewer (negative)
+
+**Critical for vehicles and aircraft:** The fuselage/body extends along **Z** (nose at -Z, tail at +Z). Wings extend along **X** (left/right). The vertical stabilizer extends along **Y**.
+
+When building an aircraft from primitives:
+- **Fuselage** = cylinder or box, long axis along **Z** (use `geometry` default or rotate 90° around X)
+- **Wings** = flat box, wide along **X**, thin along **Y**, short along **Z**
+- **Tail fin** = flat box, tall along **Y**, thin along **X**, short along **Z**
+
+```javascript
+// Correct aircraft orientation example:
+// Fuselage along Z
+const fuselage = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.15, 0.08, 2.0, 12),
+  material
+);
+fuselage.rotation.x = Math.PI / 2; // CylinderGeometry default is Y-up, rotate to Z-forward
+
+// Wings along X
+const wing = new THREE.Mesh(
+  new THREE.BoxGeometry(2.5, 0.03, 0.4), // wide X, thin Y, short Z
+  material
+);
+
+// Vertical stabilizer along Y
+const tailFin = new THREE.Mesh(
+  new THREE.BoxGeometry(0.03, 0.4, 0.3), // thin X, tall Y, short Z
+  material
+);
+tailFin.position.set(0, 0.2, 0.9); // above and behind
+```
+
+**Rotation axes for flight dynamics:**
+- **Pitch** = rotation around **X** (nose up/down)
+- **Roll** = rotation around **Z** (wings tilt)
+- **Yaw** = rotation around **Y** (nose left/right)
+
+**Common mistake:** Using the wing box as the fuselage (wide along X instead of Z). Always verify: the longest dimension of the fuselage should be along Z.
+
 ---
 
 ## Part 8: Quality Checklist
