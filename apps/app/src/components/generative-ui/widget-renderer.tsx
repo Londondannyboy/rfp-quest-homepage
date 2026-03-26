@@ -455,10 +455,17 @@ window.addEventListener('message', function(e) {
   }
 });
 
-// Auto-resize: report content height to host
+// Auto-resize: report content height to host.
+// Temporarily collapse the container so viewport-relative children (100vh, 100%)
+// don't inflate the measurement — this gives us intrinsic content height only.
 function reportHeight() {
   var content = document.getElementById('content');
-  var h = content ? content.offsetHeight : document.documentElement.scrollHeight;
+  if (!content) return;
+  content.style.height = '0';
+  content.style.overflow = 'hidden';
+  var h = content.scrollHeight;
+  content.style.height = '';
+  content.style.overflow = '';
   window.parent.postMessage({ type: 'widget-resize', height: h }, '*');
 }
 var ro = new ResizeObserver(reportHeight);
@@ -573,7 +580,7 @@ export function WidgetRenderer({ title, description, html }: WidgetRendererProps
       e.data?.type === "widget-resize" &&
       typeof e.data.height === "number"
     ) {
-      setHeight(Math.max(50, Math.min(e.data.height + 8, 4000)));
+      setHeight(Math.max(50, Math.min(e.data.height, 4000)));
     }
   }, []);
 
