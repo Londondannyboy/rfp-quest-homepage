@@ -1,41 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const DISMISSED_KEY = "desktop-tip-dismissed";
 
+let listeners: Array<() => void> = [];
+function emitChange() {
+  listeners.forEach((l) => l());
+}
+
 export function DesktopTipModal() {
-  const [visible, setVisible] = useState(false);
+  const notDismissed = useSyncExternalStore(
+    (listener) => {
+      listeners.push(listener);
+      return () => {
+        listeners = listeners.filter((l) => l !== listener);
+      };
+    },
+    () => !sessionStorage.getItem(DISMISSED_KEY),
+    () => false,
+  );
 
-  useEffect(() => {
-    // Only show on narrow viewports and if not previously dismissed
-    const mq = window.matchMedia("(max-width: 768px)");
-    if (mq.matches && !sessionStorage.getItem(DISMISSED_KEY)) {
-      setVisible(true);
-    }
-  }, []);
-
-  if (!visible) return null;
+  if (!notDismissed) return null;
 
   const dismiss = () => {
     sessionStorage.setItem(DISMISSED_KEY, "1");
-    setVisible(false);
+    emitChange();
   };
 
   return (
     <div
       onClick={dismiss}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-6 md:hidden"
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         background: "rgba(0,0,0,0.45)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
-        padding: 24,
       }}
     >
       <div
