@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ExampleLayout } from "@/components/example-layout";
 import { useGenerativeUIExamples, useExampleSuggestions } from "@/hooks";
 import { ExplainerCardsPortal } from "@/components/explainer-cards";
-import { CopilotChat } from "@copilotkit/react-core/v2";
+import { DemoGallery, type DemoItem } from "@/components/demo-gallery";
+import { GridIcon } from "@/components/demo-gallery/grid-icon";
+import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
 export default function HomePage() {
   useGenerativeUIExamples();
   useExampleSuggestions();
+
+  const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
+  const { agent } = useAgent();
+  const { copilotkit } = useCopilotKit();
+
+  const handleTryDemo = (demo: DemoItem) => {
+    setDemoDrawerOpen(false);
+    agent.addMessage({ id: crypto.randomUUID(), content: demo.prompt, role: "user" });
+    copilotkit.runAgent({ agent });
+  };
 
   // Widget bridge: handle messages from widget iframes
   useEffect(() => {
@@ -55,6 +67,20 @@ export default function HomePage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDemoDrawerOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px cursor-pointer"
+                  style={{
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--color-border-glass, rgba(0,0,0,0.1))",
+                    background: "var(--surface-primary, rgba(255,255,255,0.6))",
+                    fontFamily: "var(--font-family)",
+                  }}
+                  title="Open Demo Gallery"
+                >
+                  <GridIcon size={15} />
+                  Demos
+                </button>
                 <a
                   href="https://github.com/CopilotKit/OpenGenerativeUI"
                   target="_blank"
@@ -84,6 +110,11 @@ export default function HomePage() {
         </div>
       </div>
 
+      <DemoGallery
+        open={demoDrawerOpen}
+        onClose={() => setDemoDrawerOpen(false)}
+        onTryDemo={handleTryDemo}
+      />
     </>
   );
 }
