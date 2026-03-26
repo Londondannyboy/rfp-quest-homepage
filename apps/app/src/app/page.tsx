@@ -51,25 +51,25 @@ export default function HomePage() {
               background: "linear-gradient(135deg, rgba(190,194,255,0.08) 0%, rgba(133,224,206,0.06) 100%)",
             }}
           >
-            <div className="flex items-center justify-between gap-4 px-5 py-3">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <div
-                  className="flex items-center justify-center shrink-0 w-9 h-9 rounded-lg"
+                  className="flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-lg"
                   style={{
                     background: "linear-gradient(135deg, rgba(190,194,255,0.15), rgba(133,224,206,0.12))",
                   }}
                 >
-                  <span className="text-xl leading-none" role="img" aria-label="CopilotKit">🪁</span>
+                  <span className="text-lg sm:text-xl leading-none" role="img" aria-label="CopilotKit">🪁</span>
                 </div>
-                <p className="text-base font-semibold m-0 leading-snug" style={{ color: "var(--text-primary)" }}>
+                <p className="text-sm sm:text-base font-semibold m-0 leading-snug" style={{ color: "var(--text-primary)" }}>
                   Open Generative UI
-                  <span className="font-normal" style={{ color: "var(--text-secondary)" }}> — powered by CopilotKit</span>
+                  <span className="hidden sm:inline font-normal" style={{ color: "var(--text-secondary)" }}> — powered by CopilotKit</span>
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={() => setDemoDrawerOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px cursor-pointer"
                   style={{
                     color: "var(--text-secondary)",
                     border: "1px solid var(--color-border-glass, rgba(0,0,0,0.1))",
@@ -79,13 +79,13 @@ export default function HomePage() {
                   title="Open Demo Gallery"
                 >
                   <GridIcon size={15} />
-                  Demos
+                  <span className="hidden sm:inline">Demos</span>
                 </button>
                 <a
                   href="https://github.com/CopilotKit/OpenGenerativeUI"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-5 py-2 rounded-full text-sm font-semibold text-white no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
+                  className="inline-flex items-center px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-white no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
                   style={{
                     background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))",
                     boxShadow: "0 1px 4px rgba(149,153,204,0.3)",

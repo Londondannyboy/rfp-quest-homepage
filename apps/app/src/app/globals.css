@@ -308,6 +308,12 @@ body, html {
 
 @media (max-width: 768px) {
   .brand-shell { padding: 8px; }
+  .brand-glass-container { border-radius: var(--radius-lg); }
+}
+
+@media (max-width: 480px) {
+  .brand-shell { padding: 4px; }
+  .brand-glass-container { border-radius: var(--radius-md); }
 }
 
 /* === Gradient Utilities === */
@@ -600,6 +606,35 @@ body, html {
   background: linear-gradient(135deg, var(--color-lilac), var(--color-mint));
   color: #fff;
   flex-shrink: 0;
+}
+
+/* === Demo Gallery Drawer === */
+/* Mobile: full-screen, slides up from bottom */
+.demo-gallery-drawer {
+  inset: 0;
+  border-radius: 0;
+  transform: translateY(100%);
+}
+.demo-gallery-drawer--open {
+  transform: translateY(0);
+}
+
+/* Desktop (sm+): right side panel, slides in from right */
+@media (min-width: 640px) {
+  .demo-gallery-drawer {
+    inset: auto;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 480px;
+    max-width: 90vw;
+    border-left: 1px solid var(--color-border-glass, rgba(0,0,0,0.1));
+    transform: translateX(100%);
+  }
+  .demo-gallery-drawer--open {
+    transform: translateX(0);
+    box-shadow: -8px 0 30px rgba(0,0,0,0.1);
+  }
 }
 
 /* === Flash Animation === */

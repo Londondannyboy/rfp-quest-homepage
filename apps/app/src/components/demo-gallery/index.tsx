@@ -42,21 +42,14 @@ export function DemoGallery({ open, onClose, onTryDemo }: DemoGalleryProps) {
         />
       )}
 
-      {/* Drawer panel */}
+      {/* Drawer: full-screen bottom sheet on mobile, right side panel on sm+ */}
       <div
-        className="fixed top-0 right-0 h-full z-50 flex flex-col transition-transform duration-300 ease-in-out"
-        style={{
-          width: 480,
-          maxWidth: "90vw",
-          transform: open ? "translateX(0)" : "translateX(100%)",
-          background: "var(--surface-primary, #fff)",
-          borderLeft: "1px solid var(--color-border-glass, rgba(0,0,0,0.1))",
-          boxShadow: open ? "-8px 0 30px rgba(0,0,0,0.1)" : "none",
-        }}
+        className={`demo-gallery-drawer fixed z-50 flex flex-col transition-transform duration-300 ease-in-out ${open ? "demo-gallery-drawer--open" : ""}`}
+        style={{ background: "var(--surface-primary, #fff)" }}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-5 py-4 shrink-0"
+          className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 shrink-0"
           style={{
             borderBottom:
               "1px solid var(--color-border-glass, rgba(0,0,0,0.1))",
@@ -82,7 +75,7 @@ export function DemoGallery({ open, onClose, onTryDemo }: DemoGalleryProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg transition-colors duration-150 cursor-pointer"
+            className="p-2 -mr-1 rounded-lg transition-colors duration-150 cursor-pointer"
             style={{ color: "var(--text-secondary, #666)" }}
           >
             <svg
@@ -102,7 +95,7 @@ export function DemoGallery({ open, onClose, onTryDemo }: DemoGalleryProps) {
         </div>
 
         {/* Category filter */}
-        <div className="px-5 pt-4 pb-2 shrink-0">
+        <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-2 shrink-0">
           <CategoryFilter
             selected={selectedCategory}
             onSelect={setSelectedCategory}
@@ -110,7 +103,7 @@ export function DemoGallery({ open, onClose, onTryDemo }: DemoGalleryProps) {
         </div>
 
         {/* Card list */}
-        <div className="flex-1 overflow-y-auto px-5 pb-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 pb-5 overscroll-contain">
           <div className="flex flex-col gap-3 pt-2">
             {filtered.map((demo) => (
               <DemoCard key={demo.id} demo={demo} onTry={onTryDemo} />
