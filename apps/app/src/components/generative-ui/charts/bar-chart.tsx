@@ -1,7 +1,7 @@
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { z } from 'zod';
 import { CHART_COLORS, CHART_CONFIG } from './config';
-import { SaveTemplateOverlay } from '../save-template-overlay';
+import { ExportOverlay } from '../save-template-overlay';
 
 export const BarChartProps = z.object({
   title: z.string().describe("Chart title"),
@@ -38,9 +38,8 @@ export function BarChart({ title, description, data }: BarChartProps) {
   }));
 
   return (
-    <SaveTemplateOverlay
+    <ExportOverlay
       title={title}
-      description={description}
       componentType="barChart"
       componentData={{ title, description, data }}
     >
@@ -66,6 +65,6 @@ export function BarChart({ title, description, data }: BarChartProps) {
           </RechartsBarChart>
         </ResponsiveContainer>
       </div>
-    </SaveTemplateOverlay>
+    </ExportOverlay>
   );
 }

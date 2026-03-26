@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { z } from "zod";
 import { CHART_COLORS, CHART_CONFIG } from "./config";
-import { SaveTemplateOverlay } from "../save-template-overlay";
+import { ExportOverlay } from "../save-template-overlay";
 
 export const PieChartProps = z.object({
   title: z.string().describe("Chart title"),
@@ -47,9 +47,8 @@ export function PieChart({ title, description, data }: PieChartProps) {
   }));
 
   return (
-    <SaveTemplateOverlay
+    <ExportOverlay
       title={title}
-      description={description}
       componentType="pieChart"
       componentData={{ title, description, data }}
     >
@@ -94,6 +93,6 @@ export function PieChart({ title, description, data }: PieChartProps) {
           ))}
         </div>
       </div>
-    </SaveTemplateOverlay>
+    </ExportOverlay>
   );
 }

@@ -8,9 +8,8 @@ import {
   slugify,
 } from "./export-utils";
 
-interface SaveTemplateOverlayProps {
+interface ExportOverlayProps {
   title: string;
-  description: string;
   html?: string;
   componentData?: Record<string, unknown>;
   componentType: string;
@@ -18,14 +17,14 @@ interface SaveTemplateOverlayProps {
   children: ReactNode;
 }
 
-export function SaveTemplateOverlay({
+export function ExportOverlay({
   title,
   html,
   componentData,
   componentType,
   ready = true,
   children,
-}: SaveTemplateOverlayProps) {
+}: ExportOverlayProps) {
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [menuOpen, setMenuOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -67,11 +66,17 @@ export function SaveTemplateOverlay({
   const handleCopy = useCallback(() => {
     const textToCopy = componentType === "widgetRenderer" ? html : exportHtml;
     if (!textToCopy) return;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopyState("copied");
-      setMenuOpen(false);
-      setTimeout(() => setCopyState("idle"), 1800);
-    });
+    navigator.clipboard.writeText(textToCopy).then(
+      () => {
+        setCopyState("copied");
+        setMenuOpen(false);
+        setTimeout(() => setCopyState("idle"), 1800);
+      },
+      () => {
+        // Clipboard write failed (e.g. permission denied, iframe context)
+        setMenuOpen(false);
+      }
+    );
   }, [componentType, html, exportHtml]);
 
   const showTrigger = ready && exportHtml && (hovered || menuOpen);

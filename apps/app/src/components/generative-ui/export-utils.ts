@@ -1,5 +1,4 @@
-import { THEME_CSS } from "./widget-renderer";
-import { SVG_CLASSES_CSS, FORM_STYLES_CSS } from "./widget-renderer";
+import { THEME_CSS, SVG_CLASSES_CSS, FORM_STYLES_CSS } from "./widget-renderer";
 
 const CHART_COLORS = [
   "#3b82f6",
