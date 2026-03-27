@@ -639,7 +639,7 @@ body, html {
 
 /* === Demo Gallery Dark Mode Readability Fix === */
 :root.dark .demo-gallery-drawer {
-  background: #1a1a2e !important;
+  background: var(--color-surface) !important;
 }
 
 :root.dark .demo-gallery-drawer .demo-gallery-card {
@@ -648,8 +648,8 @@ body, html {
 }
 
 :root.dark .demo-gallery-drawer .demo-gallery-chip {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* === Flash Animation === */
