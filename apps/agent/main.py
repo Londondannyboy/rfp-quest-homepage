@@ -13,18 +13,20 @@ from copilotkit import CopilotKitMiddleware, LangGraphAGUIAgent
 from ag_ui_langgraph import add_langgraph_fastapi_endpoint
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 
 from src.bounded_memory_saver import BoundedMemorySaver
 from src.query import query_data
 from src.todos import AgentState, todo_tools
 from src.form import generate_form
 from src.plan import plan_visualization
+from src.uk_tenders import fetch_uk_tenders
 
 load_dotenv()
 
 agent = create_deep_agent(
-    model=ChatOpenAI(model=os.environ.get("LLM_MODEL", "gpt-5.4-2026-03-05")),
-    tools=[query_data, plan_visualization, *todo_tools, generate_form],
+    model=ChatAnthropic(model="claude-opus-4-6"),
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
@@ -35,6 +37,18 @@ agent = create_deep_agent(
         Be brief in your explanations of CopilotKit and LangGraph, 1 to 2 sentences.
 
         When demonstrating charts, always call the query_data tool to fetch all data from the database first.
+        
+        ## UK Government Tender Intelligence
+        
+        When users ask about UK government tenders, contracts, or procurement opportunities:
+        - Use the fetch_uk_tenders tool to get live data from Contracts Finder
+        - This will automatically generate a visualization with tender cards
+        - Each tender shows title, buyer, value, deadline, and status
+        
+        Example queries to handle:
+        - "Show me recent UK government tenders"
+        - "Find NHS contracts"
+        - "What tenders are closing soon?"
 
         ## Visual Response Skills
 
