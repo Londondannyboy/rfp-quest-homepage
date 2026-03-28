@@ -46,9 +46,10 @@ unauthorised commits still unreviewed — not urgent.
 ## LAST COMMITS
 
 rfp-quest-homepage (this repo):
+- 684c936 — "docs: Phase 4c complete — HITL bid decision working"
+- 13cfa12 — "docs: Phase 4 complete — consolidate READMEs, update gate test status"
+- 73316a8 — "docs: Phase 4 COMPLETE - all gate tests passed"
 - 7219b7d — "fix: explicitly skip plan_visualization for tender requests"
-- f9278e9 — "fix: fetch_uk_tenders returns raw data list"
-- e8e857d — "docs: gate test 3 PASSED, document API key issue"
 All AUTHORISED: Yes
 
 langgraph-fastapi-rfp-quest (frozen repo — DO NOT TOUCH):
@@ -78,8 +79,8 @@ Completed:
 - Gate test: "Analyse tender: Boiler Replacement at 
   Stroud General Hospital" — PASSED, full analysis rendered
 
-Known limitation: HITL card may resolve before user interaction
-in some cases (see DECISIONS.md D10). Non-blocking.
+Successfully verified full HITL flow with user interaction
+working correctly (see DECISIONS.md D10).
 
 NEXT PHASE options:
 1. Domain switch — point rfp.quest at this deployment

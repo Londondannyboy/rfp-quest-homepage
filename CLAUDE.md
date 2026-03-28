@@ -17,11 +17,11 @@ replaced by any alternative framework or pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 4 COMPLETE
+ACTIVE — Phase 4 and Phase 4c COMPLETE
 
 Agent backend deployed to Railway and fully functional.
 Frontend connected and visualizations working in production.
-Gate tests 3 and 4 passed. Phase 4 complete.
+Gate tests 3, 4, and 4c passed. HITL bid decisions working.
 
 ## FROZEN SECTIONS
 
@@ -128,6 +128,11 @@ Phase 4 gate test results:
    Expected: Tender cards appear with OCDS data
    Status: ✅ PASSED
 
+4c. Type: "Analyse tender: Boiler Replacement at Stroud General Hospital"
+   Expected: HITL bid decision card appears, click Bid,
+   full analysis with strengths/risks/next steps renders.
+   Status: ✅ PASSED
+
 5. Toggle dark mode
    Expected: iframe content adapts (CSS variables work)
    Status: ⏭️ SKIPPED (non-critical, cosmetic only)
@@ -144,10 +149,10 @@ Vercel team: team_nBAZLJTbCMBi2wrIMVlsmGjZ
 Vercel project: prj_tJzSjC5nfXvUisD1CmEjlXQ19KPt
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 
-Required environment variables (SET-UNVERIFIED):
-- ANTHROPIC_API_KEY (Railway — SET-UNVERIFIED)
-- LLM_MODEL=claude-opus-4-6 (Railway — SET-UNVERIFIED)
-- LANGGRAPH_DEPLOYMENT_URL (Vercel — SET-UNVERIFIED)
+Required environment variables:
+- ANTHROPIC_API_KEY (Railway — SET ✅)
+- LLM_MODEL=claude-opus-4-6 (Railway — SET ✅)
+- LANGGRAPH_DEPLOYMENT_URL (Vercel — SET ✅)
 
 OCDS API (no auth required):
 https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search
