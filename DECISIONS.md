@@ -128,4 +128,26 @@ ADDENDUM 2026-03-28: Critical dependency langchain-anthropic
 was missing from pyproject.toml. Railway deployment was 
 responding to health checks but could not use ChatAnthropic.
 Fix applied: Added "langchain-anthropic>=0.3.0" to dependencies.
-Verification pending via gate test 3 (Draw a red circle).
+Gate test 3 PASSED after fix.
+
+---
+
+## D8 — DATE: 2026-03-28
+DECISION: ANTHROPIC_API_KEY must be the exact variable name.
+CONTEXT: Variable was named CLAUDE_API_KEY in Railway, causing
+silent auth failures. Health check still returned 200.
+Every LLM call failed silently with no visible error.
+TRIED AND FAILED: Wrong variable name for weeks.
+OUTCOME: Renamed to ANTHROPIC_API_KEY. Gate test 3 passed immediately.
+REVERSIBLE: No.
+
+---
+
+## D9 — DATE: 2026-03-28
+DECISION: fetch_uk_tenders must return raw data not pre-generated HTML.
+CONTEXT: Tool returning pre-generated HTML in JSON wrapper causes
+agent to hang when trying to extract and pass to widgetRenderer.
+TRIED AND FAILED: Returning {"widgetRenderer": {"html": "..."}}
+structure. Agent cannot properly parse and forward the nested JSON.
+OUTCOME: Must return simple list of tender dicts. Agent generates HTML.
+REVERSIBLE: Yes — but current approach blocks gate test 4.
