@@ -40,10 +40,17 @@ agent = create_deep_agent(
         
         ## UK Government Tender Intelligence
         
-        When users ask about UK government tenders, contracts, or procurement opportunities:
-        - Use the fetch_uk_tenders tool to get live data from Contracts Finder
-        - This will automatically generate a visualization with tender cards
-        - Each tender shows title, buyer, value, deadline, and status
+        When users ask about UK government tenders, contracts,
+        or procurement opportunities:
+        
+        1. Call the fetch_uk_tenders tool to get live tender data
+           and a pre-built HTML visualization
+        2. The tool returns JSON with this structure:
+           {"widgetRenderer": {"title": "...", "description": "...", "html": "..."}}
+        3. Parse that JSON and immediately call widgetRenderer with 
+           exactly those title, description, and html values
+        4. Do NOT add plan_visualization before widgetRenderer for
+           tender requests — go straight to widgetRenderer
         
         Example queries to handle:
         - "Show me recent UK government tenders"

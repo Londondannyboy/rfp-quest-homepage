@@ -7,7 +7,7 @@ from langchain.tools import tool
 from datetime import datetime
 
 @tool
-async def fetch_uk_tenders(limit: int = 20) -> str:
+def fetch_uk_tenders(limit: int = 20) -> str:
     """
     Fetch recent UK government tenders from Contracts Finder OCDS API.
     Returns formatted HTML for visualization.
@@ -20,8 +20,8 @@ async def fetch_uk_tenders(limit: int = 20) -> str:
     url = f"https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?limit={limit}&format=json"
     
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, timeout=10.0)
+        with httpx.Client() as client:
+            response = client.get(url, timeout=10.0)
             data = response.json()
     except Exception as e:
         # Return mock data if API fails
