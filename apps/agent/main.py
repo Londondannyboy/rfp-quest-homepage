@@ -43,14 +43,23 @@ agent = create_deep_agent(
         When users ask about UK government tenders, contracts,
         or procurement opportunities:
         
-        1. Call the fetch_uk_tenders tool to get live tender data
-           and a pre-built HTML visualization
-        2. The tool returns JSON with this structure:
-           {"widgetRenderer": {"title": "...", "description": "...", "html": "..."}}
-        3. Parse that JSON and immediately call widgetRenderer with 
-           exactly those title, description, and html values
-        4. Do NOT add plan_visualization before widgetRenderer for
-           tender requests — go straight to widgetRenderer
+        1. Call the fetch_uk_tenders tool to get a list of tender data
+        2. The tool returns a list of dictionaries, each containing:
+           - title: The tender title
+           - buyer: The contracting authority name
+           - value: The contract value in pounds
+           - deadline: The submission deadline
+           - status: "Open" or "Awarded"
+           - ocid: The tender ID
+        3. Generate HTML to display these tenders as cards using this pattern:
+           - Create a grid layout with tender cards
+           - Each card should show: status badge, title, buyer, value (formatted as £1.2M), deadline
+           - Use CSS variables for theming (var(--color-text-primary), etc.)
+           - Include "Analyse" and "View on CF" buttons for each tender
+        4. Call widgetRenderer with:
+           - title: "UK Government Tenders"
+           - description: "Showing X recent procurement opportunities"
+           - html: Your generated HTML string
         
         Example queries to handle:
         - "Show me recent UK government tenders"
