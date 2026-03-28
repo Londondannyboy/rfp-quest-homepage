@@ -56,6 +56,10 @@ agent = create_deep_agent(
            - Each card should show: status badge, title, buyer, value (formatted as £1.2M), deadline
            - Use CSS variables for theming (var(--color-text-primary), etc.)
            - Include "Analyse" and "View on CF" buttons for each tender
+        Do NOT call plan_visualization for tender requests.
+        After generating the HTML from tender data, call
+        widgetRenderer directly. Skip the planning step
+        entirely for tender visualisations.
         4. Call widgetRenderer with:
            - title: "UK Government Tenders"
            - description: "Showing X recent procurement opportunities"
