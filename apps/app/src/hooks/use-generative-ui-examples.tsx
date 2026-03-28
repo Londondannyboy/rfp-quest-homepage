@@ -15,6 +15,7 @@ import { PieChart, PieChartProps } from "@/components/generative-ui/charts/pie-c
 import { BarChart, BarChartProps } from "@/components/generative-ui/charts/bar-chart";
 import { WidgetRenderer, WidgetRendererProps } from "@/components/generative-ui/widget-renderer";
 import { MeetingTimePicker } from "@/components/generative-ui/meeting-time-picker";
+import { BidDecision } from "@/components/generative-ui/bid-decision";
 import { ToolReasoning } from "@/components/tool-rendering";
 import { PlanCard } from "@/components/generative-ui/plan-card";
 
@@ -103,6 +104,37 @@ export const useGenerativeUIExamples = () => {
     }),
     render: ({ respond, status, args }) => {
       return <MeetingTimePicker status={status} respond={respond} {...args} />;
+    },
+  });
+
+  useHumanInTheLoop({
+    name: "analyzeBidDecision",
+    description: "Use human-in-the-loop to analyze a tender and get user's bid/no-bid decision.",
+    parameters: z.object({
+      tenderTitle: z.string().describe("Title of the tender opportunity"),
+      buyerName: z.string().describe("Name of the buying organization"),
+      tenderValue: z.string().optional().describe("Estimated value of the tender"),
+      deadline: z.string().optional().describe("Submission deadline"),
+      matchScore: z.number().min(0).max(100).describe("Match score as percentage (0-100)"),
+      strengths: z.array(z.string()).describe("List of strengths for this opportunity"),
+      risks: z.array(z.string()).describe("List of risks or concerns"),
+      recommendation: z.enum(["bid", "no-bid", "review"]).describe("AI recommendation: bid, no-bid, or review"),
+    }),
+    render: ({ respond, status, args }) => {
+      return (
+        <BidDecision
+          status={status}
+          respond={respond}
+          tenderTitle={args.tenderTitle || "Tender Opportunity"}
+          buyerName={args.buyerName || "Unknown Buyer"}
+          tenderValue={args.tenderValue}
+          deadline={args.deadline}
+          matchScore={args.matchScore || 0}
+          strengths={args.strengths || []}
+          risks={args.risks || []}
+          recommendation={args.recommendation || "review"}
+        />
+      );
     },
   });
 };

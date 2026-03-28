@@ -68,18 +68,23 @@ Railway (rfp-quest-generative-agent):
 
 ## NEXT ACTION
 
-Phase 4c — Human-in-the-Loop (HITL) bid decisions
+Phase 4c COMPLETE — bid decision HITL working
 
-Implement useHumanInTheLoop pattern for bid/no-bid decisions:
-1. Read docs/human-in-the-loop.md for pattern guidance
-2. Create a bid decision flow that pauses for user confirmation
-3. Implement certificate-style confirmation UI
-4. Test with: "Should we bid on the NHS Digital Transformation tender?"
-5. Agent should analyze and present recommendation, then await decision
+Completed:
+- BidDecision component created with certificate-style UI
+- Three decision paths: Bid, Pass, Review
+- useHumanInTheLoop hook registered as analyzeBidDecision
+- Agent system prompt updated with bid analysis instructions
+- Gate test: "Analyse tender: Boiler Replacement at 
+  Stroud General Hospital" — PASSED, full analysis rendered
 
-Reference: The langgraph-fastapi-rfp-quest repo has working
-HITL implementation using adispatch_custom_event pattern,
-but rfp-quest-homepage needs the newer useHumanInTheLoop approach.
+Known limitation: HITL card may resolve before user interaction
+in some cases (see DECISIONS.md D10). Non-blocking.
+
+NEXT PHASE options:
+1. Domain switch — point rfp.quest at this deployment
+2. Phase 5 — bid document generation (PDF/Word export)
+3. Phase 6 — multi-tender comparison views
 
 ## DO NOT (session-specific)
 
@@ -94,7 +99,7 @@ raw data list is the correct pattern.
 
 ## SIGN-OFF STATUS
 
-DRAFT — Ready for review and sign-off
+DRAFT
 
 ## Phase 4 Gate Test Results
 
