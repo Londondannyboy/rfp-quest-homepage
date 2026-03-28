@@ -1,286 +1,158 @@
-# CopilotKit + LangGraph Todo Demo
-
-## Purpose
-
-This repository serves as both a **showcase** and **template** for building AI agents with CopilotKit and LangGraph. It demonstrates how CopilotKit can drive interactive UI beyond just chat, using a **collaborative todo list** as the primary example.
-
-**Target audience:** Developers evaluating CopilotKit or starting new projects with AI agents.
-
-## Core Concept
-
-The todo list demonstrates **agent-driven UI** where:
-- The agent can manipulate application state (adding todos, updating status, organizing tasks)
-- Users can interact with the same state (editing titles, checking off tasks, deleting todos)
-- Both agent and user changes update the same shared state
-- The UI reactively updates based on agent state changes
-
-This uses CopilotKit's **v2 agent state pattern** where state lives in the agent and syncs to the frontend.
-
-## Architecture
-
-This is a **Turborepo monorepo** with three apps:
-
-### Repository Structure
-
-```
-apps/
-├── app/                         # Next.js frontend
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx        # Main page - wires up all components
-│   │   │   └── api/copilotkit/ # CopilotKit API route
-│   │   ├── components/
-│   │   │   ├── canvas/         # Todo list UI
-│   │   │   │   ├── index.tsx   # Canvas container
-│   │   │   │   ├── todo-list.tsx    # Todo list with columns
-│   │   │   │   ├── todo-column.tsx  # Column (pending/completed)
-│   │   │   │   └── todo-card.tsx    # Individual todo card
-│   │   │   ├── example-layout/ # Layout: chat + canvas side-by-side
-│   │   │   └── generative-ui/  # Example generative UI components
-│   │   └── hooks/
-│   │       ├── use-generative-ui-examples.tsx  # Example CopilotKit patterns
-│   │       └── use-example-suggestions.tsx     # Chat suggestions
-├── agent/                       # LangGraph Python agent
-│   ├── main.py                  # Agent entry point
-│   └── src/
-│       ├── todos.py             # Todo tools and state schema
-│       └── query.py             # Example data query tool
-└── mcp/                         # MCP (Model Context Protocol) integration
-```
-
-## Key Pattern: Agent State with CopilotKit v2
-
-The todo list uses **CopilotKit v2's agent state pattern** where state lives in the agent backend and syncs bidirectionally with the frontend.
-
-### How It Works
-
-1. **Agent defines state schema and tools** (Python)
-   ```python
-   # apps/agent/src/todos.py
-   class Todo(TypedDict):
-       id: str
-       title: str
-       description: str
-       emoji: str
-       status: Literal["pending", "completed"]
-
-   class AgentState(TypedDict):
-       todos: list[Todo]
-
-   @tool
-   def manage_todos(todos: list[Todo], runtime: ToolRuntime) -> Command:
-       """Manage the current todos."""
-       return Command(update={"todos": todos, ...})
-   ```
-
-2. **Frontend reads from agent state**
-   ```typescript
-   // apps/app/src/components/canvas/index.tsx
-   const { agent } = useAgent();
-
-   return (
-     <TodoList
-       todos={agent.state?.todos || []}
-       onUpdate={(updatedTodos) => agent.setState({ todos: updatedTodos })}
-       isAgentRunning={agent.isRunning}
-     />
-   );
-   ```
-
-3. **User interactions update agent state**
-   ```typescript
-   // User clicks checkbox → frontend calls agent.setState()
-   const toggleStatus = (todo) => {
-     const updated = todos.map(t =>
-       t.id === todo.id ? { ...t, status: t.status === "completed" ? "pending" : "completed" } : t
-     );
-     agent.setState({ todos: updated });
-   };
-   ```
-
-4. **Agent can manipulate state via tools**
-   - The agent calls `manage_todos` tool to update the todo list
-   - Both user and agent changes update the same `agent.state.todos`
-   - Frontend automatically re-renders when state changes
-
-### Why This Pattern?
-
-- **Single source of truth**: State lives in the agent, not duplicated in frontend
-- **Bidirectional sync**: User changes → agent state, Agent changes → UI update
-- **Simple**: No need for separate frontend state management
-- **Observable**: Agent has full visibility into state changes
-
-## Implementation Details
-
-### Agent Backend
-
-**Agent Definition** (`apps/agent/main.py`):
-```python
-from langchain.agents import create_agent
-from copilotkit import CopilotKitMiddleware
-from src.todos import todo_tools, AgentState
-
-agent = create_agent(
-    model="gpt-5.2",
-    tools=[*todo_tools, ...],  # manage_todos, get_todos
-    middleware=[CopilotKitMiddleware()],
-    state_schema=AgentState,  # Defines state shape
-    system_prompt="You are a helpful assistant..."
-)
-```
-
-**Todo Tools** (`apps/agent/src/todos.py`):
-```python
-@tool
-def manage_todos(todos: list[Todo], runtime: ToolRuntime) -> Command:
-    """Manage the current todos."""
-    # Ensure todos have unique IDs
-    for todo in todos:
-        if "id" not in todo or not todo["id"]:
-            todo["id"] = str(uuid.uuid4())
-
-    # Update agent state
-    return Command(update={
-        "todos": todos,
-        "messages": [ToolMessage(...)]
-    })
-
-@tool
-def get_todos(runtime: ToolRuntime):
-    """Get the current todos."""
-    return runtime.state.get("todos", [])
-```
-
-### Frontend
-
-**Canvas Component** (`apps/app/src/components/canvas/index.tsx`):
-```typescript
-export function Canvas() {
-  const { agent } = useAgent();  // CopilotKit v2 hook
-
-  return (
-    <div className="h-full p-8 bg-gray-50">
-      <TodoList
-        // Read state from agent
-        todos={agent.state?.todos || []}
-        // Update state in agent
-        onUpdate={(updatedTodos) => agent.setState({ todos: updatedTodos })}
-        // React to agent execution
-        isAgentRunning={agent.isRunning}
-      />
-    </div>
-  );
-}
-```
-
-**Todo List** (`apps/app/src/components/canvas/todo-list.tsx`):
-```typescript
-export function TodoList({ todos, onUpdate, isAgentRunning }: TodoListProps) {
-  const toggleStatus = (todo: Todo) => {
-    const updated = todos.map((t) =>
-      t.id === todo.id
-        ? { ...t, status: t.status === "completed" ? "pending" : "completed" }
-        : t
-    );
-    onUpdate(updated);  // Calls agent.setState()
-  };
-
-  const addTodo = () => {
-    const newTodo = { id: crypto.randomUUID(), ... };
-    onUpdate([...todos, newTodo]);
-  };
-
-  return (
-    <div className="flex gap-8">
-      <TodoColumn title="To Do" todos={pendingTodos} onAddTodo={addTodo} ... />
-      <TodoColumn title="Done" todos={completedTodos} ... />
-    </div>
-  );
-}
-```
-
-### How State Flows
-
-1. **User adds/edits todo** → Frontend calls `agent.setState({ todos: [...] })`
-2. **Agent state updates** → CopilotKit syncs to backend
-3. **Agent observes change** → Can respond via `manage_todos` tool
-4. **Agent modifies todos** → Calls `manage_todos` tool
-5. **State syncs to frontend** → `agent.state.todos` updates
-6. **UI re-renders** → React sees new state and updates display
-
-**Key insight**: State lives in the agent, frontend just reads/writes to it via CopilotKit hooks.
-
-## Tech Stack
-
-- **Frontend**: Next.js 16, React 19, TailwindCSS 4
-- **Agent**: LangGraph (Python), OpenAI GPT-5.2
-- **CopilotKit**: React hooks for agent integration (v2)
-- **Monorepo**: Turborepo with pnpm workspaces
-- **Other**: MCP (Model Context Protocol) integration, Recharts for generative UI examples
-
-## Development
-
-This is a Turborepo monorepo using pnpm workspaces.
-
-```bash
-# Install dependencies (all apps)
-pnpm install
-
-# Start all apps (app, agent, mcp)
-pnpm dev
-
-# Start individually
-pnpm dev:app    # Next.js frontend on port 3000
-pnpm dev:agent  # LangGraph agent on port 8123
-pnpm dev:mcp    # MCP server
-
-# Build all apps
-pnpm build
-
-# Lint all apps
-pnpm lint
-```
-
-### Environment Setup
-
-```bash
-# Set OpenAI API key for the agent
-echo 'OPENAI_API_KEY=your-key-here' > apps/agent/.env
-```
-
-## Design Principles
-
-1. **Simple over complex** - The todo list is intentionally simple and focused
-2. **CopilotKit v2 patterns** - Uses modern agent state management
-3. **Template-first** - Code is meant to be forked and extended
-4. **Showcasing agent-driven UI** - Demonstrates AI manipulating application state beyond chat
-
-## Future Enhancements
-
-Possible extensions to demonstrate more CopilotKit capabilities:
-- Todo categories/tags/priorities
-- Agent-driven task organization (auto-categorize, suggest priorities)
-- Due dates and reminders
-- Subtasks and dependencies
-- Export/import todo lists
-- Undo/redo with state history
-- Real-time collaboration
+# CLAUDE.md — rfp-quest-homepage
+# Standard: See CLAUDE-STANDARD.md
+# Sign-off status: SIGNED OFF 2026-03-28
 
 ---
 
-## Key Takeaways for Developers
+## WHAT THIS PROJECT IS
 
-**State Management Pattern**: This app uses CopilotKit v2's agent state pattern where:
-- State is defined in the agent backend (Python TypedDict)
-- Frontend reads via `agent.state.todos`
-- Frontend writes via `agent.setState({ todos: ... })`
-- Agent can modify state via tools (`manage_todos`)
-- Changes sync bidirectionally automatically
+This is the RFP.quest Generative UI homepage. It uses 
+OpenGenerativeUI (CopilotKit v2 + LangChain Deep Agents) 
+to render AI-generated HTML, SVG, Three.js, and Chart.js 
+visualisations in sandboxed iframes. It fetches live UK 
+government procurement data from the Contracts Finder 
+OCDS API and visualises it using the widgetRenderer 
+component. CopilotKit v2 is mandatory and cannot be 
+replaced by any alternative framework or pattern.
 
-**When extending this template**:
-- Define state schema in the agent (`AgentState`)
-- Create tools that manipulate state via `Command(update={...})`
-- Use `useAgent()` hook in frontend to read/write state
-- Let CopilotKit handle the sync - no manual state management needed
+## PROJECT STATUS
 
-This pattern works great for **agent-driven applications** where the AI needs to manipulate structured application state, not just chat.
+ACTIVE — Phase 4 Generative UI
+
+The agent backend needs to be deployed to Railway as a 
+new service before production visualisations will work.
+See HANDOFF.md NEXT ACTION.
+
+## FROZEN SECTIONS
+
+None — this project is actively developed.
+
+The following SEPARATE repo is frozen and must not 
+be touched during work on this project:
+- github.com/Londondannyboy/langgraph-fastapi-rfp-quest
+- Stable commit: 8462ed4
+- DO NOT open, modify, or push to that repo
+
+## MANDATORY PATTERNS
+
+Model: claude-opus-4-6
+The exact model string. Not claude-3-opus-20240229 
+(Opus 3, February 2024, outdated). Not gpt-4o (too weak 
+for generative UI). Not any other string. Exactly:
+claude-opus-4-6
+
+Frontend hook: useAgent()
+Not useCoAgent(). useCoAgent is a CopilotKit v1 pattern.
+In v2 the correct hook is useAgent(). Using useCoAgent 
+causes AG-UI handshake pings only — the graph never 
+executes. See DECISIONS.md.
+
+Visualisation pattern: widgetRenderer via useComponent
+The agent generates self-contained HTML strings.
+The frontend receives them via useComponent hook.
+WidgetRenderer.tsx streams them into a sandboxed iframe 
+via postMessage. Idiomorph diffs the DOM as tokens arrive.
+This is the only correct pattern for this project.
+
+Agent architecture: create_deep_agent with skills
+Skills are SKILL.md files in apps/agent/skills/[name]/
+The agent reads them on demand. UK tender skill is at:
+apps/agent/skills/uk-tenders/SKILL.md
+
+## EXPLICIT DO NOT LIST
+
+DO NOT use claude-3-opus-20240229 — it is Opus 3 from 
+2024, two years old, insufficient for generative UI.
+Use claude-opus-4-6.
+
+DO NOT use useCoAgent — it does not trigger graph 
+execution in CopilotKit v2. Use useAgent().
+
+DO NOT use useRenderToolCall for the main panel — it 
+renders inside the chat window only, not the main panel.
+Use useComponent with widgetRenderer.
+
+DO NOT touch langgraph-fastapi-rfp-quest repo — it is 
+frozen at commit 8462ed4 and is a separate project.
+
+DO NOT install packages that are not part of the 
+current explicitly planned task. If a package seems 
+needed, stop and report before installing.
+
+DO NOT create SEO slug pages, Neon DB connections, or 
+react-markdown integrations in this repo — those belong 
+to a different project and a different phase.
+
+DO NOT deploy to Vercel without first confirming that 
+LANGGRAPH_DEPLOYMENT_URL is set to the correct Railway 
+URL in Vercel environment variables.
+
+DO NOT mark any phase complete without running all 
+gate tests and confirming they pass.
+
+DO NOT attempt to replace CopilotKit if you hit a wall.
+The pattern works. The issue is always configuration 
+or model selection. Stop and report.
+
+## WHEN YOU HIT A WALL
+
+Stop. Do not attempt an alternative approach.
+Write out exactly:
+1. What you were trying to do
+2. What you tried
+3. What error or failure occurred
+4. What you think the cause might be
+
+Do not proceed. Do not install alternative packages.
+Do not switch to a different framework or pattern.
+Report and wait for instruction.
+
+## GATE TESTS
+
+These must all pass before any phase is marked complete.
+Run them in order. Do not skip any.
+
+1. curl http://localhost:8123/health
+   Expected: {"status":"ok"}
+   If this fails: agent is not running
+
+2. curl https://[railway-url]/health  
+   Expected: {"status":"ok"}
+   If this fails: Railway deployment is broken
+
+3. Open http://localhost:3002 (or production URL)
+   Type: "Draw a red circle"
+   Expected: A red circle appears in a sandboxed iframe
+   below the chat. If only text appears: model is wrong
+   or widgetRenderer is not registered.
+
+4. Type: "Show me recent UK government tenders"
+   Expected: Tender cards appear in an iframe with title,
+   buyer, value, deadline, and status badge.
+   If this fails after gate 3 passes: UK tender skill 
+   is not loaded or OCDS API is unreachable.
+
+5. Toggle dark mode
+   Expected: iframe content adapts (CSS variables work)
+
+All five must pass in production before phase is done.
+
+## ENVIRONMENT
+
+Frontend production: https://rfp-quest-homepage.vercel.app
+Frontend local: http://localhost:3002
+Agent local: http://localhost:8123
+Agent production: TO BE DEPLOYED (new Railway service)
+  Target name: rfp-quest-generative-agent
+
+Vercel team: team_nBAZLJTbCMBi2wrIMVlsmGjZ
+Vercel project: prj_tJzSjC5nfXvUisD1CmEjlXQ19KPt
+GitHub: github.com/Londondannyboy/rfp-quest-homepage
+
+Required environment variables:
+- ANTHROPIC_API_KEY (Railway + Vercel)
+- LLM_MODEL=claude-opus-4-6 (Railway)
+- LANGGRAPH_DEPLOYMENT_URL (Vercel — must be Railway URL)
+
+OCDS API (no auth required):
+https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search
