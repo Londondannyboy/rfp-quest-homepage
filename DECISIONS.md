@@ -3,7 +3,7 @@
 
 ---
 
-DATE: 2026-03-28
+## D1 — DATE: 2026-03-28
 DECISION: Build generative UI as a separate app cloned 
 from OpenGenerativeUI, not integrated into the existing 
 langgraph-fastapi-rfp-quest repo.
@@ -30,7 +30,7 @@ REVERSIBLE: No
 
 ---
 
-DATE: 2026-03-28
+## D2 — DATE: 2026-03-28
 DECISION: Use exactly claude-opus-4-6 as the model.
 CONTEXT: OpenGenerativeUI README explicitly warns that 
 weaker models produce broken layouts, missing 
@@ -46,7 +46,7 @@ REVERSIBLE: No — do not change without explicit approval.
 
 ---
 
-DATE: 2026-03-28
+## D3 — DATE: 2026-03-28
 DECISION: Use useAgent() not useCoAgent() for all 
 CopilotKit integration in this project.
 CONTEXT: This project uses CopilotKit v2. useCoAgent 
@@ -59,7 +59,7 @@ REVERSIBLE: No
 
 ---
 
-DATE: 2026-03-28
+## D4 — DATE: 2026-03-28
 DECISION: Deploy agent as a new, separate Railway 
 service — not the existing Phase 3 service.
 CONTEXT: The existing Railway service at 
@@ -78,7 +78,7 @@ create_deep_agent architecture, can consolidate.
 
 ---
 
-DATE: 2026-03-28
+## D5 — DATE: 2026-03-28
 DECISION: langgraph-fastapi-rfp-quest is frozen at 
 commit 8462ed4 and must not be modified.
 CONTEXT: That repo is the stable Phase 3 HITL app.
@@ -94,7 +94,7 @@ REVERSIBLE: No — the freeze stands.
 
 ---
 
-DATE: 2026-03-28
+## D6 — DATE: 2026-03-28
 DECISION: widgetRenderer via useComponent is the only 
 acceptable pattern for rendering visualisations.
 CONTEXT: This is the core architectural pattern of 
@@ -110,7 +110,7 @@ REVERSIBLE: No
 
 ---
 
-DATE: 2026-03-28
+## D7 — DATE: 2026-03-28
 DECISION: Successfully deployed rfp-quest-generative-agent 
 to Railway as planned.
 CONTEXT: Phase 4 required a new Railway service with 

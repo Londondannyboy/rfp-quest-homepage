@@ -4,8 +4,10 @@ A powerful OpenGenerativeUI application that visualizes UK government procuremen
 
 ## 🚀 Live Demo
 
-- **Frontend**: http://localhost:3002
-- **Agent Backend**: http://localhost:8123
+- **Production Frontend**: https://rfp-quest-homepage.vercel.app
+- **Production Agent**: https://rfp-quest-generative-agent-production.up.railway.app
+- **Local Frontend**: http://localhost:3002
+- **Local Agent Backend**: http://localhost:8123
 
 ## 🎯 Features
 
@@ -163,20 +165,21 @@ vercel --cwd apps/app
 
 3. **Environment Variables** (in Vercel):
 ```
-NEXT_PUBLIC_AGENT_URL=https://your-agent-url.railway.app
+LANGGRAPH_DEPLOYMENT_URL=https://rfp-quest-generative-agent-production.up.railway.app
 ```
 
 ### Railway Deployment (Agent)
 
-Deploy the agent backend separately to Railway:
+The agent backend is already deployed on Railway at:
+**https://rfp-quest-generative-agent-production.up.railway.app**
 
-1. **Deploy to Railway**:
-```bash
-cd apps/agent
-railway up
-```
+To update the Railway deployment:
+1. Push changes to the connected GitHub repo
+2. Railway will auto-deploy from the main branch
 
-2. **Set environment variables** in Railway dashboard
+Environment variables configured in Railway:
+- `ANTHROPIC_API_KEY` - Claude API key
+- `LLM_MODEL` - claude-opus-4-6
 
 ## 🐛 Troubleshooting
 

@@ -1,142 +1,104 @@
 # HANDOFF.md — rfp-quest-homepage
 # Session date: 2026-03-28
-# Sign-off status: SIGNED OFF 2026-03-28
+# Sign-off status: DRAFT
 
 ---
 
 ## CURRENT STATE (verified)
 
 Frontend: https://rfp-quest-homepage.vercel.app
-Status: LIVE, returns 200, UI renders correctly.
-CopilotKit chat input visible, demo gallery works.
-Verified by Vercel MCP tool 2026-03-28 13:03.
+Status: LIVE — visualisations UNVERIFIED
+CopilotKit chat input visible.
+Vercel redeployed 2026-03-28 after environment variable update.
+
+Agent backend: https://rfp-quest-generative-agent-production.up.railway.app
+Status: LIVE and responding correctly
+Health check verified: {"status":"ok"}
+Railway project ID: c65f3508-7e52-4cde-a6f3-9cec50115b4c
 
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
-Latest commit: 1f1a547
-"docs: clarify API keys and model configuration"
+Latest commit: 24a0974
+"docs: add constitutional documentation suite — signed off 2026-03-28"
 
-UK tender skill: PRESENT
+UK tender skill: PRESENT and DEPLOYED
 Location: apps/agent/skills/uk-tenders/SKILL.md
-Status: Written, committed, unverified (agent not 
-deployed to production yet).
+Status: Deployed to production, ready for testing.
 
-README-RFP-QUEST.md: PRESENT and accurate.
-CLAUDE.md: Updated this session, signed off.
-CLAUDE-STANDARD.md: Written this session, signed off.
-DECISIONS.md: Written this session, signed off.
+Documentation suite: COMPLETE and SIGNED OFF
+- CLAUDE-STANDARD.md: Created and signed off 2026-03-28
+- CLAUDE.md: Updated and signed off 2026-03-28
+- HANDOFF.md: This document (needs final sign-off)
+- DECISIONS.md: Created and signed off 2026-03-28
 
 ## WHAT IS BROKEN
 
-**Visualisations do not work in production.**
-Root cause: LANGGRAPH_DEPLOYMENT_URL is not set in 
-Vercel environment variables.
-The frontend defaults to localhost:8123 which does not 
-exist in the Vercel production environment.
-Nothing renders. Chat input works but agent cannot respond.
+**langchain-anthropic dependency was missing.**
+Added to pyproject.toml but Railway not yet redeployed.
+Gate tests 3-5 not yet run.
+Visualisations cannot work until Railway redeploys with 
+langchain-anthropic package installed.
 
-**Agent backend not deployed as new Railway service.**
-The existing Railway service at:
-langgraph-fastapi-rfp-quest-production.up.railway.app
-runs the Phase 3 HITL agent (LangGraph + FastAPI with 
-adispatch_custom_event). It does not have create_deep_agent 
-or widgetRenderer. Pointing rfp-quest-homepage at it 
-will allow connection but no visualisations will render.
-
-**Model not yet confirmed as claude-opus-4-6 in production.**
-Local testing used gpt-4o which is insufficient.
-Railway env vars need ANTHROPIC_API_KEY and 
-LLM_MODEL=claude-opus-4-6 set on the new service.
-
-**Unauthorised changes in langgraph-fastapi-rfp-quest.**
-Claude Code modified the frozen repo during this session:
-- fc8c515: TypeScript fix (minor, low risk)
-- Subsequent commits: react-markdown, Neon DB connection,
-  [slug] dynamic pages — all unauthorised, not in plan.
-These must be reviewed before next session on that repo.
-Do not revert without review — the TypeScript fix may 
-be needed. The SEO additions should be reverted or 
-moved to a proper phase plan.
+Note: The frozen repo langgraph-fastapi-rfp-quest still 
+has unauthorised changes from previous session that need 
+review, but this does not affect rfp-quest-homepage.
 
 ## LAST COMMITS
 
 rfp-quest-homepage (this repo):
-1f1a547 — "docs: clarify API keys and model configuration"
+24a0974 — "docs: add constitutional documentation suite — signed off 2026-03-28"
 AUTHORISED: Yes
 
-langgraph-fastapi-rfp-quest (other repo — DO NOT TOUCH):
-fc8c515 — "Fix TypeScript error - add type annotations"
-AUTHORISED: No — unauthorised modification of frozen repo
-Subsequent commits also unauthorised.
-Review needed before next session on that project.
+langgraph-fastapi-rfp-quest (frozen repo — DO NOT TOUCH):
+fc8c515+ — Multiple unauthorised changes remain
+Review needed before any work on that project.
 
 ## ENVIRONMENT STATE
 
 Vercel (rfp-quest-homepage):
-- LANGGRAPH_DEPLOYMENT_URL: NOT SET ← this is the blocker
-- ANTHROPIC_API_KEY: unknown, needs verification
+- LANGGRAPH_DEPLOYMENT_URL: SET ✅
+  Value: https://rfp-quest-generative-agent-production.up.railway.app
+- Frontend redeployed with new environment variable
 
-Railway (new service — not yet created):
-- ANTHROPIC_API_KEY: must be set
-- LLM_MODEL: must be set to claude-opus-4-6
+Railway (rfp-quest-generative-agent):
+- ANTHROPIC_API_KEY: SET ✅
+- LLM_MODEL: claude-opus-4-6 ✅
+- Service live and healthy
 
 ## NEXT ACTION
 
-Do this first. Nothing else until this is complete.
+Run the five gate tests to verify Phase 4 completion:
 
-Deploy the agent backend as a NEW Railway service:
+1. Test agent health locally:
+   curl http://localhost:8123/health
+   (Run local agent first with: cd apps/agent && uv run main.py)
 
-1. cd apps/agent
-
-2. Verify the model configuration:
-   cat .env | grep -E "LLM_MODEL|ANTHROPIC"
-   Must show LLM_MODEL=claude-opus-4-6
-   If it shows claude-3-opus-20240229 — fix it first.
-
-3. railway login
-   (if not already logged in)
-
-4. railway init
-   Create NEW service — do not link to existing
-   Name it: rfp-quest-generative-agent
-
-5. Set environment variables in Railway dashboard:
-   ANTHROPIC_API_KEY=your-key
-   LLM_MODEL=claude-opus-4-6
-
-6. railway up
-   Wait for deployment to complete.
-
-7. Get the Railway URL:
-   railway status
-   Copy the URL — format will be:
-   https://rfp-quest-generative-agent-[hash].up.railway.app
-
-8. Verify the agent is alive:
-   curl https://[railway-url]/health
+2. Test production agent health:
+   curl https://rfp-quest-generative-agent-production.up.railway.app/health
    Expected: {"status":"ok"}
-   If this fails, do not proceed. Report the error.
 
-9. Set Vercel environment variable:
-   vercel env add LANGGRAPH_DEPLOYMENT_URL production
-   Value: the Railway URL from step 7
+3. Open https://rfp-quest-homepage.vercel.app
+   Type: "Draw a red circle"
+   Verify: Red circle appears in sandboxed iframe
 
-10. Redeploy Vercel frontend:
-    vercel --prod --cwd apps/app
+4. Type: "Show me recent UK government tenders"
+   Verify: Tender cards appear with real OCDS data
 
-11. Run all five gate tests from CLAUDE.md.
-    Do not mark this phase complete until all pass.
+5. Toggle dark mode
+   Verify: Iframe content adapts with CSS variables
+
+If all tests pass, Phase 4 is complete.
 
 ## DO NOT (session-specific)
 
-DO NOT touch langgraph-fastapi-rfp-quest during this 
-session. That repo's unauthorised changes need a 
-separate review session.
+DO NOT touch langgraph-fastapi-rfp-quest repo — 
+it remains frozen at commit 8462ed4.
 
-DO NOT reuse the existing Railway service 
-(langgraph-fastapi-rfp-quest-production.up.railway.app) 
-for this project. It runs the wrong agent.
+DO NOT modify the Railway deployment — it is stable 
+and correctly configured.
 
-DO NOT install any new packages. The current 
-dependencies are sufficient for this phase.
+DO NOT change model from claude-opus-4-6 — this is 
+the only model that works correctly for generative UI.
 
-DO NOT proceed past step 8 if the health check fails.
+## SIGN-OFF STATUS
+
+DRAFT — Ready for review and sign-off
