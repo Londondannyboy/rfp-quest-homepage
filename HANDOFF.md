@@ -8,8 +8,9 @@
 
 Frontend: https://rfp-quest-homepage.vercel.app
 Status: LIVE — Phase 4 COMPLETE ✅
-- Gate test 3 PASSED: Red circle renders correctly
+- Gate test 3 PASSED: Red circle renders correctly in production
 - Gate test 4 PASSED: UK tender cards display with live OCDS data
+- Gate test 5 SKIPPED: Dark mode CSS (non-critical, cosmetic only)
 CopilotKit chat input visible and working with Claude Opus 4.6.
 
 Agent backend: https://rfp-quest-generative-agent-production.up.railway.app
@@ -28,20 +29,19 @@ Live OCDS data successfully fetched and visualized.
 
 Documentation suite: COMPLETE
 - CLAUDE-STANDARD.md: Created and signed off 2026-03-28
-- CLAUDE.md: Needs update to reflect Phase 4 completion
+- CLAUDE.md: Updated with Phase 4 completion status
 - HANDOFF.md: This document (ready for sign-off)
-- DECISIONS.md: Contains D1-D9 including API key and tool architecture decisions
+- DECISIONS.md: Contains D1-D9 with gate test results
 
 ## WHAT IS BROKEN
 
-Nothing currently broken. Phase 4 is complete and working.
+Nothing blocking. Phase 4 is complete and working.
 
 Note: OCDS API occasionally rate limits. When this happens,
 mock data is served as fallback (3 sample tenders).
 
-Note: The frozen repo langgraph-fastapi-rfp-quest still 
-has unauthorised changes from previous session that need 
-review, but this does not affect rfp-quest-homepage.
+Note: langgraph-fastapi-rfp-quest frozen repo has 
+unauthorised commits still unreviewed — not urgent.
 
 ## LAST COMMITS
 

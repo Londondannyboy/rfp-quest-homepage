@@ -149,5 +149,6 @@ CONTEXT: Tool returning pre-generated HTML in JSON wrapper causes
 agent to hang when trying to extract and pass to widgetRenderer.
 TRIED AND FAILED: Returning {"widgetRenderer": {"html": "..."}}
 structure. Agent cannot properly parse and forward the nested JSON.
-OUTCOME: Must return simple list of tender dicts. Agent generates HTML.
-REVERSIBLE: Yes — but current approach blocks gate test 4.
+OUTCOME: Returns simple list of tender dicts. Agent generates HTML.
+Gate test 4 PASSED.
+REVERSIBLE: Yes.

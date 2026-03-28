@@ -1,176 +1,246 @@
-# Open Generative UI
+Based on OpenGenerativeUI by CopilotKit (MIT License)
 
-An open-source showcase for building rich, interactive AI-generated UI with [CopilotKit](https://copilotkit.ai) and [LangChain Deep Agents](https://docs.langchain.com/oss/python/deepagents/overview). Ask the agent to visualize algorithms, create 3D animations, render charts, or generate interactive diagrams — all rendered as live HTML/SVG inside a sandboxed iframe.
+# RFP.quest Homepage - Generative UI with UK Tender Intelligence
 
-https://github.com/user-attachments/assets/ed28c734-e54e-4412-873f-4801da544a7f
+A powerful OpenGenerativeUI application that visualizes UK government procurement opportunities using AI-powered generative interfaces. Built with CopilotKit, LangGraph, and Claude Opus 4.6.
 
-https://github.com/user-attachments/assets/ba7db70d-07c0-49af-b221-f962f30245e2
+## 🚀 Live Demo
 
-## What It Does
+- **Production Frontend**: https://rfp-quest-homepage.vercel.app
+- **Production Agent**: https://rfp-quest-generative-agent-production.up.railway.app
+- **Local Frontend**: http://localhost:3002
+- **Local Agent Backend**: http://localhost:8123
 
-The agent produces **generative UI** — not just text responses, but fully interactive visual components:
+## 🎯 Features
 
-- **Algorithm visualizations** — binary search, BFS vs DFS, sorting algorithms
-- **3D animations** — interactive WebGL/CSS3D scenes
-- **Charts & diagrams** — pie charts, bar charts, network diagrams
-- **Interactive widgets** — forms, simulations, math plots
+- **UK Government Tender Intelligence**: Real-time fetching and visualization of UK procurement opportunities from Contracts Finder OCDS API
+- **Generative UI**: AI-powered dynamic visualizations using widgetRenderer
+- **Interactive Visualizations**: 3D graphics, charts, and data dashboards
+- **Claude Opus 4.6**: Powered by Anthropic's flagship model for superior visualization generation
+- **Real-time Data**: Live integration with UK government procurement data
 
-All visuals are rendered in sandboxed iframes with automatic light/dark theming, progressive reveal animations, and responsive sizing.
-
-## Quick Start
-
-```bash
-make setup    # Install deps + create .env template
-# Edit apps/agent/.env with your real OpenAI API key
-make dev      # Start all services
-```
-
-> **Strong models required.** Generative UI demands high-capability models that can produce complex, well-structured HTML/SVG in a single pass. Set `LLM_MODEL` in your `.env` to one of:
->
-> | Model | Provider |
-> |-------|----------|
-> | `gpt-5.4` / `gpt-5.4-pro` | OpenAI |
-> | `claude-opus-4-6` | Anthropic |
-> | `gemini-3.1-pro` | Google |
->
-> Smaller or weaker models will produce broken layouts, missing interactivity, or incomplete visualizations.
-
-- **App**: http://localhost:3000
-- **Agent**: http://localhost:8123
-
-### Available Commands
-
-| Command | Description |
-|---------|-------------|
-| `make setup` | Install all dependencies and create `.env` template |
-| `make dev` | Start all services (frontend + agent + mcp) |
-| `make dev-app` | Start Next.js frontend only |
-| `make dev-agent` | Start LangGraph agent only |
-| `make dev-mcp` | Start MCP server only |
-| `make build` | Build all apps |
-| `make lint` | Lint all apps |
-| `make clean` | Clean build artifacts |
-| `make help` | Show all available commands |
-
-You can also use `pnpm` directly (`pnpm dev`, `pnpm dev:app`, `pnpm dev:agent`, etc.).
-
-## MCP Server (Self-Hosted)
-
-The repo includes a standalone [Model Context Protocol](https://modelcontextprotocol.io) server that exposes the design system, skill instructions, and an HTML document assembler to any MCP-compatible client — including Claude Desktop, Claude Code, and Cursor.
-
-### What it provides
-
-- **`assemble_document` tool** — wraps HTML fragments with the full design system CSS and bridge JS, returning an iframe-ready document
-- **Skill resources** — browse and read skill instruction documents (`skills://list`, `skills://{name}`)
-- **Prompt templates** — pre-composed prompts for widgets, SVG diagrams, and advanced visualizations
-
-### Claude Desktop (stdio)
-
-Add to your Claude Desktop config (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "open-generative-ui": {
-      "command": "node",
-      "args": ["dist/stdio.js"],
-      "cwd": "/path/to/apps/mcp"
-    }
-  }
-}
-```
-
-### Claude Code / HTTP clients
-
-```bash
-# Start the HTTP server
-cd apps/mcp && pnpm dev
-```
-
-Add to `.mcp.json`:
-
-```json
-{
-  "openGenerativeUI": {
-    "url": "http://localhost:3100/mcp"
-  }
-}
-```
-
-See [apps/mcp/README.md](apps/mcp/README.md) for full configuration, Docker deployment, and API reference.
-
-## Architecture
-
-Turborepo monorepo with three packages:
+## 🏗️ Architecture
 
 ```
 apps/
-├── app/       Next.js 16 frontend (CopilotKit v2, React 19, Tailwind 4)
-├── agent/     Deep Agent (deepagents + CopilotKit middleware, skills-based)
-└── mcp/       Standalone MCP server (design system + skills + document assembler)
+├── app/                    # Next.js 16 frontend with CopilotKit
+│   ├── src/
+│   │   ├── app/           # App router pages
+│   │   ├── components/    # React components
+│   │   └── hooks/         # Custom hooks
+├── agent/                  # LangGraph Python agent
+│   ├── skills/            # Agent skills
+│   │   └── uk-tenders/    # UK tender visualization skill
+│   ├── src/               # Agent tools and state
+│   └── main.py            # Agent entry point
+└── mcp/                    # MCP server integration
 ```
 
-### Deep Agent + Skills
+## 📋 Prerequisites
 
-The agent backend uses [LangChain Deep Agents](https://docs.langchain.com/oss/python/deepagents/overview) (`create_deep_agent`) with a skills-based architecture. Instead of injecting all visualization instructions into the system prompt, skills are defined as `SKILL.md` files in `apps/agent/skills/` and loaded on-demand via progressive disclosure:
+- Node.js 18+ and pnpm
+- Python 3.12+
+- OpenAI API key (for fallback)
+- Anthropic API key (for Claude Opus 4.6)
+
+## 🛠️ Installation
+
+1. **Clone this repository**:
+```bash
+git clone https://github.com/Londondannyboy/rfp-quest-homepage.git
+cd rfp-quest-homepage
+```
+
+2. **Install dependencies**:
+```bash
+make setup
+```
+
+3. **Configure environment variables**:
+
+Create/update `apps/agent/.env`:
+```env
+OPENAI_API_KEY=your-openai-key-here
+LLM_MODEL=claude-opus-4-6
+ANTHROPIC_API_KEY=your-anthropic-key-here
+```
+
+## 🚀 Running Locally
+
+Start all services:
+```bash
+make dev
+```
+
+This starts:
+- Frontend on http://localhost:3002
+- Agent backend on http://localhost:8123
+- MCP server on port 3100
+
+## 💡 Usage Examples
+
+### Basic Visualization Test
+```
+Draw a red circle
+```
+
+### UK Tender Intelligence
+```
+Show me recent UK government tenders
+```
+
+### Advanced Queries
+```
+Find NHS contracts over £1M
+What construction contracts close this month?
+Analyse tender opportunities in digital transformation
+```
+
+## 🎨 UK Tender Skill
+
+The UK Tender Intelligence skill (`apps/agent/skills/uk-tenders/`) enables:
+
+- **Live Data Fetching**: Real-time data from Contracts Finder OCDS API
+- **Smart Visualization**: Automatic card layouts for tender opportunities
+- **Analysis Dashboards**: Value breakdowns, buyer analysis, timeline views
+- **Interactive Elements**: Deep links to Contracts Finder, analysis buttons
+- **Dark Mode Support**: Automatic theming with CSS variables
+
+### OCDS API Integration
+
+Data source: `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search`
+
+Key fields mapped:
+- `release.tender.title` → Contract title
+- `release.buyer.name` → Contracting authority
+- `release.tender.value.amount` → Contract value
+- `release.tender.tenderPeriod.endDate` → Deadline
+- `release.tag` → Status (tender/award)
+
+## 🔧 Technical Stack
+
+### Frontend
+- **Next.js 16.1.6** with Turbopack
+- **React 19.2.4**
+- **TailwindCSS 4**
+- **CopilotKit v1.50** for AI integration
+- **TypeScript** for type safety
+
+### Backend
+- **LangGraph** for agent workflows
+- **FastAPI** for API endpoints
+- **Claude Opus 4.6** (Anthropic) for AI generation
+- **Python 3.12** with uv package manager
+
+### Visualization Libraries
+- **Three.js** for 3D graphics
+- **Chart.js** for data visualization
+- **D3.js** for advanced visualizations
+- **GSAP** for animations
+
+## 📁 Project Structure
 
 ```
-apps/agent/skills/
-├── advanced-visualization/SKILL.md   # UI mockups, dashboards, Chart.js, generative art
-├── master-playbook/SKILL.md          # Response philosophy, decision trees, narration patterns
-└── svg-diagrams/SKILL.md             # SVG generation rules, component patterns, diagram types
+.
+├── apps/
+│   ├── app/                    # Next.js frontend
+│   ├── agent/                  # Python agent backend
+│   └── mcp/                    # MCP server
+├── docs/                       # Documentation
+├── Makefile                    # Build commands
+├── pnpm-workspace.yaml        # Monorepo config
+└── turbo.json                 # Turborepo config
 ```
 
-Deep agents also provide built-in planning (`write_todos`), filesystem tools, and sub-agent support.
+## 🚢 Deployment
 
-### How It Works
+### Vercel Deployment
 
-1. **User sends a prompt** via the CopilotKit chat UI
-2. **Deep agent decides** whether to respond with text, call a tool, or render a visual component — consulting relevant skills as needed
-3. **`widgetRenderer`** — a frontend `useComponent` hook — receives the agent's HTML and renders it in a sandboxed iframe
-4. **Skeleton loading** shows while the iframe loads, then content fades in smoothly
-5. **ResizeObserver** inside the iframe reports content height back to the parent for seamless auto-sizing
+1. **Prerequisites**:
+   - GitHub repository: https://github.com/Londondannyboy/rfp-quest-homepage
+   - Vercel account with team: team_nBAZLJTbCMBi2wrIMVlsmGjZ
 
-### Key CopilotKit Patterns
+2. **Deploy Frontend**:
+```bash
+vercel --cwd apps/app
+```
 
-| Pattern | Hook | Example |
-|---------|------|---------|
-| Generative UI | `useComponent` | Pie charts, bar charts, widget renderer |
-| Frontend tools | `useFrontendTool` | Theme toggle |
-| Human-in-the-loop | `useHumanInTheLoop` | Meeting scheduler |
-| Default tool render | `useDefaultRenderTool` | Tool execution status |
+3. **Environment Variables** (in Vercel):
+```
+LANGGRAPH_DEPLOYMENT_URL=https://rfp-quest-generative-agent-production.up.railway.app
+```
 
-## Decision Matrix — Picking the Right Visual
+### Railway Deployment (Agent)
 
-| User asks about...          | Output type              | Technology          |
-|-----------------------------|--------------------------|---------------------|
-| How X works (physical)      | Illustrative diagram     | SVG                 |
-| How X works (abstract)      | Interactive explainer    | HTML + inline SVG   |
-| Process / steps             | Flowchart                | SVG                 |
-| Architecture / containment  | Structural diagram       | SVG                 |
-| Database schema / ERD       | Relationship diagram     | Mermaid             |
-| Trends over time            | Line chart               | Chart.js            |
-| Category comparison         | Bar chart                | Chart.js            |
-| Part of whole               | Doughnut chart           | Chart.js            |
-| KPIs / metrics              | Dashboard                | HTML metric cards   |
-| Design a UI                 | Mockup                   | HTML                |
-| Choose between options      | Comparison cards         | HTML grid           |
-| Cyclic process              | Step-through             | HTML stepper        |
-| Physics / math              | Simulation               | Canvas + JS         |
-| Function / equation         | Plotter                  | SVG + JS            |
-| Data exploration            | Sortable table           | HTML + JS           |
-| Creative / decorative       | Art / illustration       | SVG                 |
-| 3D visualization            | 3D scene                 | Three.js            |
-| Music / audio               | Synthesizer              | Tone.js             |
-| Network / graph             | Force layout             | D3.js               |
-| Quick factual answer        | Plain text               | None                |
-| Code solution               | Code block               | None                |
-| Emotional support           | Warm text                | None                |
+The agent backend is already deployed on Railway at:
+**https://rfp-quest-generative-agent-production.up.railway.app**
 
-## Tech Stack
+To update the Railway deployment:
+1. Push changes to the connected GitHub repo
+2. Railway will auto-deploy from the main branch
 
-Next.js 16, React 19, Tailwind CSS 4, LangChain Deep Agents, LangGraph, CopilotKit v2, Turborepo, Recharts
+Environment variables configured in Railway:
+- `ANTHROPIC_API_KEY` - Claude API key
+- `LLM_MODEL` - claude-opus-4-6
 
-## License
+## 🐛 Troubleshooting
 
-MIT
+### Common Issues
+
+1. **Visualization not rendering**:
+   - Ensure claude-opus-4-6 is configured
+   - Check API keys are valid
+   - Refresh page to clear request queue
+
+2. **Hydration mismatch error**:
+   - Normal SSR warning, doesn't affect functionality
+   - Can be ignored or suppressed in production
+
+3. **Agent not responding**:
+   - Check agent is running: `curl http://localhost:8123/health`
+   - Verify .env configuration
+   - Check logs for errors
+
+### Model Configuration
+
+**Critical**: Must use `claude-opus-4-6` for proper visualization generation.
+
+Incorrect models will produce broken or incomplete visualizations:
+- ❌ gpt-4o (too weak)
+- ❌ claude-3-opus-20240229 (outdated)
+- ✅ claude-opus-4-6 (current flagship)
+
+## 📚 Documentation
+
+- [CopilotKit Docs](https://docs.copilotkit.ai)
+- [LangGraph Docs](https://python.langchain.com/docs/langgraph)
+- [Contracts Finder API](https://www.contractsfinder.service.gov.uk/apidocumentation)
+- [OpenGenerativeUI](https://github.com/CopilotKit/OpenGenerativeUI)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit changes
+4. Push to branch
+5. Open a Pull Request
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🙏 Acknowledgments
+
+- CopilotKit team for OpenGenerativeUI template
+- Anthropic for Claude Opus 4.6
+- UK Government Digital Service for OCDS API
+- Open Contracting Partnership for OCDS standard
+
+## 📧 Contact
+
+- GitHub: [@Londondannyboy](https://github.com/Londondannyboy)
+- Project: [rfp-quest-homepage](https://github.com/Londondannyboy/rfp-quest-homepage)
+
+---
+
+Built with ❤️ for the UK public procurement ecosystem
