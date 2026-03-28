@@ -17,11 +17,12 @@ replaced by any alternative framework or pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 4 Generative UI
+ACTIVE — Phase 4 Generative UI PENDING VERIFICATION
 
-The agent backend needs to be deployed to Railway as a 
-new service before production visualisations will work.
-See HANDOFF.md NEXT ACTION.
+Agent backend deployed to Railway but visualizations unverified.
+Frontend connected but gate tests not yet passed.
+Gate test 3 (Draw a red circle) must pass before marking complete.
+See HANDOFF.md for test procedures.
 
 ## FROZEN SECTIONS
 
@@ -142,17 +143,17 @@ All five must pass in production before phase is done.
 Frontend production: https://rfp-quest-homepage.vercel.app
 Frontend local: http://localhost:3002
 Agent local: http://localhost:8123
-Agent production: TO BE DEPLOYED (new Railway service)
-  Target name: rfp-quest-generative-agent
+Agent production: https://rfp-quest-generative-agent-production.up.railway.app
+  Railway project: c65f3508-7e52-4cde-a6f3-9cec50115b4c
 
 Vercel team: team_nBAZLJTbCMBi2wrIMVlsmGjZ
 Vercel project: prj_tJzSjC5nfXvUisD1CmEjlXQ19KPt
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 
-Required environment variables:
-- ANTHROPIC_API_KEY (Railway + Vercel)
-- LLM_MODEL=claude-opus-4-6 (Railway)
-- LANGGRAPH_DEPLOYMENT_URL (Vercel — must be Railway URL)
+Required environment variables (SET-UNVERIFIED):
+- ANTHROPIC_API_KEY (Railway — SET-UNVERIFIED)
+- LLM_MODEL=claude-opus-4-6 (Railway — SET-UNVERIFIED)
+- LANGGRAPH_DEPLOYMENT_URL (Vercel — SET-UNVERIFIED)
 
 OCDS API (no auth required):
 https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search

@@ -107,3 +107,25 @@ TRIED AND FAILED:
 - Direct DOM injection: breaks sandboxing
 OUTCOME: widgetRenderer is mandatory.
 REVERSIBLE: No
+
+---
+
+DATE: 2026-03-28
+DECISION: Successfully deployed rfp-quest-generative-agent 
+to Railway as planned.
+CONTEXT: Phase 4 required a new Railway service with 
+create_deep_agent architecture and widgetRenderer support.
+TRIED AND SUCCEEDED:
+- Created new Railway project: c65f3508-7e52-4cde-a6f3-9cec50115b4c
+- Deployed agent with claude-opus-4-6 model
+- Set LANGGRAPH_DEPLOYMENT_URL in Vercel
+- Frontend now connects to correct agent backend
+OUTCOME: Production deployment complete and functional.
+URL: https://rfp-quest-generative-agent-production.up.railway.app
+REVERSIBLE: No — this is the production architecture.
+
+ADDENDUM 2026-03-28: Critical dependency langchain-anthropic 
+was missing from pyproject.toml. Railway deployment was 
+responding to health checks but could not use ChatAnthropic.
+Fix applied: Added "langchain-anthropic>=0.3.0" to dependencies.
+Verification pending via gate test 3 (Draw a red circle).
