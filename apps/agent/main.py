@@ -23,6 +23,7 @@ from src.todos import AgentState, todo_tools
 from src.form import generate_form
 from src.plan import plan_visualization
 from src.uk_tenders import fetch_uk_tenders
+from src.query_tenders import query_neon_tenders
 
 load_dotenv()
 
@@ -39,7 +40,7 @@ model_with_retry = base_model.with_retry(
 
 agent = create_deep_agent(
     model=model_with_retry,
-    tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders],
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders, query_neon_tenders],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
@@ -84,11 +85,13 @@ agent = create_deep_agent(
         - "What tenders are closing soon?"
 
         ## Bid Decision Analysis (Human-in-the-Loop)
-        
+
         When users ask you to analyze a specific tender for bid/no-bid decision
         (e.g., "Should we bid on X?", "Analyze tender: Y"), you should:
-        
-        1. First fetch tender details if not already available
+
+        1. FIRST call query_neon_tenders with the tender title or keywords.
+           This searches the database instantly (<100ms) and avoids a slow re-fetch.
+           Only call fetch_uk_tenders if query_neon_tenders returns NO results.
         2. Analyze the tender based on:
            - Contract value and buyer reputation
            - Deadline feasibility

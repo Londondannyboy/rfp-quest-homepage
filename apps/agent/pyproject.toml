@@ -17,4 +17,5 @@ dependencies = [
     "ag-ui-langgraph==0.0.25",
     "langchain-mcp-adapters>=0.2.1",
     "deepagents>=0.1.0",
+    "psycopg2-binary>=2.9.9",
 ]
