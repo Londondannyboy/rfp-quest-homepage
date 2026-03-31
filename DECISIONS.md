@@ -164,3 +164,130 @@ decision recorded, agent continued with full analysis
 including strengths, risks, and next steps.
 Three decision paths working: Bid, Pass, Review.
 REVERSIBLE: N/A — this is a success entry.
+
+---
+
+## D13 — DATE: 2026-03-31
+DECISION: Use with_retry wrapper not max_retries for overload resilience.
+CONTEXT: overloaded_error occurs inside streaming after connection
+established. max_retries on ChatAnthropic only catches connection errors,
+not mid-stream failures.
+TRIED AND FAILED: max_retries=3 on ChatAnthropic — does not catch
+streaming overloaded_error. Error still propagates identically.
+OUTCOME: base_model.with_retry(stop_after_attempt=3) wraps the entire
+runnable including stream and catches it correctly.
+REVERSIBLE: Yes
+
+---
+
+## D14 — DATE: 2026-03-31
+DECISION: Always add export const maxDuration = 60 to Vercel API routes.
+CONTEXT: Vercel serverless functions default to 10 second timeout.
+Opus generation for complex prompts takes 15-45 seconds minimum.
+Without maxDuration, all complex requests silently fail at 10s.
+TRIED AND FAILED: Default Vercel timeout — silent failures on all
+Opus requests beyond simple chat. No error shown to user.
+OUTCOME: export const maxDuration = 60 in route.ts fixes production
+timeouts. Must be added to every new API route in this project.
+REVERSIBLE: No — must always be present.
+
+---
+
+## D15 — DATE: 2026-03-31
+DECISION: Gate tests must never be run during active diagnostic sessions.
+CONTEXT: Multiple rapid Opus requests trigger overloaded_error which
+makes working code appear broken. Hours were wasted today diagnosing
+code that was functioning correctly.
+TRIED AND FAILED: Running gate tests immediately after diagnostic curl
+commands and repeated browser refreshes — all appeared to fail but
+were actually Anthropic overload failures, not code failures.
+OUTCOME: Always wait 30+ minutes after heavy API usage before running
+gate tests. Use a fresh browser tab with no conversation history.
+Test in isolation, never mid-session.
+REVERSIBLE: N/A — this is a testing protocol, not a code decision.
+
+---
+
+## D16 — DATE: 2026-03-31
+DECISION: Tender analysis requires Neon persistence to be reliable
+in production.
+CONTEXT: "Analyse tender: X" without full details causes two sequential
+Opus calls — fetch_uk_tenders (finds the tender) + analyzeBidDecision
+(generates HITL card). Together they reliably exceed 60 seconds and
+timeout silently. Also, tenders not in current top 20 live OCDS feed
+cannot be analysed at all.
+TRIED AND FAILED: Asking agent to fetch then analyse in same prompt —
+double-call timeout. Providing tender name only — agent fetches entire
+feed to find it, same timeout.
+OUTCOME: Workaround confirmed — providing full tender details
+(title, buyer, value, deadline) in the prompt skips the fetch call
+and goes straight to analyzeBidDecision. Single call completes in time.
+Proper fix: Phase 5c Neon persistence stores tenders on first fetch,
+agent looks up by name without re-fetching.
+REVERSIBLE: Yes — Neon persistence is the architectural fix.
+
+---
+
+## D17 — DATE: 2026-03-31
+DECISION: Railway health endpoint is not a reliable agent readiness indicator.
+CONTEXT: /health returns {"status":"ok"} even when the agent is actively
+throwing overloaded_error on every LLM request. Health check only
+confirms the FastAPI server is running, not that Anthropic API is
+responding.
+TRIED AND FAILED: Using health check to confirm agent is ready before
+testing — health returned 200 while every user request was failing.
+OUTCOME: Do not use health check as readiness gate. Only a successful
+end-to-end LLM response (e.g. red circle renders) confirms readiness.
+REVERSIBLE: N/A — this is an operational protocol.
+
+---
+
+## D18 — DATE: 2026-03-31
+DECISION: pnpm-lock.yaml must only be regenerated with pnpm@9.
+CONTEXT: Project specifies pnpm@9.0.0 as packageManager. Using
+npx pnpm@8 to regenerate the lockfile produced an incompatible
+lockfile that caused Vercel deployment to fail completely with
+"pnpm install exited with 1".
+TRIED AND FAILED: npx pnpm@8 install — regenerated lockfile with
+wrong pnpm version, broke Vercel build, required emergency rollback.
+OUTCOME: Never regenerate pnpm-lock.yaml unless pnpm@9 is available.
+If pnpm is not installed globally, do not regenerate — find another
+way or install pnpm@9 first.
+REVERSIBLE: No — lockfile corruption requires force rollback.
+
+---
+
+## D19 — DATE: 2026-03-31
+DECISION: Use Neon (Postgres + pgvector) as the single database
+for Phase 5c. Do not add Redis, Zep, or Supabase.
+CONTEXT: Multiple database options evaluated for Phase 5c:
+- Supabase: adds auth UI and realtime subscriptions not yet needed.
+  Switching cost from Neon not justified. Neon already in use.
+- Redis: cache layer would add speed perception but premature at
+  current scale. Neon with proper indexing handles tens of thousands
+  of rows comfortably.
+- Zep: graph database for relationship mapping (similar tenders,
+  buyer patterns). Genuinely relevant but needs bid history data
+  to build the graph from. Too early — Phase 7+.
+OUTCOME: Neon with pgvector extension handles:
+  - Tender persistence (Postgres table)
+  - Vector similarity search for related tenders (pgvector)
+  - Future: bid tracker, company profiles, framework intelligence
+  All on same instance, no additional infrastructure.
+REVERSIBLE: Yes — can add Redis cache layer in Phase 7 if needed.
+
+---
+
+## D20 — DATE: 2026-03-31
+DECISION: Add pgvector to Neon in Phase 5c alongside basic persistence.
+CONTEXT: At tens of thousands of tender rows from multiple sources,
+similarity search becomes the primary navigation mechanism. A user
+who bids on NHS cleaning contracts should automatically see Yorkshire
+Council cleaning contracts, ESPO framework cleaning lots etc.
+pgvector on same Neon instance means no additional infrastructure.
+Embedding generated on insert using langchain embeddings.
+TRIED AND FAILED: N/A — proactive architectural decision.
+OUTCOME: tenders table includes embedding vector(1536) column.
+query_neon_tenders tool supports both exact title lookup and
+similarity search. Related tenders surface automatically in analysis.
+REVERSIBLE: Yes — column can be dropped if not used.

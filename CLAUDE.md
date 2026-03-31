@@ -91,8 +91,28 @@ DO NOT mark any phase complete without running all
 gate tests and confirming they pass.
 
 DO NOT attempt to replace CopilotKit if you hit a wall.
-The pattern works. The issue is always configuration 
+The pattern works. The issue is always configuration
 or model selection. Stop and report.
+
+DO NOT use max_retries on ChatAnthropic for overload resilience.
+It does not catch streaming overloaded_error. Use with_retry wrapper
+on the runnable instead. See DECISIONS.md D13.
+
+DO NOT run gate tests during or immediately after diagnostic sessions.
+Wait 30 minutes minimum after any heavy API usage. See D15.
+
+DO NOT regenerate pnpm-lock.yaml with any pnpm version other than
+pnpm@9. Using pnpm@8 breaks Vercel deployment. See D18.
+
+DO NOT rely on Railway /health as a readiness indicator.
+Only a successful end-to-end render confirms readiness. See D17.
+
+DO NOT chain fetch_uk_tenders + analyzeBidDecision in a single prompt.
+This causes double-call timeout. Provide full tender details in prompt
+until Neon persistence is implemented. See D16.
+
+DO NOT add Redis, Supabase, or Zep to this project before Phase 7.
+Use Neon with pgvector only. See D19 and D20.
 
 ## WHEN YOU HIT A WALL
 
@@ -128,14 +148,23 @@ Phase 4 gate test results:
    Expected: Tender cards appear with OCDS data
    Status: ✅ PASSED
 
-4c. Type: "Analyse tender: Boiler Replacement at Stroud General Hospital"
-   Expected: HITL bid decision card appears, click Bid,
-   full analysis with strengths/risks/next steps renders.
-   Status: ✅ PASSED
+Phase 4c (CONFIRMED ON PRODUCTION 2026-03-31):
+Prerequisites: fresh browser tab, no API calls in prior 30 minutes.
 
-5. Toggle dark mode
-   Expected: iframe content adapts (CSS variables work)
-   Status: ⏭️ SKIPPED (non-critical, cosmetic only)
+1. "Draw a red circle"
+   Expected: red circle renders in widgetRenderer iframe ✅
+
+2. "Show me recent UK government tenders"
+   Expected: 20 tender cards render in widgetRenderer ✅
+
+3. "Analyse tender: BWV Support & Maintenance by Cambridgeshire
+   Constabulary, value £128K, deadline 31 Mar 2026"
+   Expected: HITL bid decision card renders ✅
+   Expected: Ignoring HITL does not crash agent ✅
+
+CRITICAL NOTE: Gate test 3 requires full tender details in prompt.
+Do not ask agent to find tender first — double-call timeout.
+Do not run any gate test during active development sessions.
 
 ## ENVIRONMENT
 
@@ -156,3 +185,65 @@ Required environment variables:
 
 OCDS API (no auth required):
 https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search
+
+## PHASE ROADMAP
+
+**Phase 5a** — REBUILD: RFP.quest rebrand
+Update page-client.tsx header to "RFP.quest" with Beta badge.
+Update layout.tsx title to "RFP.quest — UK Procurement Intelligence".
+Update demo-data.ts with RFP-focused example prompts replacing
+original OpenGenerativeUI prompts (binary search, solar system etc).
+Gate: page header shows "RFP.quest" with Beta badge.
+
+**Phase 5b** — REBUILD: SSR tender feed
+Server-side render tender titles into page HTML for crawler indexing.
+Required before rfp.quest domain switch — domain currently ranks
+page 1 for "RFP platform UK" and must not lose SEO authority.
+Gate: curl production URL must contain tender title in raw HTML.
+Gate: CopilotKit chat still renders generative UI correctly.
+
+**Phase 5c** — Neon persistence + pgvector + loading states
+Priority 1: Neon tenders table with pgvector
+  - tenders table: ocid, title, buyer, value, deadline, status,
+    cpv_codes, raw_json, embedding vector(1536), source, fetched_at
+  - Enable pgvector extension on Neon instance
+  - fetch_uk_tenders saves to Neon on every call
+  - query_neon_tenders tool: exact title lookup + similarity search
+  - analyzeBidDecision queries Neon first, skips fetch entirely
+  - Add DATABASE_URL to Railway environment variables
+
+Priority 2: Instant tender card while AI analyses
+  - Emit tender data immediately on identify via CopilotKit state
+  - Frontend renders static card while Opus streams analysis
+
+Priority 3: Loading states and graceful errors
+  - "Searching tenders..." shown when query_neon_tenders fires
+  - "Analysing opportunity..." shown when analyzeBidDecision fires
+  - Graceful message if retries exhausted: try again prompt
+
+Priority 4: Rate limiting
+  - 5 free queries per session via localStorage
+  - SSR feed loads do not count
+  - "Create account to continue" overlay after limit
+
+Priority 5: Neon Auth
+  - JWT-based, native Neon Auth, Next.js SDK
+  - No third-party providers
+
+**Phase 6** — Company profile + bid tracker
+Registration captures: company name, Companies House number,
+sectors (SIC codes), CPV codes, certifications (ISO 27001, ISO 9001,
+Cyber Essentials, BS 7858), framework memberships (G-Cloud 14,
+DOS 6, Crown Commercial lots, NHS frameworks).
+Bid tracker Neon table: one row per tender flagged as interested.
+Fields: tender_id, ocid, title, buyer, value, deadline,
+status (interested/bidding/submitted/won/lost), notes.
+
+**Phase 7** — Matched and intelligent feed + Redis cache
+Agent filters live OCDS stream against company CPV codes.
+Only relevant tenders shown by default for logged-in users.
+Zep graph database for relationship mapping between tenders,
+buyers, and bid outcomes. Redis cache layer if Neon latency
+becomes noticeable at scale.
+Multi-source ingestion: Find a Tender, Proactis, Delta eSourcing.
+source column in tenders table tracks provenance.

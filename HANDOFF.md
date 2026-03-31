@@ -1,113 +1,188 @@
 # HANDOFF.md — rfp-quest-homepage
-# Session date: 2026-03-28
-# Sign-off status: DRAFT
+# Session date: 2026-03-31
+# Sign-off status: DRAFT — pending Claude.ai review
 
----
-
-## CURRENT STATE (verified)
+## CURRENT STATE (verified on production 2026-03-31)
 
 Frontend: https://rfp-quest-homepage.vercel.app
-Status: LIVE — Phase 4 COMPLETE ✅
-- Gate test 3 PASSED: Red circle renders correctly in production
-- Gate test 4 PASSED: UK tender cards display with live OCDS data
-- Gate test 5 SKIPPED: Dark mode CSS (non-critical, cosmetic only)
-CopilotKit chat input visible and working with Claude Opus 4.6.
-
-Agent backend: https://rfp-quest-generative-agent-production.up.railway.app
-Status: LIVE and fully functional with Claude Opus 4.6
-Health check verified: {"status":"ok"}
-Railway project ID: c65f3508-7e52-4cde-a6f3-9cec50115b4c
-
+Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
-Latest commit: 7219b7d
-"fix: explicitly skip plan_visualization for tender requests"
+Branch: main
 
-UK tender skill: WORKING IN PRODUCTION ✅
-Location: apps/agent/skills/uk-tenders/SKILL.md
-fetch_uk_tenders returns raw data list, agent generates HTML.
-Live OCDS data successfully fetched and visualized.
+Gate tests confirmed passing on production:
+- Gate 1 PASSED: "Draw a red circle" → renders in widgetRenderer iframe ✅
+- Gate 2 PASSED: "Show me recent UK government tenders" → 20 cards ✅
+- Gate 3 PASSED: HITL bid decision card renders correctly ✅
+- Gate 3 NOTE: Must provide full tender details in prompt to avoid
+  double-call timeout. Example prompt:
+  "Analyse tender: BWV Support & Maintenance by Cambridgeshire
+  Constabulary, value £128K, deadline 31 Mar 2026"
+- Gate 3 NOTE: Agent recovers gracefully when HITL is ignored ✅
 
-Documentation suite: COMPLETE
-- CLAUDE-STANDARD.md: Created and signed off 2026-03-28
-- CLAUDE.md: Updated with Phase 4 completion status
-- HANDOFF.md: This document (ready for sign-off)
-- DECISIONS.md: Contains D1-D9 with gate test results
+Deployed fixes confirmed working:
+- export const maxDuration = 60 in apps/app/src/app/api/copilotkit/route.ts
+- with_retry wrapper (stop_after_attempt=3) on ChatAnthropic
+  in apps/agent/main.py
 
 ## WHAT IS BROKEN
 
-Nothing blocking. Phase 4 is complete and working.
+1. DOUBLE-CALL TIMEOUT
+   "Analyse tender: X" without full details causes two sequential
+   Opus calls (fetch_uk_tenders + analyzeBidDecision) that together
+   exceed 60 seconds and silently fail.
+   Workaround: provide full tender details in the prompt.
+   Proper fix: Neon persistence (Phase 5c Priority 1).
 
-Note: OCDS API occasionally rate limits. When this happens,
-mock data is served as fallback (3 sample tenders).
+2. NO TENDER PERSISTENCE
+   Tenders not in current live top 20 OCDS feed cannot be analysed.
+   Agent re-fetches entire live feed on every analyse request.
+   Fix: Neon DB persistence (Phase 5c).
 
-Note: langgraph-fastapi-rfp-quest frozen repo has 
-unauthorised commits still unreviewed — not urgent.
+3. SILENT FAILURES
+   When Opus is overloaded and retries exhausted, user sees nothing.
+   No error message, no feedback, no graceful degradation.
+   Fix: loading states + graceful error UI (Phase 5c).
+
+4. DEMO GALLERY
+   Still shows original OpenGenerativeUI prompts (binary search,
+   solar system etc). Not updated to RFP-focused prompts.
+   Fix: update demo-data.ts in Phase 5a.
+
+5. PHASE 5A/5B NOT REBUILT
+   RFP.quest branding and SSR tender feed were completed then rolled
+   back during emergency reset on 2026-03-31. Need clean rebuild on
+   top of current stable baseline.
+
+## WHAT WAS LEARNED (2026-03-31)
+
+1. OVERLOAD DETECTION
+   anthropic.APIStatusError overloaded_error occurs INSIDE the stream
+   after connection established. max_retries on ChatAnthropic does NOT
+   catch it. with_retry wrapper on the runnable DOES catch it.
+
+2. HEALTH CHECK IS UNRELIABLE
+   Railway /health returns 200 even when agent is overloaded.
+   Only a successful end-to-end render confirms readiness.
+
+3. VERCEL TIMEOUT
+   Default Vercel serverless timeout is 10 seconds. Opus generation
+   takes 15-45 seconds. Always add export const maxDuration = 60
+   to every API route in this project.
+
+4. GATE TEST PROTOCOL
+   Never run gate tests during or immediately after heavy diagnostic
+   sessions. Multiple rapid Opus requests trigger overloaded_error
+   making working code appear broken when it is not.
+   Always wait 30+ minutes. Use fresh browser tab.
+
+5. PNPM VERSION LOCK
+   Never regenerate pnpm-lock.yaml with a different pnpm version.
+   Using npx pnpm@8 instead of pnpm@9 broke Vercel deployment.
+
+6. FORCE PUSH + VERCEL
+   Force pushing to reset main branch does not always trigger Vercel
+   webhook. Use empty commit to force redeploy:
+   git commit --allow-empty -m "chore: trigger redeploy"
+   git push origin main
+
+7. HITL RECOVERY
+   HITL component recovers gracefully when ignored by user.
+   Agent continues conversation without crash.
+
+8. DOUBLE-CALL TIMEOUT PATTERN
+   Two sequential Opus calls in one user prompt reliably exceeds
+   60 seconds. Architecture must avoid chaining fetch + analyse.
+   Neon persistence eliminates the need for the fetch call entirely.
 
 ## LAST COMMITS
 
-rfp-quest-homepage (this repo):
-- 684c936 — "docs: Phase 4c complete — HITL bid decision working"
-- 13cfa12 — "docs: Phase 4 complete — consolidate READMEs, update gate test status"
-- 73316a8 — "docs: Phase 4 COMPLETE - all gate tests passed"
-- 7219b7d — "fix: explicitly skip plan_visualization for tender requests"
-All AUTHORISED: Yes
-
-langgraph-fastapi-rfp-quest (frozen repo — DO NOT TOUCH):
-fc8c515+ — Multiple unauthorised changes remain
-Review needed before any work on that project.
+e9e38e9 — fix: add retry backoff and timeout to ChatAnthropic
+d92aa92 — fix: add maxDuration 60s to prevent Vercel timeout
+55dabec — chore: trigger Vercel redeploy to Phase 4c baseline
+bc8faf6 — docs: sign-off corrections — Phase 4c complete
+All commits authorised.
 
 ## ENVIRONMENT STATE
 
 Vercel (rfp-quest-homepage):
-- LANGGRAPH_DEPLOYMENT_URL: SET and VERIFIED ✅
+- LANGGRAPH_DEPLOYMENT_URL: SET ✅
   Value: https://rfp-quest-generative-agent-production.up.railway.app
 
 Railway (rfp-quest-generative-agent):
-- ANTHROPIC_API_KEY: SET and WORKING ✅
+- ANTHROPIC_API_KEY: SET ✅
 - LLM_MODEL: claude-opus-4-6 (hardcoded in main.py) ✅
-- Service live, healthy, and processing requests
+- DATABASE_URL: NOT SET — required for Phase 5c Neon persistence
 
-## NEXT ACTION
+All required variables confirmed working in production.
+DATABASE_URL must be added to Railway before Phase 5c agent work.
 
-Phase 4c COMPLETE — bid decision HITL working
+## NEXT ACTION — Phase 5c Architecture
 
-Completed:
-- BidDecision component created with certificate-style UI
-- Three decision paths: Bid, Pass, Review
-- useHumanInTheLoop hook registered as analyzeBidDecision
-- Agent system prompt updated with bid analysis instructions
-- Gate test: "Analyse tender: Boiler Replacement at 
-  Stroud General Hospital" — PASSED, full analysis rendered
+Do NOT start any code until all three gate tests pass in a fresh
+browser session with no recent API activity (30+ min gap).
 
-Successfully verified full HITL flow with user interaction
-working correctly (see DECISIONS.md D10).
+Phase 5c implementation order (strict — do not reorder):
 
-NEXT PHASE options:
-1. Domain switch — point rfp.quest at this deployment
-2. Phase 5 — bid document generation (PDF/Word export)
-3. Phase 6 — multi-tender comparison views
+PRIORITY 1: Neon tender persistence
+  a. Create tenders table in Neon with columns:
+     ocid (primary key), title, buyer, value, deadline,
+     status, cpv_codes, raw_json, embedding (vector),
+     source, fetched_at
+  b. Add pgvector extension to Neon instance
+  c. Update fetch_uk_tenders in apps/agent/src/uk_tenders.py to:
+     - Save each tender to Neon on fetch
+     - Generate and store text embedding for similarity search
+  d. Add query_neon_tenders tool to agent:
+     - Look up tender by title (fuzzy match)
+     - Return related tenders via pgvector similarity search
+  e. Update analyzeBidDecision flow:
+     - Query Neon first, skip fetch_uk_tenders entirely
+     - Single Opus call instead of two — fixes timeout permanently
+  f. Add DATABASE_URL to Railway environment
 
-## DO NOT (session-specific)
+PRIORITY 2: Instant tender card while AI analyses
+  - When agent identifies tender from Neon, immediately emit
+    tender data to frontend via copilotkit state
+  - Frontend renders static tender card instantly
+  - Opus analysis streams in alongside it
+  - User sees something in under 2 seconds
 
-DO NOT touch langgraph-fastapi-rfp-quest repo — 
-it remains frozen at commit 8462ed4.
+PRIORITY 3: Loading states and graceful errors
+  - Show "Searching tenders..." when query_neon_tenders fires
+  - Show "Analysing opportunity..." when analyzeBidDecision fires
+  - If all retries fail, show: "I'm having trouble connecting
+    right now. Please try again in a moment."
+  - Never show silence to the user
 
-DO NOT change model from claude-opus-4-6 — this is 
-the only model that works correctly for generative UI.
+PRIORITY 4: Rate limiting
+  - 5 free generative AI queries per session via localStorage
+  - SSR tender feed load does NOT count as a query
+  - After limit: "Create free account to continue" overlay
 
-DO NOT modify fetch_uk_tenders to return HTML again —
-raw data list is the correct pattern.
+PRIORITY 5: Neon Auth
+  - JWT-based, native Neon Auth, Next.js SDK
+  - No third-party auth providers
+
+Technology decisions for Phase 5c:
+  - Database: Neon (Postgres) — already in use across portfolio
+  - Vector search: pgvector on same Neon instance
+  - Cache: NOT adding Redis — premature at current scale
+  - Memory/graph: NOT adding Zep yet — needs bid history first
+  - Multi-source ingestion: Phase 7+
+
+## DO NOT
+
+DO NOT start Phase 5 without confirming all gate tests pass first.
+DO NOT regenerate pnpm-lock.yaml — use existing file.
+DO NOT change CopilotKit package versions from 1.54.0-next.6.
+DO NOT change Railway agent model from claude-opus-4-6.
+DO NOT run gate tests during heavy API usage sessions.
+DO NOT use max_retries on ChatAnthropic — use with_retry wrapper.
+DO NOT add Redis, Zep, or Supabase — use Neon only.
+DO NOT chain fetch_uk_tenders + analyzeBidDecision in same prompt.
+DO NOT push to main without checking git log first.
 
 ## SIGN-OFF STATUS
 
-DRAFT
-
-## Phase 4 Gate Test Results
-
-✅ Gate test 1: Agent health check passes
-✅ Gate test 2: Production agent responds 
-✅ Gate test 3: "Draw a red circle" renders correctly
-✅ Gate test 4: "Show me recent UK government tenders" displays cards
-✅ Gate test 5: Dark mode CSS variables work in iframes
-
-Phase 4 Generative UI is COMPLETE.
+DRAFT — must be reviewed and approved by Claude.ai before
+Phase 5c work begins.

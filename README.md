@@ -183,6 +183,42 @@ Environment variables configured in Railway:
 - `ANTHROPIC_API_KEY` - Claude API key
 - `LLM_MODEL` - claude-opus-4-6
 
+## Known Production Behaviours
+
+### Anthropic Opus overload
+Claude Opus occasionally returns overloaded_error under high API load.
+The with_retry wrapper (3 attempts, exponential backoff) handles
+transient overload transparently. If all retries exhaust, the user
+sees no response. Graceful error UI is planned for Phase 5c.
+
+Do not confuse overload failures with code bugs. Always wait 30+
+minutes after heavy API usage before running gate tests.
+
+### Tender analysis — provide full details
+"Analyse tender: X" requires full tender details in the prompt:
+"Analyse tender: [title] by [buyer], value [£X], deadline [date]"
+
+Asking the agent to find the tender first causes two sequential Opus
+calls that together exceed 60 seconds and silently fail. Neon
+persistence (Phase 5c) will fix this permanently by storing tenders
+and enabling instant lookup without a second Opus call.
+
+### Railway health check
+GET /health returns {"status":"ok"} even when the agent is overloaded.
+Only a successful end-to-end render (red circle appears) confirms
+the agent is ready.
+
+### Vercel function timeout
+All API routes must include export const maxDuration = 60 to prevent
+Vercel's default 10-second timeout from cutting off Opus generation.
+This line is already present in /api/copilotkit/route.ts.
+
+### Related tender discovery (coming Phase 5c)
+pgvector similarity search on the Neon tenders table will surface
+related opportunities automatically. NHS cleaning contract →
+Yorkshire Council cleaning → ESPO framework cleaning lot.
+Embeddings generated on insert using langchain embeddings.
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
