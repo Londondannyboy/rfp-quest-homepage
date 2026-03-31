@@ -39,7 +39,7 @@ model_with_retry = base_model.with_retry(
 )
 
 agent = create_deep_agent(
-    model=model_with_retry,
+    model=base_model,
     tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders, query_neon_tenders],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
