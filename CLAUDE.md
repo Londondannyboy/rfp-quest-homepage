@@ -72,6 +72,15 @@ Tako integration pattern (when implemented):
   4. Extract embed_url from response knowledge_cards[0]
   5. Return embed_url to agent for widgetRenderer rendering
 
+Tako iframe rendering pattern (when implemented):
+  - Extract iframe src, generate stable ID from src
+  - Register in global Map (iframeRegistry) — never changes once set
+  - Render as React.memo StableIframe siblings alongside ReactMarkdown
+  - Never inside ReactMarkdown component tree — causes flickering
+  - Handle tako::resize postMessage for dynamic height adjustment
+  Reference implementation: takodata/tako-copilotkit
+    src/components/MarkdownRenderer.tsx (StableIframe + iframeRegistry)
+
 ## EXPLICIT DO NOT LIST
 
 DO NOT use claude-3-opus-20240229 — it is Opus 3 from 
@@ -138,17 +147,13 @@ stripping channel_binding=require first. See D22.
 DO NOT change pyproject.toml without running uv lock and
 committing uv.lock in the same commit. See D23.
 
+DO NOT hardcode TAKO_API_KEY. Always os.getenv("TAKO_API_KEY"). See D28.
 DO NOT upload tenders to Tako as static files.
-Use inline CSV method — query Neon, convert to CSV string,
-pass in request body. Charts are live Neon data. See D27.
-
-DO NOT hardcode TAKO_API_KEY. Always os.getenv. See D28.
-
-DO NOT pass full DATABASE_URL to psycopg2.
-Strip channel_binding first. See D22.
-
-DO NOT change pyproject.toml without running uv lock
-and committing both files together. See D23.
+  Query Neon → convert to CSV string → pass inline. See D27.
+DO NOT render Tako chart iframes inside ReactMarkdown.
+  Use StableIframe pattern (stable ID registry, React.memo,
+  rendered as siblings outside ReactMarkdown tree).
+  Reference: takodata/tako-copilotkit MarkdownRenderer.tsx
 
 ## WHEN YOU HIT A WALL
 
@@ -248,11 +253,10 @@ Neon:
 
 Tako:
 - TAKO_API_KEY: NOT SET in Railway ❌ — required for Priority 1.6
-  Add to Railway before implementing visualise_tender_analytics
 - Visualize endpoint: https://tako.com/api/v1/beta/visualize
-- Method: POST inline CSV strings — no file upload needed
+- Method: POST inline CSV — no file upload needed
 - Returns: embed_url → render in widgetRenderer as iframe
-- API key: load from os.getenv("TAKO_API_KEY") only
+- Key: os.getenv("TAKO_API_KEY") only, never hardcode
 
 ## PHASE ROADMAP
 
