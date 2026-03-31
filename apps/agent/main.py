@@ -5,6 +5,7 @@ It defines the workflow graph, state, tools, nodes and edges.
 
 import os
 import warnings
+import asyncio
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -14,6 +15,7 @@ from ag_ui_langgraph import add_langgraph_fastapi_endpoint
 from deepagents import create_deep_agent
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
+from anthropic import APIStatusError
 
 from src.bounded_memory_saver import BoundedMemorySaver
 from src.query import query_data
@@ -25,7 +27,11 @@ from src.uk_tenders import fetch_uk_tenders
 load_dotenv()
 
 agent = create_deep_agent(
-    model=ChatAnthropic(model="claude-opus-4-6"),
+    model=ChatAnthropic(
+        model="claude-opus-4-6",
+        max_retries=3,
+        timeout=120.0,
+    ),
     tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
