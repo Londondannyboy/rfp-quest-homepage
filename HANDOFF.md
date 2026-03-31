@@ -106,6 +106,14 @@ Neon:
 - pgvector: enabled ✅
 - Indexes: title GIN full-text, buyer, deadline, embedding ivfflat ✅
 
+Tako:
+- TAKO_API_KEY: NOT SET — required for Priority 1.6
+  Add to Railway environment variables before implementing
+  visualise_tender_analytics tool
+- API endpoint: https://tako.com/api/v1/beta/visualize
+- Method: inline CSV in request body (no file upload)
+- API key: load from env only, never hardcode
+
 Local dev:
 - apps/agent/.env requires DATABASE_URL for local Neon access
 - Frontend: http://localhost:3002

@@ -62,6 +62,16 @@ Skills are SKILL.md files in apps/agent/skills/[name]/
 The agent reads them on demand. UK tender skill is at:
 apps/agent/skills/uk-tenders/SKILL.md
 
+Tako integration pattern (when implemented):
+  1. Run targeted Neon SQL query for the analytical question
+  2. Convert to CSV: import io, csv; buf = io.StringIO();
+     writer = csv.DictWriter(buf, fieldnames=rows[0].keys());
+     writer.writeheader(); writer.writerows(rows);
+     csv_string = buf.getvalue()
+  3. POST to Tako with csv=[csv_string] and query=user_question
+  4. Extract embed_url from response knowledge_cards[0]
+  5. Return embed_url to agent for widgetRenderer rendering
+
 ## EXPLICIT DO NOT LIST
 
 DO NOT use claude-3-opus-20240229 — it is Opus 3 from 
@@ -127,6 +137,14 @@ stripping channel_binding=require first. See D22.
 
 DO NOT change pyproject.toml without running uv lock and
 committing uv.lock in the same commit. See D23.
+
+DO NOT upload tenders to Tako as static files.
+Use the inline CSV method — query Neon, convert to CSV string,
+pass directly in the request body. This keeps charts live.
+See D27.
+
+DO NOT hardcode TAKO_API_KEY. Always use os.getenv("TAKO_API_KEY").
+See D28.
 
 ## WHEN YOU HIT A WALL
 
@@ -224,6 +242,14 @@ Neon:
 - DATABASE_URL: SET in Railway ✅
 - Note: strip channel_binding=require before psycopg2 connection
 
+Tako:
+- TAKO_API_KEY: must be set in Railway and local .env
+  Used by visualise_tender_analytics tool in main.py
+- Visualize endpoint: https://tako.com/api/v1/beta/visualize
+- Method: POST raw CSV strings inline — no file upload needed
+- Returns: embed_url for interactive chart iframe
+- Render via: widgetRenderer (existing pattern)
+
 ## PHASE ROADMAP
 
 **Phase 5c Priority 1** — COMPLETE ✅
@@ -250,6 +276,19 @@ Update system prompt after bulk load:
 
 Gate: SELECT COUNT(*) FROM tenders returns 10,000+ rows
 Gate: First query renders from Neon in under 5 seconds
+
+**Phase 5c Priority 1.6** — Tako live analytics integration
+New tool: visualise_tender_analytics
+  - Queries Neon tenders table with targeted SQL
+  - Converts result to inline CSV string
+  - Calls Tako /v1/beta/visualize with csv + natural language query
+  - Returns embed_url → rendered in widgetRenderer as iframe
+  - Zero file upload, zero sync delay — fully live Neon data
+
+Environment: TAKO_API_KEY required in Railway + local .env
+
+Gate: "Show me NHS contract spend by year"
+      → Tako chart iframe renders in conversation
 
 **Phase 5c Priority 2** — Instant tender card while AI analyses
 Emit tender data immediately on identify via CopilotKit state.

@@ -382,3 +382,38 @@ OUTCOME: Evaluate Zep at Phase 6 alongside company profile work.
 If Zep can ingest from Neon tenders table directly, use it for
 related tender discovery instead of pgvector similarity alone.
 REVERSIBLE: Yes — pgvector similarity remains as fallback.
+
+---
+
+## D27 — DATE: 2026-03-31
+DECISION: Use Tako Visualize API for live analytical charts over
+Neon tender data. No CSV upload, no file sync, no stale index.
+CONTEXT: Tako's /v1/beta/visualize endpoint accepts raw CSV strings
+inline in the request body. The agent can query Neon, convert results
+to CSV, and pass directly to Tako to get an embeddable chart iframe
+at query time. This is a fully live feed — every chart reflects
+current Neon data.
+ARCHITECTURE:
+  1. User asks analytical question
+     (e.g. "Show me NHS contract spend by year")
+  2. Agent runs targeted SQL query on Neon tenders table
+  3. Agent converts result to CSV string (2 lines of Python)
+  4. Agent calls POST https://tako.com/api/v1/beta/visualize
+     with csv=[csv_string], query=natural_language_question
+  5. Tako returns embed_url for an interactive chart iframe
+  6. Agent passes embed_url to widgetRenderer — chart renders
+TRIED AND FAILED: N/A — proactive architectural decision.
+OUTCOME: Two distinct agent capabilities:
+  - query_neon_tenders: fast individual tender lookup + HITL analysis
+  - visualise_tender_analytics: live Tako charts over full dataset
+REVERSIBLE: Yes — can fall back to Chart.js if Tako unavailable.
+
+---
+
+## D28 — DATE: 2026-03-31
+DECISION: TAKO_API_KEY is a required environment variable.
+CONTEXT: Tako API requires X-API-Key header on every request.
+Key: 1e6246140d6f0142eb3a6bbadbd6143cc30df5b8
+OUTCOME: Add to Railway environment variables and local .env
+Do not hardcode. Always load from os.getenv("TAKO_API_KEY").
+REVERSIBLE: No — required for Tako integration to function.

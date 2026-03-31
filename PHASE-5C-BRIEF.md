@@ -179,3 +179,179 @@ Agent should never call live API — Neon only.
 1. SELECT COUNT(*) FROM tenders; → expect 10,000+ rows
 2. Fresh browser query renders from Neon in under 5 seconds
 3. Railway logs show query_neon_tenders only, no fetch_uk_tenders
+
+## PRIORITY 1.6 — TAKO LIVE ANALYTICS INTEGRATION
+
+### Why this matters
+Neon handles individual tender lookup (fast, precise).
+Tako handles analytical questions over the full dataset
+(trends, comparisons, sector breakdowns, buyer analysis).
+Together they make RFP.quest a complete procurement
+intelligence platform — not just a tender finder.
+
+### Example queries Tako enables
+- "Show me UK government IT contract spend by year"
+- "Which buyers award the most contracts over £1M?"
+- "Compare NHS vs MOD procurement volumes"
+- "What sectors have the most contracts closing this month?"
+- "Show me contract value distribution by region"
+- "Which CPV codes have grown most in the last 2 years?"
+
+These cannot be answered by individual tender lookup.
+They require aggregation over the full dataset — which
+Neon + Tako handles perfectly.
+
+### New tool: visualise_tender_analytics
+
+Add to apps/agent/main.py alongside query_neon_tenders:
+```python
+@tool
+def visualise_tender_analytics(query: str, sql: str = "") -> str:
+    """
+    Answer analytical questions about UK government procurement
+    by querying the Neon tenders database and visualising the
+    results as an interactive Tako chart.
+
+    Use for: trends over time, comparisons between buyers/sectors,
+    spend breakdowns, volume analysis, contract value distributions.
+
+    Do NOT use for: finding a specific tender (use query_neon_tenders).
+
+    Args:
+        query: Natural language description of what to visualise
+               e.g. "NHS contract spend by year as a bar chart"
+        sql: Optional pre-built SQL query. If empty, agent builds one.
+
+    Returns:
+        Tako embed_url string for the chart iframe
+    """
+    import os
+    import io
+    import csv as csv_module
+    import httpx
+    import psycopg2
+
+    DATABASE_URL = os.getenv("DATABASE_URL", "").replace(
+        "channel_binding=require&", ""
+    ).replace("&channel_binding=require", "").replace(
+        "channel_binding=require", ""
+    )
+    TAKO_API_KEY = os.getenv("TAKO_API_KEY", "")
+
+    # If no SQL provided, use a sensible default based on query
+    if not sql:
+        sql = """
+            SELECT
+                title, buyer, value, status,
+                EXTRACT(year FROM deadline)::int as year,
+                source
+            FROM tenders
+            WHERE deadline IS NOT NULL
+            ORDER BY fetched_at DESC
+            LIMIT 500
+        """
+
+    # Query Neon
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            columns = [desc[0] for desc in cur.description]
+            rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+        conn.close()
+    except Exception as e:
+        return f"Database error: {str(e)}"
+
+    if not rows:
+        return "No data found for this query."
+
+    # Convert to CSV string
+    buf = io.StringIO()
+    writer = csv_module.DictWriter(buf, fieldnames=columns)
+    writer.writeheader()
+    writer.writerows(rows)
+    csv_string = buf.getvalue()
+
+    # Call Tako Visualize API
+    try:
+        response = httpx.post(
+            "https://tako.com/api/v1/beta/visualize",
+            headers={
+                "X-API-Key": TAKO_API_KEY,
+                "Content-Type": "application/json"
+            },
+            json={
+                "csv": [csv_string],
+                "query": query,
+                "model": "o4-mini",
+                "output_settings": {
+                    "knowledge_card_settings": {
+                        "image_dark_mode": True
+                    }
+                }
+            },
+            timeout=60.0
+        )
+        data = response.json()
+        cards = data.get("outputs", {}).get("knowledge_cards", [])
+        if cards:
+            return cards[0].get("embed_url", "No embed URL returned")
+        return "Tako returned no chart for this query."
+    except Exception as e:
+        return f"Tako API error: {str(e)}"
+```
+
+### Register in create_deep_agent tools list:
+
+tools=[
+    query_data,
+    plan_visualization,
+    *todo_tools,
+    generate_form,
+    fetch_uk_tenders,
+    query_neon_tenders,
+    visualise_tender_analytics,  # NEW
+]
+
+### Update system prompt in main.py:
+
+Add this section to the system prompt:
+
+## Tender Analytics with Tako
+
+When users ask analytical questions about procurement trends,
+sector comparisons, buyer analysis, or spend over time — use
+the visualise_tender_analytics tool.
+
+This tool queries the Neon database and generates a live
+interactive chart via Tako. The embed_url it returns should
+be passed to widgetRenderer as the html parameter, wrapped
+in an iframe:
+
+<iframe src="[embed_url]" width="100%" height="600px"
+frameborder="0" scrolling="no"></iframe>
+
+Decision guide:
+- "Find me a tender" → query_neon_tenders
+- "Analyse this tender" → query_neon_tenders + analyzeBidDecision
+- "Show me trends/comparisons/breakdowns" → visualise_tender_analytics
+- "Show me all tenders" → fetch_uk_tenders (as last resort)
+
+### Environment variables required:
+
+Railway: add TAKO_API_KEY=1e6246140d6f0142eb3a6bbadbd6143cc30df5b8
+Local: add to apps/agent/.env
+
+### Gate tests for Priority 1.6
+
+1. "Show me UK government contract spend by year"
+   → agent calls visualise_tender_analytics
+   → Tako returns embed_url
+   → interactive chart iframe renders in widgetRenderer
+
+2. "Which buyers award the most contracts?"
+   → agent calls visualise_tender_analytics
+   → bar chart of top buyers renders
+
+3. query_neon_tenders still works for individual lookup ✅
+4. analyzeBidDecision HITL still works ✅
