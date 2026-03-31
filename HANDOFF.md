@@ -8,167 +8,202 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
+Latest commit: b5885ca
 
-Gate tests confirmed passing on production:
-- Gate 1 PASSED: "Draw a red circle" → renders in widgetRenderer iframe ✅
-- Gate 2 PASSED: "Show me recent UK government tenders" → 20 cards ✅
-- Gate 3 PASSED: HITL bid decision card renders correctly ✅
-- Gate 3 NOTE: Must provide full tender details in prompt to avoid
-  double-call timeout. Example prompt:
-  "Analyse tender: BWV Support & Maintenance by Cambridgeshire
-  Constabulary, value £128K, deadline 31 Mar 2026"
-- Gate 3 NOTE: Agent recovers gracefully when HITL is ignored ✅
+### Phase 4c gate tests — ALL PASSING ✅
+1. "Draw a red circle" → red circle renders in widgetRenderer iframe ✅
+2. "Show me recent UK government tenders" → tender cards render ✅
+3. "Analyse tender: BWV Support & Maintenance" (no details needed)
+   → agent queries Neon first, HITL card renders ✅
+4. Ignoring HITL does not crash agent ✅
 
-Deployed fixes confirmed working:
-- export const maxDuration = 60 in apps/app/src/app/api/copilotkit/route.ts
-- with_retry wrapper (stop_after_attempt=3) on ChatAnthropic
-  in apps/agent/main.py
+### Phase 5c Priority 1 gate tests — ALL PASSING ✅
+1. Neon persistence: after "Show me recent UK tenders",
+   SELECT COUNT(*) FROM tenders returns 18+ rows ✅
+2. Single-call analyse: "Analyse tender: BWV Support & Maintenance"
+   → agent calls query_neon_tenders (not fetch_uk_tenders)
+   → HITL card renders within 45 seconds ✅
+3. Railway logs confirm single Opus call, not double ✅
 
-## WHAT IS BROKEN
+### What is deployed and working
+- Neon tenders table with pgvector (rfp-quest-production project,
+  US East 1, Neon project ID: calm-dust-71989092)
+- pgvector extension enabled
+- Full-text search index on title
+- fetch_uk_tenders saves to Neon on every call via psycopg2
+- query_neon_tenders tool deployed — searches Neon by title,
+  falls back to pgvector similarity search
+- Agent system prompt updated: query Neon first, only fetch live
+  feed if Neon returns nothing
+- DATABASE_URL set in Railway environment ✅
+- psycopg2-binary added to pyproject.toml and uv.lock regenerated ✅
+- channel_binding=require stripped from DATABASE_URL before
+  psycopg2 connection (psycopg2 incompatibility)
 
-1. DOUBLE-CALL TIMEOUT
-   "Analyse tender: X" without full details causes two sequential
-   Opus calls (fetch_uk_tenders + analyzeBidDecision) that together
-   exceed 60 seconds and silently fail.
-   Workaround: provide full tender details in the prompt.
-   Proper fix: Neon persistence (Phase 5c Priority 1).
+## WHAT IS BROKEN / INCOMPLETE
 
-2. NO TENDER PERSISTENCE
-   Tenders not in current live top 20 OCDS feed cannot be analysed.
-   Agent re-fetches entire live feed on every analyse request.
-   Fix: Neon DB persistence (Phase 5c).
+1. FIRST QUERY IS STILL SLOW
+   On first session load, if Neon has no recent tenders cached,
+   agent still calls fetch_uk_tenders (live OCDS feed, ~10-20s).
+   Root cause: no background ingestion pipeline.
+   Every tender should already be in Neon before any user asks.
+   Fix: Phase 5c Priority 1.5 — bulk loader + cron ingestion job.
 
-3. SILENT FAILURES
-   When Opus is overloaded and retries exhausted, user sees nothing.
-   No error message, no feedback, no graceful degradation.
-   Fix: loading states + graceful error UI (Phase 5c).
+2. NEON ONLY HAS ~18 TENDERS
+   Only tenders fetched by users in this session are in Neon.
+   Historical data going back years is not loaded.
+   Fix: bulk historical loader (see NEXT ACTION below).
 
-4. DEMO GALLERY
-   Still shows original OpenGenerativeUI prompts (binary search,
-   solar system etc). Not updated to RFP-focused prompts.
-   Fix: update demo-data.ts in Phase 5a.
+3. WITH_RETRY WRAPPER REMOVED
+   create_deep_agent inspects model.profile at startup.
+   RunnableRetry wrapper does not expose .profile.
+   Reverted to plain ChatAnthropic — no streaming retry on overload.
+   Fix: needs different retry approach (tool-level or deepagents config).
+   See DECISIONS.md D21.
 
-5. PHASE 5A/5B NOT REBUILT
-   RFP.quest branding and SSR tender feed were completed then rolled
-   back during emergency reset on 2026-03-31. Need clean rebuild on
-   top of current stable baseline.
+4. NO LOADING STATES
+   User sees nothing while query_neon_tenders or analyzeBidDecision
+   runs. Silent wait, no feedback.
+   Fix: Phase 5c Priority 3 — useRenderTool loading cards.
 
-## WHAT WAS LEARNED (2026-03-31)
+5. NO GRACEFUL ERROR UI
+   If Opus is overloaded and all retries fail, user sees silence.
+   Fix: Phase 5c Priority 3 — catch in route.ts.
 
-1. OVERLOAD DETECTION
-   anthropic.APIStatusError overloaded_error occurs INSIDE the stream
-   after connection established. max_retries on ChatAnthropic does NOT
-   catch it. with_retry wrapper on the runnable DOES catch it.
+6. DEMO GALLERY STALE
+   Still shows OpenGenerativeUI demos (binary search, solar system).
+   Fix: Phase 5a — update demo-data.ts.
 
-2. HEALTH CHECK IS UNRELIABLE
-   Railway /health returns 200 even when agent is overloaded.
-   Only a successful end-to-end render confirms readiness.
+7. NO RFP.QUEST BRANDING
+   Header still shows "Open Generative UI".
+   Fix: Phase 5a — update layout.tsx and page-client.tsx.
 
-3. VERCEL TIMEOUT
-   Default Vercel serverless timeout is 10 seconds. Opus generation
-   takes 15-45 seconds. Always add export const maxDuration = 60
-   to every API route in this project.
+8. NO SSR TENDER FEED
+   Tenders not in page HTML — not crawlable by search engines.
+   Fix: Phase 5b — server-side render tender titles.
 
-4. GATE TEST PROTOCOL
-   Never run gate tests during or immediately after heavy diagnostic
-   sessions. Multiple rapid Opus requests trigger overloaded_error
-   making working code appear broken when it is not.
-   Always wait 30+ minutes. Use fresh browser tab.
+## LAST COMMITS (authorised)
 
-5. PNPM VERSION LOCK
-   Never regenerate pnpm-lock.yaml with a different pnpm version.
-   Using npx pnpm@8 instead of pnpm@9 broke Vercel deployment.
-
-6. FORCE PUSH + VERCEL
-   Force pushing to reset main branch does not always trigger Vercel
-   webhook. Use empty commit to force redeploy:
-   git commit --allow-empty -m "chore: trigger redeploy"
-   git push origin main
-
-7. HITL RECOVERY
-   HITL component recovers gracefully when ignored by user.
-   Agent continues conversation without crash.
-
-8. DOUBLE-CALL TIMEOUT PATTERN
-   Two sequential Opus calls in one user prompt reliably exceeds
-   60 seconds. Architecture must avoid chaining fetch + analyse.
-   Neon persistence eliminates the need for the fetch call entirely.
-
-## LAST COMMITS
-
-e9e38e9 — fix: add retry backoff and timeout to ChatAnthropic
-d92aa92 — fix: add maxDuration 60s to prevent Vercel timeout
-55dabec — chore: trigger Vercel redeploy to Phase 4c baseline
-bc8faf6 — docs: sign-off corrections — Phase 4c complete
-All commits authorised.
+b5885ca — fix: pass base_model to create_deep_agent — RunnableRetry lacks .profile
+f23be00 — fix: regenerate uv.lock with psycopg2-binary dependency
+03882e5 — feat: Phase 5c Priority 1 — Neon persistence + pgvector + query_neon_tenders
 
 ## ENVIRONMENT STATE
+
+Railway (rfp-quest-generative-agent):
+- ANTHROPIC_API_KEY: SET ✅
+- LLM_MODEL: claude-opus-4-6 (hardcoded in main.py) ✅
+- DATABASE_URL: SET ✅ (rfp-quest-production Neon, US East 1)
+  Connection string uses sslmode=require only (channel_binding stripped)
 
 Vercel (rfp-quest-homepage):
 - LANGGRAPH_DEPLOYMENT_URL: SET ✅
   Value: https://rfp-quest-generative-agent-production.up.railway.app
 
-Railway (rfp-quest-generative-agent):
-- ANTHROPIC_API_KEY: SET ✅
-- LLM_MODEL: claude-opus-4-6 (hardcoded in main.py) ✅
-- DATABASE_URL: NOT SET — required for Phase 5c Neon persistence
+Neon:
+- Project: rfp-quest-production (calm-dust-71989092, US East 1)
+- Table: tenders (18 rows as of session end)
+- pgvector: enabled ✅
+- Indexes: title GIN full-text, buyer, deadline, embedding ivfflat ✅
 
-All required variables confirmed working in production.
-DATABASE_URL must be added to Railway before Phase 5c agent work.
+Local dev:
+- apps/agent/.env requires DATABASE_URL for local Neon access
+- Frontend: http://localhost:3002
+- Agent: http://localhost:8123
 
-## NEXT ACTION — Phase 5c Architecture
+## NEXT ACTION — Phase 5c Priority 1.5: Bulk Ingestion Pipeline
 
-Do NOT start any code until all three gate tests pass in a fresh
-browser session with no recent API activity (30+ min gap).
+The goal: every tender ever published should be in Neon BEFORE
+any user asks for it. The first query should hit Neon only —
+never the live feed. Feed fetching should become a background
+job, not a user-triggered action.
 
-Phase 5c implementation order (strict — do not reorder):
+### Step 1: Historical bulk loader
 
-PRIORITY 1: Neon tender persistence
-  a. Create tenders table in Neon with columns:
-     ocid (primary key), title, buyer, value, deadline,
-     status, cpv_codes, raw_json, embedding (vector),
-     source, fetched_at
-  b. Add pgvector extension to Neon instance
-  c. Update fetch_uk_tenders in apps/agent/src/uk_tenders.py to:
-     - Save each tender to Neon on fetch
-     - Generate and store text embedding for similarity search
-  d. Add query_neon_tenders tool to agent:
-     - Look up tender by title (fuzzy match)
-     - Return related tenders via pgvector similarity search
-  e. Update analyzeBidDecision flow:
-     - Query Neon first, skip fetch_uk_tenders entirely
-     - Single Opus call instead of two — fixes timeout permanently
-  f. Add DATABASE_URL to Railway environment
+Create: apps/agent/src/bulk_load_tenders.py
 
-PRIORITY 2: Instant tender card while AI analyses
-  - When agent identifies tender from Neon, immediately emit
-    tender data to frontend via copilotkit state
-  - Frontend renders static tender card instantly
-  - Opus analysis streams in alongside it
-  - User sees something in under 2 seconds
+This is a standalone Python script (not a tool, not part of the
+agent) that:
 
-PRIORITY 3: Loading states and graceful errors
-  - Show "Searching tenders..." when query_neon_tenders fires
-  - Show "Analysing opportunity..." when analyzeBidDecision fires
-  - If all retries fail, show: "I'm having trouble connecting
-    right now. Please try again in a moment."
-  - Never show silence to the user
+1. Pages through the OCDS API backwards from today
+   URL pattern:
+   https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?limit=100&format=json&publishedFrom=YYYY-MM-DD&publishedTo=YYYY-MM-DD
 
-PRIORITY 4: Rate limiting
-  - 5 free generative AI queries per session via localStorage
-  - SSR tender feed load does NOT count as a query
-  - After limit: "Create free account to continue" overlay
+2. Fetches in 7-day windows, walking backwards from today
+   Target: go back at least 2 years (2024-01-01)
+   Expected volume: tens of thousands of tenders, lightweight JSON
 
-PRIORITY 5: Neon Auth
-  - JWT-based, native Neon Auth, Next.js SDK
-  - No third-party auth providers
+3. For each release, upserts to Neon tenders table:
+   - ocid (primary key — skip if already exists)
+   - title, buyer, value, deadline, status, cpv_codes
+   - raw_json (full release JSON)
+   - source = 'ocds-bulk'
+   - fetched_at = NOW()
+   - embedding: generate using langchain OpenAIEmbeddings
+     on title + buyer concatenated string
 
-Technology decisions for Phase 5c:
-  - Database: Neon (Postgres) — already in use across portfolio
-  - Vector search: pgvector on same Neon instance
-  - Cache: NOT adding Redis — premature at current scale
-  - Memory/graph: NOT adding Zep yet — needs bid history first
-  - Multi-source ingestion: Phase 7+
+4. Batch inserts: 50 tenders per DB transaction for efficiency
+
+5. Progress logging: print count every 100 tenders
+
+6. Resumable: skips ocids already in DB (upsert ON CONFLICT DO NOTHING)
+
+Run locally:
+cd apps/agent
+uv run python src/bulk_load_tenders.py
+
+This is a one-time job. Run it once to populate Neon historically.
+It will take time but costs almost nothing — OCDS API is free,
+no auth required.
+
+### Step 2: Daily cron ingestion service
+
+Create: apps/agent/src/cron_ingest_tenders.py
+
+A lightweight script that:
+1. Fetches tenders published in the last 25 hours (overlap buffer)
+2. Upserts to Neon (same schema as bulk loader)
+3. Logs how many new tenders were added
+4. Exits cleanly
+
+This script is designed to be run as a Railway cron job daily.
+Do NOT add Redis, Temporal, or trigger.dev — Railway cron is sufficient.
+
+### Step 3: Update agent system prompt
+
+Once bulk loader has run and Neon has comprehensive data,
+update the system prompt in apps/agent/main.py:
+
+REMOVE this logic:
+"Only call fetch_uk_tenders if query_neon_tenders returns nothing"
+
+REPLACE with:
+"Never call fetch_uk_tenders directly. Always use query_neon_tenders.
+The Neon database is kept current by a background ingestion job.
+If query_neon_tenders returns no results, inform the user that
+no matching tenders were found — do not fall back to live fetch."
+
+This ensures the first user query is always fast (Neon lookup)
+and never triggers a slow live API call.
+
+### Step 4: Railway cron configuration
+
+In Railway dashboard, add a new cron service pointing at the same
+repo, root directory apps/agent, with command:
+uv run python src/cron_ingest_tenders.py
+
+Schedule: 0 6 * * * (daily at 6am UTC)
+This keeps Neon current with overnight UK government publications.
+
+### Step 5: Gate tests for Phase 5c Priority 1.5
+
+After bulk loader runs:
+1. SELECT COUNT(*) FROM tenders; → expect 10,000+ rows
+2. Fresh browser, "Show me recent UK government tenders"
+   → Railway logs show query_neon_tenders only, no fetch_uk_tenders
+   → Cards render in under 5 seconds (Neon lookup, no live API)
+3. "Analyse tender: [any tender title from 2024]"
+   → HITL card renders from Neon lookup, no live fetch needed
 
 ## DO NOT
 
@@ -181,8 +216,9 @@ DO NOT use max_retries on ChatAnthropic — use with_retry wrapper.
 DO NOT add Redis, Zep, or Supabase — use Neon only.
 DO NOT chain fetch_uk_tenders + analyzeBidDecision in same prompt.
 DO NOT push to main without checking git log first.
+DO NOT pass RunnableRetry to create_deep_agent — use base_model.
 
 ## SIGN-OFF STATUS
 
 DRAFT — must be reviewed and approved by Claude.ai before
-Phase 5c work begins.
+Phase 5c Priority 1.5 work begins.

@@ -17,11 +17,14 @@ replaced by any alternative framework or pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 4 and Phase 4c COMPLETE
+ACTIVE — Phase 4c COMPLETE, Phase 5c Priority 1 COMPLETE
 
-Agent backend deployed to Railway and fully functional.
-Frontend connected and visualizations working in production.
-Gate tests 3, 4, and 4c passed. HITL bid decisions working.
+Phase 5c Priority 1 confirmed working on production 2026-03-31:
+- Neon tenders table live with pgvector
+- fetch_uk_tenders saves to Neon on fetch
+- query_neon_tenders tool deployed
+- Agent queries Neon first, falls back to live fetch only if empty
+- Single-call analyse confirmed working: Neon lookup → HITL
 
 ## FROZEN SECTIONS
 
@@ -114,6 +117,17 @@ until Neon persistence is implemented. See D16.
 DO NOT add Redis, Supabase, or Zep to this project before Phase 7.
 Use Neon with pgvector only. See D19 and D20.
 
+DO NOT call fetch_uk_tenders as the primary data source once
+Neon bulk loader has run. All tender data should be in Neon.
+Only use fetch_uk_tenders as a fallback when Neon is empty.
+See D24.
+
+DO NOT pass the full Neon DATABASE_URL to psycopg2 without
+stripping channel_binding=require first. See D22.
+
+DO NOT change pyproject.toml without running uv lock and
+committing uv.lock in the same commit. See D23.
+
 ## WHEN YOU HIT A WALL
 
 Stop. Do not attempt an alternative approach.
@@ -166,6 +180,22 @@ CRITICAL NOTE: Gate test 3 requires full tender details in prompt.
 Do not ask agent to find tender first — double-call timeout.
 Do not run any gate test during active development sessions.
 
+Phase 5c Priority 1 (CONFIRMED ON PRODUCTION 2026-03-31):
+Prerequisites: 18+ rows in Neon tenders table.
+
+1. "Show me recent UK government tenders"
+   → Tender cards render ✅
+   → SELECT COUNT(*) FROM tenders returns 18+ rows ✅
+
+2. "Analyse tender: BWV Support & Maintenance"
+   (no buyer/value/deadline provided)
+   → Agent calls query_neon_tenders (not fetch_uk_tenders) ✅
+   → HITL bid decision card renders within 45 seconds ✅
+
+CRITICAL NOTE: Gate test 2 now works WITHOUT full tender details
+because Neon lookup replaces the live feed fetch.
+The old workaround (providing full details) is no longer needed.
+
 ## ENVIRONMENT
 
 Frontend production: https://rfp-quest-homepage.vercel.app
@@ -186,64 +216,73 @@ Required environment variables:
 OCDS API (no auth required):
 https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search
 
+Neon:
+- Project: rfp-quest-production (US East 1)
+- Project ID: calm-dust-71989092
+- Table: tenders (18 rows as of 2026-03-31, growing)
+- pgvector: enabled
+- DATABASE_URL: SET in Railway ✅
+- Note: strip channel_binding=require before psycopg2 connection
+
 ## PHASE ROADMAP
 
-**Phase 5a** — REBUILD: RFP.quest rebrand
-Update page-client.tsx header to "RFP.quest" with Beta badge.
-Update layout.tsx title to "RFP.quest — UK Procurement Intelligence".
-Update demo-data.ts with RFP-focused example prompts replacing
-original OpenGenerativeUI prompts (binary search, solar system etc).
-Gate: page header shows "RFP.quest" with Beta badge.
+**Phase 5c Priority 1** — COMPLETE ✅
+Neon tenders table, pgvector, query_neon_tenders tool,
+fetch saves to Neon, agent queries Neon first.
 
-**Phase 5b** — REBUILD: SSR tender feed
-Server-side render tender titles into page HTML for crawler indexing.
-Required before rfp.quest domain switch — domain currently ranks
-page 1 for "RFP platform UK" and must not lose SEO authority.
-Gate: curl production URL must contain tender title in raw HTML.
-Gate: CopilotKit chat still renders generative UI correctly.
+**Phase 5c Priority 1.5** — NEXT: Bulk ingestion pipeline
+Create apps/agent/src/bulk_load_tenders.py:
+  - Pages OCDS API backwards in 7-day windows from today to 2024-01-01
+  - Upserts to Neon in batches of 50
+  - Generates embeddings for each tender on insert
+  - Resumable (skips existing ocids)
+  - One-time historical load
 
-**Phase 5c** — Neon persistence + pgvector + loading states
-Priority 1: Neon tenders table with pgvector
-  - tenders table: ocid, title, buyer, value, deadline, status,
-    cpv_codes, raw_json, embedding vector(1536), source, fetched_at
-  - Enable pgvector extension on Neon instance
-  - fetch_uk_tenders saves to Neon on every call
-  - query_neon_tenders tool: exact title lookup + similarity search
-  - analyzeBidDecision queries Neon first, skips fetch entirely
-  - Add DATABASE_URL to Railway environment variables
+Create apps/agent/src/cron_ingest_tenders.py:
+  - Fetches last 25 hours of OCDS publications
+  - Upserts new tenders to Neon
+  - Railway cron: 0 6 * * * (daily 6am UTC)
 
-Priority 2: Instant tender card while AI analyses
-  - Emit tender data immediately on identify via CopilotKit state
-  - Frontend renders static card while Opus streams analysis
+Update system prompt after bulk load:
+  - Remove fetch_uk_tenders fallback entirely
+  - Agent never calls live API — Neon only
+  - First user query becomes instant
 
-Priority 3: Loading states and graceful errors
-  - "Searching tenders..." shown when query_neon_tenders fires
-  - "Analysing opportunity..." shown when analyzeBidDecision fires
-  - Graceful message if retries exhausted: try again prompt
+Gate: SELECT COUNT(*) FROM tenders returns 10,000+ rows
+Gate: First query renders from Neon in under 5 seconds
 
-Priority 4: Rate limiting
-  - 5 free queries per session via localStorage
-  - SSR feed loads do not count
-  - "Create account to continue" overlay after limit
+**Phase 5c Priority 2** — Instant tender card while AI analyses
+Emit tender data immediately on identify via CopilotKit state.
+Frontend renders static card while Opus streams analysis.
 
-Priority 5: Neon Auth
-  - JWT-based, native Neon Auth, Next.js SDK
-  - No third-party providers
+**Phase 5c Priority 3** — Loading states and graceful errors
+useRenderTool loading cards for query_neon_tenders and
+analyzeBidDecision. Graceful error message if Opus overloaded.
 
-**Phase 6** — Company profile + bid tracker
-Registration captures: company name, Companies House number,
-sectors (SIC codes), CPV codes, certifications (ISO 27001, ISO 9001,
-Cyber Essentials, BS 7858), framework memberships (G-Cloud 14,
-DOS 6, Crown Commercial lots, NHS frameworks).
-Bid tracker Neon table: one row per tender flagged as interested.
-Fields: tender_id, ocid, title, buyer, value, deadline,
-status (interested/bidding/submitted/won/lost), notes.
+**Phase 5c Priority 4** — Rate limiting
+5 free queries per session via localStorage.
+"Create account to continue" overlay after limit.
 
-**Phase 7** — Matched and intelligent feed + Redis cache
-Agent filters live OCDS stream against company CPV codes.
-Only relevant tenders shown by default for logged-in users.
-Zep graph database for relationship mapping between tenders,
-buyers, and bid outcomes. Redis cache layer if Neon latency
-becomes noticeable at scale.
-Multi-source ingestion: Find a Tender, Proactis, Delta eSourcing.
+**Phase 5c Priority 5** — Neon Auth
+JWT-based, native Neon Auth, Next.js SDK.
+
+**Phase 5a** — RFP.quest rebrand (cosmetic, ~30 min)
+Header, title, Beta badge, demo-data.ts prompts.
+
+**Phase 5b** — SSR tender feed (SEO, ~30 min)
+Server-side render tender titles into page HTML.
+Required before rfp.quest domain switch.
+
+**Phase 6** — Company profile + bid tracker + Zep evaluation
+Company registration: name, Companies House number, CPV codes,
+certifications, framework memberships.
+Bid tracker table in Neon.
+Evaluate Zep for entity relationship graph on top of Neon data.
+Zep can build buyer/CPV/tender relationships from existing data
+without needing bid outcomes. Cheaper than Neo4j.
+
+**Phase 7** — Intelligent matched feed + multi-source ingestion
+Agent filters Neon by company CPV codes for logged-in users.
+Redis cache if Neon latency becomes noticeable at scale.
+Add Find a Tender, Proactis, Delta eSourcing as sources.
 source column in tenders table tracks provenance.

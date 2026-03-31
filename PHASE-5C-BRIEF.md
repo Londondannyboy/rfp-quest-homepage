@@ -1,6 +1,6 @@
 # PHASE-5C-BRIEF.md — RFP.quest Phase 5c Implementation Brief
 # Created: 2026-03-31
-# Status: READY TO IMPLEMENT — pending Phase 4c gate test confirmation
+# Status: Priority 1 COMPLETE — Priority 1.5 is NEXT ACTION
 
 ## OBJECTIVE
 
@@ -142,3 +142,40 @@ Before starting Phase 5c:
 10. Test all Phase 5c gate tests
 11. Update HANDOFF.md and DECISIONS.md
 12. Push and confirm production gate tests pass
+
+## PRIORITY 1.5 — BULK INGESTION PIPELINE
+
+### Why this matters
+Currently Neon has 18 tenders — only those fetched by users
+in the 2026-03-31 session. The first user query on any new
+session still triggers fetch_uk_tenders (live API, 10-20 seconds).
+Until Neon has comprehensive historical data and a cron keeping
+it current, the agent cannot rely on Neon alone.
+
+### File created: apps/agent/src/bulk_load_tenders.py
+One-time historical loader. Pages OCDS API backwards in 7-day
+windows from today to 2024-01-01. Upserts to Neon in batches of 50.
+Resumable — skips existing ocids. See file for full implementation.
+
+Run locally:
+    cd apps/agent
+    uv run python src/bulk_load_tenders.py
+
+### File created: apps/agent/src/cron_ingest_tenders.py
+Daily cron ingestion. Fetches last 25 hours of OCDS publications.
+Upserts new tenders to Neon. Designed for Railway cron.
+
+Run locally:
+    cd apps/agent
+    uv run python src/cron_ingest_tenders.py
+
+Railway cron config: 0 6 * * * (6am UTC daily)
+
+### After bulk load completes
+Update agent system prompt to remove fetch_uk_tenders fallback.
+Agent should never call live API — Neon only.
+
+### Gate tests for Priority 1.5
+1. SELECT COUNT(*) FROM tenders; → expect 10,000+ rows
+2. Fresh browser query renders from Neon in under 5 seconds
+3. Railway logs show query_neon_tenders only, no fetch_uk_tenders

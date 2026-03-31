@@ -305,3 +305,80 @@ OUTCOME: Reverted to model=base_model (plain ChatAnthropic).
 Overload retry must be handled differently — either inside uk_tenders.py
 tool level, or via deepagents built-in retry config if available.
 REVERSIBLE: Yes — retry solution needed but approach must change.
+
+---
+
+## D22 — DATE: 2026-03-31
+DECISION: psycopg2 requires channel_binding stripped from Neon URL.
+CONTEXT: Neon default connection strings include
+channel_binding=require. psycopg2-binary does not support this
+parameter and throws a connection error silently.
+TRIED AND FAILED: Passing full Neon DATABASE_URL directly to
+psycopg2 — silent connection failure, zero rows written to Neon.
+OUTCOME: Strip channel_binding from URL before connecting:
+db_url = os.getenv("DATABASE_URL","").replace(
+    "channel_binding=require&","").replace(
+    "&channel_binding=require","").replace(
+    "channel_binding=require","")
+Use sslmode=require only. This is applied in uk_tenders.py.
+REVERSIBLE: Yes — asyncpg supports channel_binding natively.
+
+---
+
+## D23 — DATE: 2026-03-31
+DECISION: uv.lock must be regenerated when pyproject.toml changes.
+CONTEXT: Railway uses uv sync --locked which requires uv.lock to
+match pyproject.toml exactly. Adding psycopg2-binary to pyproject.toml
+without regenerating uv.lock caused build failure:
+"lockfile needs to be updated but --locked was provided."
+TRIED AND FAILED: Committing pyproject.toml changes without
+updating uv.lock — Railway build fails with exit code 1.
+OUTCOME: Always run uv lock from apps/agent/ after changing
+pyproject.toml, then commit both files together.
+REVERSIBLE: N/A — operational protocol.
+
+---
+
+## D24 — DATE: 2026-03-31
+DECISION: Never call fetch_uk_tenders as a user-triggered action.
+CONTEXT: fetch_uk_tenders hits the live OCDS API and takes 10-20
+seconds. When chained with analyzeBidDecision it reliably times out.
+Even alone it is slow for users. All tender data should be in Neon
+before users ask for it via background ingestion.
+TRIED AND FAILED: Relying on fetch_uk_tenders as the primary data
+source — first user query always slow, double-call always times out.
+OUTCOME: fetch_uk_tenders is now a fallback only. Once bulk loader
+runs and cron is active, system prompt will be updated to remove
+the fallback entirely. All queries go to Neon.
+REVERSIBLE: Yes — can re-enable live fetch if Neon is unavailable.
+
+---
+
+## D25 — DATE: 2026-03-31
+DECISION: Use Railway cron for daily ingestion. No Temporal or
+trigger.dev at this stage.
+CONTEXT: Considered trigger.dev (observability, retries), Temporal
+(workflow orchestration), and Railway cron (simple, free).
+At current scale — one daily OCDS poll, ~50-200 new tenders per day,
+lightweight JSON — Railway cron is sufficient and adds no cost.
+Trigger.dev and Temporal add infrastructure complexity not yet needed.
+OUTCOME: cron_ingest_tenders.py as a Railway cron service,
+schedule 0 6 * * * (6am UTC daily).
+Revisit trigger.dev in Phase 7 when multi-source ingestion begins.
+REVERSIBLE: Yes.
+
+---
+
+## D26 — DATE: 2026-03-31
+DECISION: Zep moved from Phase 7 to Phase 6 consideration.
+CONTEXT: Originally Zep was deferred to Phase 7 because it needs
+bid history data to build meaningful graph relationships. However
+Zep is significantly cheaper than Neo4j and has a hosted option.
+Use case: once tenders are bulk-loaded into Neon, Zep can build
+entity relationships between buyers, CPV codes, and tender patterns
+without requiring bid outcomes first. The tender data itself is
+enough to seed useful relationships.
+OUTCOME: Evaluate Zep at Phase 6 alongside company profile work.
+If Zep can ingest from Neon tenders table directly, use it for
+related tender discovery instead of pgvector similarity alone.
+REVERSIBLE: Yes — pgvector similarity remains as fallback.
