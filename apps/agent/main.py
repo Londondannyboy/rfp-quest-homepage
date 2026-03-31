@@ -26,12 +26,19 @@ from src.uk_tenders import fetch_uk_tenders
 
 load_dotenv()
 
+base_model = ChatAnthropic(
+    model="claude-opus-4-6",
+    timeout=120.0,
+)
+
+model_with_retry = base_model.with_retry(
+    retry_if_exception_type=(Exception,),
+    wait_exponential_jitter=True,
+    stop_after_attempt=3,
+)
+
 agent = create_deep_agent(
-    model=ChatAnthropic(
-        model="claude-opus-4-6",
-        max_retries=3,
-        timeout=120.0,
-    ),
+    model=model_with_retry,
     tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
