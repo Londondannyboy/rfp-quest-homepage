@@ -291,3 +291,17 @@ OUTCOME: tenders table includes embedding vector(1536) column.
 query_neon_tenders tool supports both exact title lookup and
 similarity search. Related tenders surface automatically in analysis.
 REVERSIBLE: Yes — column can be dropped if not used.
+
+---
+
+## D21 — DATE: 2026-03-31
+DECISION: with_retry wrapper is incompatible with create_deep_agent.
+CONTEXT: create_deep_agent (deepagents library) inspects model.profile
+at startup. RunnableRetry wrapper does not expose .profile, causing
+AttributeError crash on Railway startup.
+TRIED AND FAILED: model=base_model.with_retry(stop_after_attempt=3)
+passed to create_deep_agent — crashes with AttributeError at startup.
+OUTCOME: Reverted to model=base_model (plain ChatAnthropic).
+Overload retry must be handled differently — either inside uk_tenders.py
+tool level, or via deepagents built-in retry config if available.
+REVERSIBLE: Yes — retry solution needed but approach must change.
