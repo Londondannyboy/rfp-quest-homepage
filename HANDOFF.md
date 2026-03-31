@@ -11,222 +11,199 @@ Branch: main
 Latest commit: b5885ca
 
 ### Phase 4c gate tests — ALL PASSING ✅
-1. "Draw a red circle" → red circle renders in widgetRenderer iframe ✅
+1. "Draw a red circle" → red circle in widgetRenderer iframe ✅
 2. "Show me recent UK government tenders" → tender cards render ✅
 3. "Analyse tender: BWV Support & Maintenance" (no details needed)
    → agent queries Neon first, HITL card renders ✅
 4. Ignoring HITL does not crash agent ✅
 
 ### Phase 5c Priority 1 gate tests — ALL PASSING ✅
-1. Neon persistence: after "Show me recent UK tenders",
-   SELECT COUNT(*) FROM tenders returns 18+ rows ✅
-2. Single-call analyse: "Analyse tender: BWV Support & Maintenance"
-   → agent calls query_neon_tenders (not fetch_uk_tenders)
+1. Neon persistence: SELECT COUNT(*) FROM tenders → 18+ rows ✅
+2. Single-call analyse: query_neon_tenders fires (not fetch_uk)
    → HITL card renders within 45 seconds ✅
-3. Railway logs confirm single Opus call, not double ✅
 
 ### What is deployed and working
-- Neon tenders table with pgvector (rfp-quest-production project,
-  US East 1, Neon project ID: calm-dust-71989092)
-- pgvector extension enabled
-- Full-text search index on title
-- fetch_uk_tenders saves to Neon on every call via psycopg2
-- query_neon_tenders tool deployed — searches Neon by title,
-  falls back to pgvector similarity search
-- Agent system prompt updated: query Neon first, only fetch live
-  feed if Neon returns nothing
-- DATABASE_URL set in Railway environment ✅
-- psycopg2-binary added to pyproject.toml and uv.lock regenerated ✅
-- channel_binding=require stripped from DATABASE_URL before
-  psycopg2 connection (psycopg2 incompatibility)
+- Neon tenders table with pgvector (project: rfp-quest-production,
+  ID: calm-dust-71989092, US East 1)
+- pgvector, full-text and ivfflat indexes enabled
+- fetch_uk_tenders saves to Neon on every call (psycopg2)
+- query_neon_tenders tool: full-text → pgvector fallback
+- Agent system prompt: Neon first, live fetch only if empty
+- DATABASE_URL set in Railway ✅
+- psycopg2-binary in pyproject.toml + uv.lock regenerated ✅
+- channel_binding stripped from DATABASE_URL before psycopg2 ✅
 
 ## WHAT IS BROKEN / INCOMPLETE
 
-1. FIRST QUERY IS STILL SLOW
-   On first session load, if Neon has no recent tenders cached,
-   agent still calls fetch_uk_tenders (live OCDS feed, ~10-20s).
-   Root cause: no background ingestion pipeline.
-   Every tender should already be in Neon before any user asks.
-   Fix: Phase 5c Priority 1.5 — bulk loader + cron ingestion job.
+1. FIRST QUERY STILL SLOW IF NEON IS EMPTY
+   Only 18 tenders in Neon. First query on fresh session may
+   still trigger fetch_uk_tenders (live API, 10-20s).
+   Fix: run bulk_load_tenders.py (see NEXT ACTION).
 
-2. NEON ONLY HAS ~18 TENDERS
-   Only tenders fetched by users in this session are in Neon.
-   Historical data going back years is not loaded.
-   Fix: bulk historical loader (see NEXT ACTION below).
+2. WITH_RETRY WRAPPER REMOVED
+   create_deep_agent checks model.profile at startup.
+   RunnableRetry wrapper does not expose .profile — crashes.
+   Reverted to plain ChatAnthropic. No streaming retry on overload.
+   Fix: needs different retry approach. See D21.
 
-3. WITH_RETRY WRAPPER REMOVED
-   create_deep_agent inspects model.profile at startup.
-   RunnableRetry wrapper does not expose .profile.
-   Reverted to plain ChatAnthropic — no streaming retry on overload.
-   Fix: needs different retry approach (tool-level or deepagents config).
-   See DECISIONS.md D21.
+3. NO LOADING STATES
+   User sees nothing while query_neon_tenders or
+   analyzeBidDecision runs.
+   Fix: Phase 5c Priority 3.
 
-4. NO LOADING STATES
-   User sees nothing while query_neon_tenders or analyzeBidDecision
-   runs. Silent wait, no feedback.
-   Fix: Phase 5c Priority 3 — useRenderTool loading cards.
+4. NO GRACEFUL ERROR UI
+   Silent failure when Opus overloaded and retries exhausted.
+   Fix: Phase 5c Priority 3.
 
-5. NO GRACEFUL ERROR UI
-   If Opus is overloaded and all retries fail, user sees silence.
-   Fix: Phase 5c Priority 3 — catch in route.ts.
+5. TAKO NOT YET IMPLEMENTED
+   visualise_tender_analytics tool not yet built.
+   TAKO_API_KEY not yet set in Railway.
+   Fix: Phase 5c Priority 1.6 (after bulk load).
 
 6. DEMO GALLERY STALE
-   Still shows OpenGenerativeUI demos (binary search, solar system).
-   Fix: Phase 5a — update demo-data.ts.
+   Still shows OpenGenerativeUI demos.
+   Fix: Phase 5a.
 
 7. NO RFP.QUEST BRANDING
    Header still shows "Open Generative UI".
-   Fix: Phase 5a — update layout.tsx and page-client.tsx.
+   Fix: Phase 5a.
 
 8. NO SSR TENDER FEED
-   Tenders not in page HTML — not crawlable by search engines.
-   Fix: Phase 5b — server-side render tender titles.
+   Tenders not crawlable by search engines.
+   Fix: Phase 5b.
 
-## LAST COMMITS (authorised)
+## LAST COMMITS (all authorised)
 
-b5885ca — fix: pass base_model to create_deep_agent — RunnableRetry lacks .profile
-f23be00 — fix: regenerate uv.lock with psycopg2-binary dependency
-03882e5 — feat: Phase 5c Priority 1 — Neon persistence + pgvector + query_neon_tenders
+b5885ca — fix: pass base_model to create_deep_agent
+f23be00 — fix: regenerate uv.lock with psycopg2-binary
+03882e5 — feat: Phase 5c Priority 1 — Neon + pgvector + query_neon_tenders
 
 ## ENVIRONMENT STATE
 
 Railway (rfp-quest-generative-agent):
 - ANTHROPIC_API_KEY: SET ✅
-- LLM_MODEL: claude-opus-4-6 (hardcoded in main.py) ✅
-- DATABASE_URL: SET ✅ (rfp-quest-production Neon, US East 1)
-  Connection string uses sslmode=require only (channel_binding stripped)
+- DATABASE_URL: SET ✅ (sslmode=require, channel_binding stripped)
+- TAKO_API_KEY: NOT SET ❌ — required for Phase 5c Priority 1.6
 
 Vercel (rfp-quest-homepage):
 - LANGGRAPH_DEPLOYMENT_URL: SET ✅
-  Value: https://rfp-quest-generative-agent-production.up.railway.app
 
 Neon:
 - Project: rfp-quest-production (calm-dust-71989092, US East 1)
-- Table: tenders (18 rows as of session end)
+- Table: tenders (18 rows — bulk load will bring to 10,000+)
 - pgvector: enabled ✅
-- Indexes: title GIN full-text, buyer, deadline, embedding ivfflat ✅
 
-Tako:
-- TAKO_API_KEY: NOT SET — required for Priority 1.6
-  Add to Railway environment variables before implementing
-  visualise_tender_analytics tool
-- API endpoint: https://tako.com/api/v1/beta/visualize
-- Method: inline CSV in request body (no file upload)
-- API key: load from env only, never hardcode
+Local dev (apps/agent/.env):
+- ANTHROPIC_KEY: must be set
+- DATABASE_URL: must be set (same as Railway, channel_binding stripped)
+- TAKO_API_KEY: must be set before Priority 1.6 work
 
-Local dev:
-- apps/agent/.env requires DATABASE_URL for local Neon access
-- Frontend: http://localhost:3002
-- Agent: http://localhost:8123
+## NEXT ACTION — Phase 5c Priority 1.5: Run bulk loader
 
-## NEXT ACTION — Phase 5c Priority 1.5: Bulk Ingestion Pipeline
+Step 1: Confirm bulk loader file exists:
+  cat apps/agent/src/bulk_load_tenders.py
 
-The goal: every tender ever published should be in Neon BEFORE
-any user asks for it. The first query should hit Neon only —
-never the live feed. Feed fetching should become a background
-job, not a user-triggered action.
+Step 2: Run bulk historical load:
+  cd apps/agent
+  uv run python src/bulk_load_tenders.py
+  Expected runtime: 30-90 minutes
+  Expected output: 10,000+ tenders in Neon
 
-### Step 1: Historical bulk loader
+Step 3: Verify:
+  Connect to Neon and run:
+  SELECT COUNT(*) FROM tenders;
+  SELECT source, COUNT(*) FROM tenders GROUP BY source;
+  Expected: 10,000+ rows, source = 'ocds-bulk'
 
-Create: apps/agent/src/bulk_load_tenders.py
+Step 4: Configure Railway cron service:
+  New Railway service → same repo → root: apps/agent
+  Start command: uv run python src/cron_ingest_tenders.py
+  Cron schedule: 0 6 * * * (6am UTC daily)
 
-This is a standalone Python script (not a tool, not part of the
-agent) that:
+Step 5: Update agent system prompt in apps/agent/main.py:
+  Remove the fetch_uk_tenders fallback from system prompt.
+  Agent should never call live API — Neon only.
+  Commit and push.
 
-1. Pages through the OCDS API backwards from today
-   URL pattern:
-   https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?limit=100&format=json&publishedFrom=YYYY-MM-DD&publishedTo=YYYY-MM-DD
+Step 6: Phase 5c Priority 1.6 — Tako integration:
+  Add TAKO_API_KEY to Railway environment variables.
+  Add visualise_tender_analytics tool to apps/agent/main.py.
+  See DECISIONS.md D27 for full architecture.
+  Tool queries Neon → CSV string → Tako visualize API → embed_url.
 
-2. Fetches in 7-day windows, walking backwards from today
-   Target: go back at least 2 years (2024-01-01)
-   Expected volume: tens of thousands of tenders, lightweight JSON
+Step 7: Gate test after bulk load + Tako:
+  a. "Show me recent UK government tenders"
+     → Neon only, under 3 seconds
+  b. "Analyse tender: [any 2024 tender title]"
+     → Neon lookup works, HITL renders
+  c. "Show me NHS contract spend by year"
+     → Tako chart iframe renders in widgetRenderer
 
-3. For each release, upserts to Neon tenders table:
-   - ocid (primary key — skip if already exists)
-   - title, buyer, value, deadline, status, cpv_codes
-   - raw_json (full release JSON)
-   - source = 'ocds-bulk'
-   - fetched_at = NOW()
-   - embedding: generate using langchain OpenAIEmbeddings
-     on title + buyer concatenated string
+## PHASE ROADMAP
 
-4. Batch inserts: 50 tenders per DB transaction for efficiency
+**Phase 5c Priority 1** — COMPLETE ✅
+Neon tenders table, pgvector, query_neon_tenders,
+fetch saves to Neon, agent queries Neon first.
 
-5. Progress logging: print count every 100 tenders
+**Phase 5c Priority 1.5** — NEXT: Run bulk ingestion
+  - Run bulk_load_tenders.py (one-time, 10,000+ rows)
+  - Configure Railway cron (cron_ingest_tenders.py, daily 6am)
+  - Remove fetch_uk_tenders fallback from system prompt
+  - Gate: SELECT COUNT(*) FROM tenders → 10,000+ rows
+  - Gate: first query renders from Neon in under 3 seconds
 
-6. Resumable: skips ocids already in DB (upsert ON CONFLICT DO NOTHING)
+**Phase 5c Priority 1.6** — Tako live analytics
+  - Add TAKO_API_KEY to Railway
+  - Add visualise_tender_analytics tool (Neon SQL → CSV → Tako)
+  - Uses POST /v1/beta/visualize with inline csv parameter
+  - Returns embed_url → rendered in widgetRenderer
+  - Gate: "Show me NHS contract spend by year" → Tako chart renders
 
-Run locally:
-cd apps/agent
-uv run python src/bulk_load_tenders.py
+**Phase 5c Priority 2** — Instant tender card while AI analyses
+  Emit tender data immediately via CopilotKit state on identify.
+  Frontend renders static card while Opus streams analysis.
 
-This is a one-time job. Run it once to populate Neon historically.
-It will take time but costs almost nothing — OCDS API is free,
-no auth required.
+**Phase 5c Priority 3** — Loading states + graceful errors
+  useRenderTool loading cards for query_neon_tenders and
+  analyzeBidDecision. Graceful error message if Opus overloaded.
 
-### Step 2: Daily cron ingestion service
+**Phase 5c Priority 4** — Rate limiting
+  5 free queries per session via localStorage.
+  "Create account to continue" overlay after limit.
 
-Create: apps/agent/src/cron_ingest_tenders.py
+**Phase 5c Priority 5** — Neon Auth
+  JWT-based, native Neon Auth, Next.js SDK.
 
-A lightweight script that:
-1. Fetches tenders published in the last 25 hours (overlap buffer)
-2. Upserts to Neon (same schema as bulk loader)
-3. Logs how many new tenders were added
-4. Exits cleanly
+**Phase 5a** — RFP.quest rebrand (~30 min, cosmetic)
+  Header, title, Beta badge, demo-data.ts RFP prompts.
 
-This script is designed to be run as a Railway cron job daily.
-Do NOT add Redis, Temporal, or trigger.dev — Railway cron is sufficient.
+**Phase 5b** — SSR tender feed (~30 min, SEO)
+  Server-side render tender titles. Required before domain switch.
 
-### Step 3: Update agent system prompt
+**Phase 6** — Company profile + bid tracker + Zep evaluation
+  Registration: company name, Companies House, CPV codes,
+  certifications, framework memberships.
+  Bid tracker table in Neon.
+  Evaluate Zep for buyer/CPV/tender relationship graph.
 
-Once bulk loader has run and Neon has comprehensive data,
-update the system prompt in apps/agent/main.py:
-
-REMOVE this logic:
-"Only call fetch_uk_tenders if query_neon_tenders returns nothing"
-
-REPLACE with:
-"Never call fetch_uk_tenders directly. Always use query_neon_tenders.
-The Neon database is kept current by a background ingestion job.
-If query_neon_tenders returns no results, inform the user that
-no matching tenders were found — do not fall back to live fetch."
-
-This ensures the first user query is always fast (Neon lookup)
-and never triggers a slow live API call.
-
-### Step 4: Railway cron configuration
-
-In Railway dashboard, add a new cron service pointing at the same
-repo, root directory apps/agent, with command:
-uv run python src/cron_ingest_tenders.py
-
-Schedule: 0 6 * * * (daily at 6am UTC)
-This keeps Neon current with overnight UK government publications.
-
-### Step 5: Gate tests for Phase 5c Priority 1.5
-
-After bulk loader runs:
-1. SELECT COUNT(*) FROM tenders; → expect 10,000+ rows
-2. Fresh browser, "Show me recent UK government tenders"
-   → Railway logs show query_neon_tenders only, no fetch_uk_tenders
-   → Cards render in under 5 seconds (Neon lookup, no live API)
-3. "Analyse tender: [any tender title from 2024]"
-   → HITL card renders from Neon lookup, no live fetch needed
+**Phase 7** — Intelligent matched feed + multi-source ingestion
+  CPV-filtered feed for logged-in users. Redis if needed.
+  Find a Tender, Proactis, Delta eSourcing as sources.
 
 ## DO NOT
 
-DO NOT start Phase 5 without confirming all gate tests pass first.
-DO NOT regenerate pnpm-lock.yaml — use existing file.
-DO NOT change CopilotKit package versions from 1.54.0-next.6.
-DO NOT change Railway agent model from claude-opus-4-6.
-DO NOT run gate tests during heavy API usage sessions.
-DO NOT use max_retries on ChatAnthropic — use with_retry wrapper.
-DO NOT add Redis, Zep, or Supabase — use Neon only.
-DO NOT chain fetch_uk_tenders + analyzeBidDecision in same prompt.
-DO NOT push to main without checking git log first.
-DO NOT pass RunnableRetry to create_deep_agent — use base_model.
+DO NOT call fetch_uk_tenders once bulk load has run.
+DO NOT pass full Neon DATABASE_URL to psycopg2 — strip
+  channel_binding first. See D22.
+DO NOT change pyproject.toml without running uv lock. See D23.
+DO NOT regenerate pnpm-lock.yaml with pnpm@8. See D18.
+DO NOT run gate tests during heavy API sessions. See D15.
+DO NOT use with_retry wrapper on model passed to
+  create_deep_agent — crashes with AttributeError. See D21.
+DO NOT hardcode TAKO_API_KEY. Use os.getenv only. See D28.
+DO NOT upload tenders to Tako as static files.
+  Use inline CSV method. See D27.
 
 ## SIGN-OFF STATUS
 
-DRAFT — must be reviewed and approved by Claude.ai before
-Phase 5c Priority 1.5 work begins.
+DRAFT — must be reviewed and approved by Claude.ai

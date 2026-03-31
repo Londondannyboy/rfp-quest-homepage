@@ -139,12 +139,16 @@ DO NOT change pyproject.toml without running uv lock and
 committing uv.lock in the same commit. See D23.
 
 DO NOT upload tenders to Tako as static files.
-Use the inline CSV method — query Neon, convert to CSV string,
-pass directly in the request body. This keeps charts live.
-See D27.
+Use inline CSV method — query Neon, convert to CSV string,
+pass in request body. Charts are live Neon data. See D27.
 
-DO NOT hardcode TAKO_API_KEY. Always use os.getenv("TAKO_API_KEY").
-See D28.
+DO NOT hardcode TAKO_API_KEY. Always os.getenv. See D28.
+
+DO NOT pass full DATABASE_URL to psycopg2.
+Strip channel_binding first. See D22.
+
+DO NOT change pyproject.toml without running uv lock
+and committing both files together. See D23.
 
 ## WHEN YOU HIT A WALL
 
@@ -243,12 +247,12 @@ Neon:
 - Note: strip channel_binding=require before psycopg2 connection
 
 Tako:
-- TAKO_API_KEY: must be set in Railway and local .env
-  Used by visualise_tender_analytics tool in main.py
+- TAKO_API_KEY: NOT SET in Railway ❌ — required for Priority 1.6
+  Add to Railway before implementing visualise_tender_analytics
 - Visualize endpoint: https://tako.com/api/v1/beta/visualize
-- Method: POST raw CSV strings inline — no file upload needed
-- Returns: embed_url for interactive chart iframe
-- Render via: widgetRenderer (existing pattern)
+- Method: POST inline CSV strings — no file upload needed
+- Returns: embed_url → render in widgetRenderer as iframe
+- API key: load from os.getenv("TAKO_API_KEY") only
 
 ## PHASE ROADMAP
 
