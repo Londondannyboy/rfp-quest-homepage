@@ -6,6 +6,8 @@ import {
 import { LangGraphHttpAgent } from "@copilotkit/runtime/langgraph";
 import { NextRequest } from "next/server";
 
+export const maxDuration = 60;
+
 // Simple in-memory sliding-window rate limiter (per IP)
 // Enable via RATE_LIMIT_ENABLED=true — off by default.
 // For high-traffic deployments, consider Redis-backed rate limiting instead.
