@@ -325,7 +325,7 @@ def main():
 
     cumulative = 0
     today = datetime.now()
-    window_days = 30
+    window_days = 7
 
     try:
         chunk_start = start_date
