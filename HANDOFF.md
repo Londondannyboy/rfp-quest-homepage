@@ -8,7 +8,7 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: 043c2c1
+Latest commit: 9850fc8
 
 ### What is deployed and working
 - Rich tenders schema live on production Neon (D31)
@@ -33,18 +33,18 @@ Latest commit: 043c2c1
 
 ### Background jobs running (do not kill)
 - Find a Tender 2024+ PID 15967
-  /tmp/fat_2024.log — 27,725 fetched, chunk 2024-07-29
+  /tmp/fat_2024.log
   Coverage: 2024-01-01 to now
-- Contracts Finder v2 PID 20853
-  /tmp/cf_v2_full.log
+- Contracts Finder v2 PID 21205
+  /tmp/cf_v2_full.log (7-day windows)
   Coverage: 2024-01-01 to now
 
-### Neon row counts (as of 2026-04-01 21:30)
-- find-a-tender: 33,844
-- contracts-finder-v2: 1,330
+### Neon row counts (as of 2026-04-01 22:00)
+- find-a-tender: 36,172
+- contracts-finder-v2: 2,744
 - contracts-finder: 75 (legacy OCDS, superseded by v2)
 - ocds: 18 (legacy, superseded by v2)
-- Total: ~35,267 (growing)
+- Total: ~39,009 (growing)
 
 ### Gate tests — NOT YET RUN
 Must re-run after loaders complete and Railway redeploys.
@@ -92,6 +92,7 @@ Must re-run after loaders complete and Railway redeploys.
 
 ## LAST COMMITS (all authorised)
 
+9850fc8 — fix: reduce CF v2 window to 7 days
 043c2c1 — feat: contracts_finder_v2_ingest.py — REST v2 API with SME flags
 752ab1e — feat: add contracts_finder_v2_ingest.py initial
 148743d — fix: remove broken OCDS pagination (D33)
@@ -117,7 +118,7 @@ Vercel (rfp-quest-homepage):
 
 Neon:
 - Project: rfp-quest-production (calm-dust-71989092, US East 1)
-- Table: tenders (~35,267 rows, growing)
+- Table: tenders (~39,009 rows, growing)
 - Rich schema: 37+ columns, 9 indexes, tender_sync_log table
 - pgvector: enabled ✅
 
@@ -168,7 +169,7 @@ Step 6: Run validation queries:
 
 ## DO NOT
 
-DO NOT kill background loader PIDs (15967, 20853).
+DO NOT kill background loader PIDs (15967, 21205).
 DO NOT use OCDS endpoint for bulk extraction — use REST v2 (D33).
 DO NOT call fetch_uk_tenders — removed from agent tools.
 DO NOT pass full DATABASE_URL to psycopg2 — strip channel_binding (D22).
