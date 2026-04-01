@@ -22,8 +22,8 @@ from src.query import query_data
 from src.todos import AgentState, todo_tools
 from src.form import generate_form
 from src.plan import plan_visualization
-from src.uk_tenders import fetch_uk_tenders
 from src.query_tenders import query_neon_tenders
+from src.tako_analytics import visualise_tender_analytics
 
 load_dotenv()
 
@@ -40,7 +40,7 @@ model_with_retry = base_model.with_retry(
 
 agent = create_deep_agent(
     model=base_model,
-    tools=[query_data, plan_visualization, *todo_tools, generate_form, fetch_uk_tenders, query_neon_tenders],
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
@@ -53,11 +53,12 @@ agent = create_deep_agent(
         When demonstrating charts, always call the query_data tool to fetch all data from the database first.
         
         ## UK Government Tender Intelligence
-        
+
         When users ask about UK government tenders, contracts,
         or procurement opportunities:
-        
-        1. Call the fetch_uk_tenders tool to get a list of tender data
+
+        1. Call query_neon_tenders to search the Neon database.
+           All tender data is in Neon — never call a live API.
         2. The tool returns a list of dictionaries, each containing:
            - title: The tender title
            - buyer: The contracting authority name
@@ -78,20 +79,32 @@ agent = create_deep_agent(
            - title: "UK Government Tenders"
            - description: "Showing X recent procurement opportunities"
            - html: Your generated HTML string
-        
+
         Example queries to handle:
         - "Show me recent UK government tenders"
         - "Find NHS contracts"
         - "What tenders are closing soon?"
+
+        ## Tender Analytics & Visualisation
+
+        When users ask analytical questions about tenders (trends, spending,
+        breakdowns by buyer/sector/year), call visualise_tender_analytics
+        with the user's question. It queries Neon, converts to CSV, and
+        returns a Tako chart embed_url. Pass that URL to the takoVisualize
+        component for rendering.
+
+        Example queries:
+        - "Show me NHS contract spend by year"
+        - "Which buyers publish the most tenders?"
+        - "What's the average tender value by sector?"
 
         ## Bid Decision Analysis (Human-in-the-Loop)
 
         When users ask you to analyze a specific tender for bid/no-bid decision
         (e.g., "Should we bid on X?", "Analyze tender: Y"), you should:
 
-        1. FIRST call query_neon_tenders with the tender title or keywords.
-           This searches the database instantly (<100ms) and avoids a slow re-fetch.
-           Only call fetch_uk_tenders if query_neon_tenders returns NO results.
+        1. Call query_neon_tenders with the tender title or keywords.
+           This searches the database instantly (<100ms).
         2. Analyze the tender based on:
            - Contract value and buyer reputation
            - Deadline feasibility

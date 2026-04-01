@@ -29,6 +29,7 @@ export default function HomePage() {
       if (e.data?.type === "open-link" && typeof e.data.url === "string") {
         window.open(e.data.url, "_blank", "noopener,noreferrer");
       }
+      // Tako iframe resize events are handled by StableIframe component directly
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
