@@ -1,6 +1,6 @@
 # HANDOFF.md — rfp-quest-homepage
 # Session date: 2026-03-31
-# Sign-off status: DRAFT — pending Claude.ai review
+# Sign-off status: DRAFT — schema migration complete and verified. Query field names unverified. Gate tests not run.
 
 ## CURRENT STATE (verified on production 2026-03-31)
 
@@ -8,7 +8,7 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: b5885ca
+Latest commit: 27d9353
 
 ### Phase 4c gate tests — ALL PASSING ✅
 1. "Draw a red circle" → red circle in widgetRenderer iframe ✅
@@ -35,13 +35,47 @@ Latest commit: b5885ca
 - channel_binding stripped from DATABASE_URL before psycopg2 ✅
 - with_retry wrapper REMOVED (incompatible with create_deep_agent)
   plain ChatAnthropic in use — see D21
+- Rich tenders schema live on production Neon
+  (21 new columns, 5 renames, cpv_codes as JSONB)
+- 5,604 Find a Tender rows migrated from old DB
+  (square-waterfall-95675895 → calm-dust-71989092)
+- Production DB: 5,622 tenders (5,604 find-a-tender + 18 ocds)
+- tender_sync_log table created
+- bulk_load_tenders.py rewritten with proper OCDS parsing
+- find_a_tender_ingest.py created (Python port of old TS sync)
 
 ## WHAT IS BROKEN / INCOMPLETE
 
-1. FIRST QUERY SLOW IF NEON EMPTY
-   Only 18 tenders in Neon. First query on fresh session may
-   trigger fetch_uk_tenders (live API, 10-20s).
-   Fix: run bulk_load_tenders.py — see NEXT ACTION.
+1. BULK LOAD NOT YET RUN
+   bulk_load_tenders.py has been fixed with proper OCDS
+   parsing but has not been run against production.
+   Contracts Finder historical data (target 10,000+ rows)
+   not yet loaded. Run manually when ready.
+
+1b. FIND A TENDER CATCH-UP NOT RUN
+   find_a_tender_ingest.py --full not yet run.
+   Old DB data only goes to Mar 17 2026. Gap since then
+   not yet filled.
+
+1c. QUERY_NEON_TENDERS FIELD NAMES NOT VERIFIED
+   Schema column renames (deadline → tender_end_date,
+   value → value_amount, buyer → buyer_name) may have
+   broken query_neon_tenders SQL in main.py and
+   query_tenders.py. Not yet tested against production.
+
+1d. GATE TESTS NOT RUN
+   No gate tests have been run since schema migration.
+   Phase 4c and Phase 5c gate tests must be re-verified
+   before this phase is marked complete.
+
+1e. SECOND RAILWAY CRON NOT CONFIGURED
+   find_a_tender_ingest.py cron service not yet created
+   in Railway dashboard.
+   Service name: rfp-quest-find-a-tender-cron
+   Root: apps/agent
+   Command: uv run python src/find_a_tender_ingest.py
+   Schedule: 0 7 * * * (7am UTC, 1 hour after OCDS cron)
+   Needs DATABASE_URL env var.
 
 2. WITH_RETRY WRAPPER REMOVED
    create_deep_agent inspects model.profile at startup.
@@ -76,6 +110,8 @@ Latest commit: b5885ca
 
 ## LAST COMMITS (all authorised)
 
+27d9353 — feat: enrich tenders schema + migrate 5604 rows + fix OCDS parsing + add find-a-tender ingest
+993117f — feat: Phase 5c Priority 1.5+1.6 — Neon-only + Tako analytics
 b5885ca — fix: pass base_model to create_deep_agent — RunnableRetry lacks .profile
 f23be00 — fix: regenerate uv.lock with psycopg2-binary dependency
 03882e5 — feat: Phase 5c Priority 1 — Neon persistence + pgvector + query_neon_tenders
@@ -92,7 +128,8 @@ Vercel (rfp-quest-homepage):
 
 Neon:
 - Project: rfp-quest-production (calm-dust-71989092, US East 1)
-- Table: tenders (18 rows — bulk load will bring to 10,000+)
+- Table: tenders (5,622 rows — 5,604 find-a-tender + 18 ocds)
+- Rich schema: 33 columns, 9 indexes, tender_sync_log table
 - pgvector: enabled ✅
 
 Local (apps/agent/.env):
@@ -100,40 +137,31 @@ Local (apps/agent/.env):
 - DATABASE_URL: must be set (channel_binding stripped)
 - TAKO_API_KEY: must be set before Priority 1.6 work
 
-## NEXT ACTION — Phase 5c Priority 1.5
+## NEXT ACTION — Post-schema-migration verification
 
-Step 1: Confirm bulk loader exists:
-  ls apps/agent/src/bulk_load_tenders.py
-  ls apps/agent/src/cron_ingest_tenders.py
+Step 1: Fix query_neon_tenders SQL field names
+  Search apps/agent/main.py and apps/agent/src/query_tenders.py
+  for any references to old column names:
+  - deadline → tender_end_date
+  - value → value_amount
+  - buyer → buyer_name
+  - raw_json → raw_ocds
+  Update all SQL queries. Commit.
 
-Step 2: Run bulk historical load locally:
+Step 2: Run find_a_tender_ingest.py catch-up:
+  cd apps/agent
+  uv run python src/find_a_tender_ingest.py --days=30
+
+Step 3: Run bulk_load_tenders.py:
   cd apps/agent
   uv run python src/bulk_load_tenders.py
-  Expected: 30-90 minutes, 10,000+ tenders in Neon
 
-Step 3: Verify:
-  SELECT COUNT(*) FROM tenders;
+Step 4: Verify counts:
   SELECT source, COUNT(*) FROM tenders GROUP BY source;
+  SELECT stage, COUNT(*) FROM tenders GROUP BY stage;
+  SELECT COUNT(*) FROM tenders WHERE cpv_codes != '[]';
 
-Step 4: Configure Railway cron service:
-  New Railway service → same repo → root: apps/agent
-  Start command: uv run python src/cron_ingest_tenders.py
-  Schedule: 0 6 * * * (6am UTC daily)
-
-Step 5: Update system prompt — remove fetch_uk_tenders fallback.
-  Agent should never call live API. Neon only. Commit and push.
-
-Step 6: Phase 5c Priority 1.6 — Tako integration:
-  Add TAKO_API_KEY to Railway environment.
-  Add visualise_tender_analytics tool to apps/agent/main.py.
-  Implement StableIframe pattern from Tako research canvas repo
-  (src/components/MarkdownRenderer.tsx) for chart iframe stability.
-  See DECISIONS.md D27 for full architecture.
-
-Step 7: Gate tests after bulk load + Tako:
-  a. "Show me recent UK tenders" → Neon only, under 3 seconds
-  b. "Analyse tender: [any 2024 tender]" → Neon lookup, HITL renders
-  c. "Show me NHS contract spend by year" → Tako chart renders
+Step 5: Run all Phase 4c and 5c gate tests.
 
 ## PHASE ROADMAP
 
@@ -186,4 +214,5 @@ DO NOT render Tako chart iframes inside ReactMarkdown.
 
 ## SIGN-OFF STATUS
 
-DRAFT — pending Claude.ai review
+DRAFT — schema migration complete and verified.
+Query field names unverified. Gate tests not run.
