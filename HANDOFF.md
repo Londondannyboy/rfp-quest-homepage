@@ -110,7 +110,7 @@ Railway (rfp-quest-generative-agent):
 - ANTHROPIC_API_KEY: SET ✅
 - DATABASE_URL: SET ✅
 - TAKO_API_KEY: SET ✅
-- LANGSMITH_API_KEY: NEEDS SETTING ❌
+- LANGSMITH_API_KEY: SET ✅
 
 Vercel (rfp-quest-homepage):
 - LANGGRAPH_DEPLOYMENT_URL: SET ✅

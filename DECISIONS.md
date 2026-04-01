@@ -469,6 +469,21 @@ REVERSIBLE: No — schema migration is destructive.
 
 ---
 
+## D32 — DATE: 2026-04-01
+DECISION: Add LangSmith tracing for agent observability.
+CONTEXT: Zero visibility into tool calls, errors, and
+agent decisions. Cannot diagnose failures like the NHS
+chart timeout without knowing what each tool returned.
+LangSmith auto-instruments LangGraph with zero code
+changes beyond env vars and startup block in main.py.
+OUTCOME: Every agent run traceable at smith.langchain.com
+showing all tool inputs/outputs, latency, token usage.
+Enabled via LANGSMITH_API_KEY + LANGCHAIN_TRACING_V2=true
++ LANGCHAIN_PROJECT=rfp-quest in Railway environment.
+REVERSIBLE: Yes — remove env vars to disable.
+
+---
+
 ## D33 — DATE: 2026-04-01
 DECISION: Use Contracts Finder REST v2 API for bulk
 extraction, not the OCDS endpoint.
