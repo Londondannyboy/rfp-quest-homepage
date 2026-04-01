@@ -15,6 +15,7 @@ Adaptive date narrowing: 30d → 14d → 7d → 1d if hitCount > 1000.
 """
 
 import os
+import re
 import sys
 import time
 import json
@@ -54,6 +55,12 @@ def sanitize_for_json(obj):
 
 def safe_json_dumps(obj) -> str:
     return json.dumps(sanitize_for_json(obj))
+
+
+def strip_html(text: str | None) -> str | None:
+    if not text:
+        return None
+    return re.sub(r"<[^>]+>", " ", text).strip()
 
 
 def get_db():
@@ -97,9 +104,14 @@ def parse_notice(notice: dict) -> dict:
     """Parse a REST v2 notice into the tenders schema."""
     item = notice.get("item", {})
 
-    # CPV codes — can be single string or comma-separated
+    # CPV codes — single string or comma-separated
     cpv_raw = item.get("cpvCodes") or ""
     cpv_codes = [c.strip() for c in cpv_raw.split(",") if c.strip()] if cpv_raw else []
+    # Also check cpvCodesExtended
+    cpv_ext = item.get("cpvCodesExtended") or ""
+    if cpv_ext:
+        cpv_codes.extend([c.strip() for c in cpv_ext.split(",") if c.strip()])
+        cpv_codes = list(set(cpv_codes))
 
     # Determine stage/status from noticeType
     notice_type = item.get("noticeType") or ""
@@ -129,8 +141,9 @@ def parse_notice(notice: dict) -> dict:
     return {
         "ocid": item.get("id", ""),
         "release_id": item.get("noticeIdentifier"),
+        "parent_id": item.get("parentId"),
         "title": item.get("title") or "Untitled",
-        "description": item.get("description"),
+        "description": strip_html(item.get("description")),
         "status": status,
         "stage": stage,
         "buyer_name": item.get("organisationName") or "Unknown",
@@ -139,44 +152,46 @@ def parse_notice(notice: dict) -> dict:
         "value_currency": "GBP",
         "value_min": value_low if value_low and value_low > 0 else None,
         "value_max": value_high if value_high and value_high > 0 else None,
-        "published_date": item.get("publishedDate"),
+        "published_date": item.get("publishedDate") or None,
         "tender_start_date": None,
-        "tender_end_date": item.get("deadlineDate"),
-        "contract_start_date": item.get("start") or item.get("awardedDate"),
-        "contract_end_date": item.get("end"),
+        "tender_end_date": item.get("deadlineDate") or None,
+        "contract_start_date": item.get("start") or item.get("awardedDate") or None,
+        "contract_end_date": item.get("end") or None,
         "cpv_codes": json.dumps(cpv_codes),
-        "region": item.get("region"),
+        "region": (item.get("region") or "")[:255] or None,
         "raw_ocds": safe_json_dumps(item),
         "source": "contracts-finder-v2",
         "notice_type": notice_type,
+        "procedure_type": item.get("procedureType"),
         "winner": item.get("awardedSupplier"),
         "is_sme_suitable": bool(item.get("isSuitableForSme")),
         "is_vcse_suitable": bool(item.get("isSuitableForVco")),
-        "awarded_to_sme": False,
-        "awarded_to_vcse": False,
+        "awarded_to_sme": bool(item.get("awardedToSme")),
+        "awarded_to_vcse": bool(item.get("awardedToVcse")),
     }
 
 
 INSERT_SQL = """
     INSERT INTO tenders (
-        ocid, release_id, title, description, status, stage,
+        ocid, release_id, parent_id, title, description, status, stage,
         buyer_name, buyer_id, value_amount, value_currency,
         value_min, value_max, published_date, tender_start_date,
         tender_end_date, contract_start_date, contract_end_date,
         cpv_codes, region, raw_ocds, source, notice_type,
-        winner, is_sme_suitable, is_vcse_suitable,
+        procedure_type, winner, is_sme_suitable, is_vcse_suitable,
         awarded_to_sme, awarded_to_vcse, synced_at, fetched_at
     ) VALUES (
-        %s, %s, %s, %s, %s, %s,
+        %s, %s, %s, %s, %s, %s, %s,
         %s, %s, %s, %s,
         %s, %s, %s, %s,
         %s, %s, %s,
         %s::jsonb, %s, %s::jsonb, %s, %s,
-        %s, %s, %s,
+        %s, %s, %s, %s,
         %s, %s, NOW(), NOW()
     )
     ON CONFLICT (ocid) DO UPDATE SET
         release_id = EXCLUDED.release_id,
+        parent_id = EXCLUDED.parent_id,
         title = EXCLUDED.title,
         description = EXCLUDED.description,
         status = EXCLUDED.status,
@@ -193,9 +208,12 @@ INSERT_SQL = """
         region = EXCLUDED.region,
         raw_ocds = EXCLUDED.raw_ocds,
         notice_type = EXCLUDED.notice_type,
+        procedure_type = EXCLUDED.procedure_type,
         winner = EXCLUDED.winner,
         is_sme_suitable = EXCLUDED.is_sme_suitable,
         is_vcse_suitable = EXCLUDED.is_vcse_suitable,
+        awarded_to_sme = EXCLUDED.awarded_to_sme,
+        awarded_to_vcse = EXCLUDED.awarded_to_vcse,
         synced_at = NOW(),
         updated_at = NOW()
 """
@@ -210,7 +228,8 @@ def upsert_batch(conn, parsed_notices):
             try:
                 cur.execute("SAVEPOINT insert_row")
                 cur.execute(INSERT_SQL, (
-                    t["ocid"], t["release_id"], t["title"], t["description"],
+                    t["ocid"], t["release_id"], t["parent_id"],
+                    t["title"], t["description"],
                     t["status"], t["stage"],
                     t["buyer_name"], t["buyer_id"],
                     t["value_amount"], t["value_currency"],
@@ -220,7 +239,8 @@ def upsert_batch(conn, parsed_notices):
                     t["contract_end_date"],
                     t["cpv_codes"], t["region"],
                     t["raw_ocds"], t["source"], t["notice_type"],
-                    t["winner"], t["is_sme_suitable"], t["is_vcse_suitable"],
+                    t["procedure_type"], t["winner"],
+                    t["is_sme_suitable"], t["is_vcse_suitable"],
                     t["awarded_to_sme"], t["awarded_to_vcse"],
                 ))
                 cur.execute("RELEASE SAVEPOINT insert_row")
