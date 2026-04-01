@@ -61,7 +61,7 @@ def _call_tako(csv_string: str, question: str) -> str:
         resp = client.post(
             TAKO_VISUALIZE_URL,
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "X-API-Key": api_key,
                 "Content-Type": "application/json",
             },
             json={
@@ -70,7 +70,14 @@ def _call_tako(csv_string: str, question: str) -> str:
             },
         )
         resp.raise_for_status()
-        data = resp.json()
+
+        try:
+            data = resp.json()
+        except Exception:
+            raise ValueError(f"Tako returned non-JSON response: {resp.text[:200]}")
+
+    if "error" in data:
+        raise ValueError(f"Tako API error: {data['error']}")
 
     cards = data.get("knowledge_cards", [])
     if not cards:
@@ -86,41 +93,41 @@ def _call_tako(csv_string: str, question: str) -> str:
 # Map common analytical questions to targeted SQL queries
 SQL_TEMPLATES = {
     "spend_by_buyer": """
-        SELECT buyer, COUNT(*) as tender_count,
-               COALESCE(SUM(value), 0) as total_value
+        SELECT buyer_name as buyer, COUNT(*) as tender_count,
+               COALESCE(SUM(value_amount), 0) as total_value
         FROM tenders
-        WHERE value > 0
-        GROUP BY buyer
+        WHERE value_amount > 0
+        GROUP BY buyer_name
         ORDER BY total_value DESC
         LIMIT 20
     """,
     "spend_by_year": """
         SELECT EXTRACT(YEAR FROM fetched_at)::int as year,
                COUNT(*) as tender_count,
-               COALESCE(SUM(value), 0) as total_value
+               COALESCE(SUM(value_amount), 0) as total_value
         FROM tenders
-        WHERE value > 0
+        WHERE value_amount > 0
         GROUP BY year
         ORDER BY year
     """,
     "status_breakdown": """
         SELECT status, COUNT(*) as count,
-               COALESCE(SUM(value), 0) as total_value
+               COALESCE(SUM(value_amount), 0) as total_value
         FROM tenders
         GROUP BY status
     """,
     "top_value": """
-        SELECT title, buyer, value, status
+        SELECT title, buyer_name as buyer, value_amount as value, status
         FROM tenders
-        WHERE value > 0
-        ORDER BY value DESC
+        WHERE value_amount > 0
+        ORDER BY value_amount DESC
         LIMIT 20
     """,
     "general": """
-        SELECT buyer, title, value, status,
-               TO_CHAR(fetched_at, 'YYYY-MM') as month
+        SELECT buyer_name as buyer, title, value_amount as value, status,
+               TO_CHAR(COALESCE(published_date, fetched_at), 'YYYY-MM') as month
         FROM tenders
-        WHERE value > 0
+        WHERE value_amount > 0
         ORDER BY fetched_at DESC
         LIMIT 200
     """,

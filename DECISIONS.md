@@ -445,3 +445,24 @@ OUTCOME: Any state field written by concurrent nodes must use:
 All parallel tool nodes must catch exceptions internally and
 return errors as state data — never raise.
 REVERSIBLE: N/A — state schema design decision.
+
+---
+
+## D31 — DATE: 2026-04-01
+DECISION: Adopt rich tenders schema before bulk load.
+CONTEXT: Original thin schema (single value, single
+deadline, no stage/CPV/region) would have loaded
+10,000+ rows of junk. Old rfp.quest DB had richer
+schema with 5,604 Find a Tender rows already correct.
+OUTCOME: Schema enriched to match old DB. Both
+Contracts Finder and Find a Tender feed same table.
+source column tracks provenance. All 9 OCDS release
+stages captured correctly. Columns renamed: buyer →
+buyer_name, value → value_amount, deadline →
+tender_end_date, raw_json → raw_ocds, currency →
+value_currency. 21 new columns added. cpv_codes
+converted from ARRAY to JSONB. tender_sync_log table
+created. 5,604 rows migrated from old DB
+(square-waterfall-95675895) to production
+(calm-dust-71989092).
+REVERSIBLE: No — schema migration is destructive.

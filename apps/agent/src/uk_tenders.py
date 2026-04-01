@@ -28,15 +28,15 @@ def _save_tenders_to_neon(tenders: List[Dict[str, Any]], raw_releases: List[Dict
         for tender, release in zip(tenders, raw_releases):
             cur.execute(
                 """
-                INSERT INTO tenders (ocid, title, buyer, value, deadline, status, raw_json, source, fetched_at)
+                INSERT INTO tenders (ocid, title, buyer_name, value_amount, tender_end_date, status, raw_ocds, source, fetched_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, 'ocds', NOW())
                 ON CONFLICT (ocid) DO UPDATE SET
                     title = EXCLUDED.title,
-                    buyer = EXCLUDED.buyer,
-                    value = EXCLUDED.value,
-                    deadline = EXCLUDED.deadline,
+                    buyer_name = EXCLUDED.buyer_name,
+                    value_amount = EXCLUDED.value_amount,
+                    tender_end_date = EXCLUDED.tender_end_date,
                     status = EXCLUDED.status,
-                    raw_json = EXCLUDED.raw_json,
+                    raw_ocds = EXCLUDED.raw_ocds,
                     fetched_at = NOW()
                 """,
                 (

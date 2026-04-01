@@ -57,9 +57,9 @@ def main():
             if not ocid:
                 continue
             cur.execute("""
-                INSERT INTO tenders (ocid, title, buyer, value, deadline,
-                    status, raw_json, source, fetched_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                INSERT INTO tenders (ocid, title, buyer_name, value_amount, tender_end_date,
+                    status, raw_ocds, source, fetched_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, NOW())
                 ON CONFLICT (ocid) DO NOTHING
             """, (
                 ocid,

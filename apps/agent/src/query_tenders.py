@@ -41,10 +41,10 @@ def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
         # Step 1: Full-text search on title
         cur.execute(
             """
-            SELECT ocid, title, buyer, value, deadline, status
+            SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
             FROM tenders
             WHERE to_tsvector('english', title) @@ plainto_tsquery('english', %s)
-            ORDER BY fetched_at DESC
+            ORDER BY published_date DESC NULLS LAST, fetched_at DESC
             LIMIT 5
             """,
             (query,)
@@ -55,10 +55,10 @@ def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
         if not results:
             cur.execute(
                 """
-                SELECT ocid, title, buyer, value, deadline, status
+                SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
                 FROM tenders
-                WHERE title ILIKE %s OR buyer ILIKE %s
-                ORDER BY fetched_at DESC
+                WHERE title ILIKE %s OR buyer_name ILIKE %s
+                ORDER BY published_date DESC NULLS LAST, fetched_at DESC
                 LIMIT 5
                 """,
                 (f"%{query}%", f"%{query}%")
@@ -74,10 +74,11 @@ def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
             tenders.append({
                 "ocid": row["ocid"],
                 "title": row["title"],
-                "buyer": row["buyer"] or "Unknown Buyer",
-                "value": float(row["value"]) if row["value"] else 0,
-                "deadline": row["deadline"].isoformat() if row["deadline"] else "",
+                "buyer": row["buyer_name"] or "Unknown Buyer",
+                "value": float(row["value_amount"]) if row["value_amount"] else 0,
+                "deadline": row["tender_end_date"].isoformat() if row["tender_end_date"] else "",
                 "status": row["status"] or "Open",
+                "stage": row["stage"] or "",
             })
 
         return tenders

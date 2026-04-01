@@ -1,0 +1,321 @@
+"""
+Find a Tender API ingestion script.
+Fetches OCDS releases from find-tender.service.gov.uk and upserts to Neon.
+Can run as one-time bulk load or daily cron (via Railway).
+
+Usage:
+    cd apps/agent
+    uv run python src/find_a_tender_ingest.py              # Last 7 days
+    uv run python src/find_a_tender_ingest.py --full        # All available
+    uv run python src/find_a_tender_ingest.py --days=30     # Last 30 days
+    uv run python src/find_a_tender_ingest.py --limit=1000  # Max records
+
+API: https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages
+No auth required. Public API. Cursor-based pagination via links.next.
+"""
+
+import os
+import sys
+import time
+import json
+import argparse
+import uuid
+import httpx
+import psycopg2
+import psycopg2.extras
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "").replace(
+    "channel_binding=require&", ""
+).replace("&channel_binding=require", "").replace(
+    "channel_binding=require", ""
+)
+
+FAT_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages"
+REQUEST_DELAY = 0.5  # 500ms between requests, matching old TS implementation
+
+
+def get_db():
+    return psycopg2.connect(DATABASE_URL)
+
+
+def fetch_page(url: str) -> tuple[list, str | None]:
+    """Fetch a page of releases, return (releases, next_url)."""
+    with httpx.Client(timeout=30) as client:
+        resp = client.get(url, headers={"Accept": "application/json"})
+
+        if resp.status_code in (429, 503):
+            retry_after = int(resp.headers.get("Retry-After", "60"))
+            print(f"  Rate limited. Waiting {retry_after}s...")
+            time.sleep(retry_after)
+            return fetch_page(url)  # Retry
+
+        if resp.status_code != 200:
+            print(f"  API error: {resp.status_code} {resp.text[:200]}")
+            return [], None
+
+        data = resp.json()
+        releases = data.get("releases", [])
+        next_url = data.get("links", {}).get("next")
+        return releases, next_url
+
+
+def get_stage(tags: list[str]) -> str:
+    """Determine release stage from OCDS tags."""
+    for tag in tags:
+        if tag in ("award", "awardUpdate"):
+            return "award"
+        if tag in ("tender", "tenderUpdate", "tenderAmendment"):
+            return "tender"
+        if tag in ("planning", "planningUpdate"):
+            return "planning"
+        if tag in ("contract", "contractAmendment", "contractTermination"):
+            return "contract"
+        if tag == "tenderCancellation":
+            return "tenderCancellation"
+    return tags[0] if tags else "unknown"
+
+
+def extract_cpv_codes(release: dict) -> list[str]:
+    """Extract CPV codes from tender items classifications."""
+    cpv_codes = []
+    tender = release.get("tender", {})
+
+    # Top-level classification
+    classification = tender.get("classification", {})
+    if classification.get("scheme") == "CPV" and classification.get("id"):
+        cpv_codes.append(classification["id"])
+
+    # Items
+    for item in tender.get("items", []):
+        item_class = item.get("classification", {})
+        if item_class.get("scheme") == "CPV" and item_class.get("id"):
+            cpv_codes.append(item_class["id"])
+        for add_class in item.get("additionalClassifications", []):
+            if add_class.get("scheme") == "CPV" and add_class.get("id"):
+                cpv_codes.append(add_class["id"])
+
+    return list(set(cpv_codes))
+
+
+def extract_region(release: dict) -> str | None:
+    """Extract region from delivery addresses."""
+    tender = release.get("tender", {})
+    addresses = tender.get("deliveryAddresses", [])
+    if addresses:
+        return addresses[0].get("region")
+    return None
+
+
+def parse_release(release: dict) -> dict:
+    """Parse an OCDS release into the tenders schema."""
+    tender = release.get("tender", {})
+    tags = release.get("tag", [])
+    stage = get_stage(tags)
+
+    # Extract buyer — top level or from parties
+    buyer = release.get("buyer", {})
+    buyer_name = buyer.get("name")
+    buyer_id = buyer.get("id")
+    if not buyer_name:
+        for party in release.get("parties", []):
+            if "buyer" in party.get("roles", []):
+                buyer_name = party.get("name")
+                buyer_id = party.get("id")
+                break
+
+    # Determine status
+    if "tenderCancellation" in tags:
+        status = "Cancelled"
+    elif "award" in tags or "awardUpdate" in tags:
+        status = "Awarded"
+    elif "tender" in tags or "tenderUpdate" in tags:
+        status = "Open"
+    elif "planning" in tags:
+        status = "Planning"
+    elif "contract" in tags or "contractAmendment" in tags:
+        status = "Contract"
+    else:
+        status = tender.get("status") or "Unknown"
+
+    tender_period = tender.get("tenderPeriod", {})
+    contract_period = tender.get("contractPeriod", {})
+
+    return {
+        "ocid": release.get("ocid", ""),
+        "release_id": release.get("id"),
+        "title": tender.get("title") or "Untitled",
+        "description": tender.get("description"),
+        "status": status,
+        "stage": stage,
+        "buyer_name": buyer_name or "Unknown",
+        "buyer_id": buyer_id,
+        "value_amount": tender.get("value", {}).get("amount"),
+        "value_currency": tender.get("value", {}).get("currency", "GBP"),
+        "value_min": tender.get("minValue", {}).get("amount"),
+        "value_max": (tender.get("maxValue") or tender.get("value", {})).get("amount"),
+        "published_date": release.get("date"),
+        "tender_start_date": tender_period.get("startDate"),
+        "tender_end_date": tender_period.get("endDate"),
+        "contract_start_date": contract_period.get("startDate"),
+        "contract_end_date": contract_period.get("endDate"),
+        "cpv_codes": json.dumps(extract_cpv_codes(release)),
+        "region": extract_region(release),
+        "raw_ocds": json.dumps(release),
+        "source": "find-a-tender",
+    }
+
+
+INSERT_SQL = """
+    INSERT INTO tenders (
+        ocid, release_id, title, description, status, stage,
+        buyer_name, buyer_id, value_amount, value_currency,
+        value_min, value_max, published_date, tender_start_date,
+        tender_end_date, contract_start_date, contract_end_date,
+        cpv_codes, region, raw_ocds, source, synced_at, fetched_at
+    ) VALUES (
+        %s, %s, %s, %s, %s, %s,
+        %s, %s, %s, %s,
+        %s, %s, %s, %s,
+        %s, %s, %s,
+        %s::jsonb, %s, %s::jsonb, %s, NOW(), NOW()
+    )
+    ON CONFLICT (ocid) DO UPDATE SET
+        release_id = EXCLUDED.release_id,
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        status = EXCLUDED.status,
+        stage = EXCLUDED.stage,
+        buyer_name = EXCLUDED.buyer_name,
+        buyer_id = EXCLUDED.buyer_id,
+        value_amount = EXCLUDED.value_amount,
+        value_currency = EXCLUDED.value_currency,
+        value_min = EXCLUDED.value_min,
+        value_max = EXCLUDED.value_max,
+        published_date = EXCLUDED.published_date,
+        tender_start_date = EXCLUDED.tender_start_date,
+        tender_end_date = EXCLUDED.tender_end_date,
+        contract_start_date = EXCLUDED.contract_start_date,
+        contract_end_date = EXCLUDED.contract_end_date,
+        cpv_codes = EXCLUDED.cpv_codes,
+        region = EXCLUDED.region,
+        raw_ocds = EXCLUDED.raw_ocds,
+        synced_at = NOW(),
+        updated_at = NOW()
+"""
+
+
+def main():
+    sys.stdout.reconfigure(line_buffering=True)
+
+    parser = argparse.ArgumentParser(description="Find a Tender ingestion")
+    parser.add_argument("--full", action="store_true", help="Fetch all available")
+    parser.add_argument("--days", type=int, default=7, help="Days to look back (default 7)")
+    parser.add_argument("--limit", type=int, help="Max records to fetch")
+    args = parser.parse_args()
+
+    conn = get_db()
+
+    # Create sync log entry
+    log_id = str(uuid.uuid4())
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO tender_sync_log (id, params) VALUES (%s, %s::jsonb)",
+            (log_id, json.dumps({"days": args.days, "full": args.full, "limit": args.limit, "source": "find-a-tender"}))
+        )
+    conn.commit()
+
+    # Build initial URL
+    params = "limit=100"
+    if not args.full:
+        updated_from = (datetime.now() - timedelta(days=args.days)).isoformat()
+        params += f"&updatedFrom={updated_from}"
+        print(f"Fetching Find a Tender releases from last {args.days} days")
+    else:
+        print("Fetching ALL Find a Tender releases (full sync)")
+
+    url = f"{FAT_API}?{params}"
+    total_fetched = 0
+    total_inserted = 0
+
+    try:
+        while url:
+            releases, next_url = fetch_page(url)
+
+            if not releases:
+                break
+
+            print(f"  Processing batch of {len(releases)} releases...", flush=True)
+
+            with conn.cursor() as cur:
+                for release in releases:
+                    if args.limit and total_fetched >= args.limit:
+                        url = None
+                        break
+
+                    parsed = parse_release(release)
+                    if not parsed["ocid"]:
+                        continue
+
+                    cur.execute(INSERT_SQL, (
+                        parsed["ocid"], parsed["release_id"], parsed["title"],
+                        parsed["description"], parsed["status"], parsed["stage"],
+                        parsed["buyer_name"], parsed["buyer_id"],
+                        parsed["value_amount"], parsed["value_currency"],
+                        parsed["value_min"], parsed["value_max"],
+                        parsed["published_date"], parsed["tender_start_date"],
+                        parsed["tender_end_date"], parsed["contract_start_date"],
+                        parsed["contract_end_date"],
+                        parsed["cpv_codes"], parsed["region"],
+                        parsed["raw_ocds"], parsed["source"],
+                    ))
+                    if cur.rowcount:
+                        total_inserted += 1
+                    total_fetched += 1
+
+            conn.commit()
+
+            if total_fetched % 100 == 0:
+                print(f"  Progress: {total_fetched} processed, {total_inserted} inserted")
+
+            if args.limit and total_fetched >= args.limit:
+                break
+
+            url = next_url
+            if url:
+                time.sleep(REQUEST_DELAY)
+
+        # Update sync log — success
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE tender_sync_log
+                SET completed_at = NOW(), status = 'completed',
+                    records_fetched = %s, records_inserted = %s
+                WHERE id = %s
+            """, (total_fetched, total_inserted, log_id))
+        conn.commit()
+
+    except Exception as e:
+        # Update sync log — error
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE tender_sync_log
+                SET completed_at = NOW(), status = 'error',
+                    records_fetched = %s, records_inserted = %s,
+                    error_message = %s
+                WHERE id = %s
+            """, (total_fetched, total_inserted, str(e), log_id))
+        conn.commit()
+        raise
+
+    finally:
+        conn.close()
+
+    print(f"\nDone. Fetched: {total_fetched}, Inserted: {total_inserted}")
+
+
+if __name__ == "__main__":
+    main()
