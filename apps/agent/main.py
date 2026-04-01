@@ -64,7 +64,8 @@ agent = create_deep_agent(
            - buyer: The contracting authority name
            - value: The contract value in pounds
            - deadline: The submission deadline
-           - status: "Open" or "Awarded"
+           - status: "Open", "Awarded", "Planning", "Cancelled", or "Contract"
+           - stage: The OCDS release stage (tender, award, planning, contract, etc.)
            - ocid: The tender ID
         3. Generate HTML to display these tenders as cards using this pattern:
            - Create a grid layout with tender cards

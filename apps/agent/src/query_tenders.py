@@ -21,8 +21,8 @@ def _get_db_connection():
 def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
     """
     Search for tenders in the Neon database by title, buyer, or description.
-    Use this BEFORE fetch_uk_tenders when a user asks to analyse a specific tender.
-    Returns matching tenders plus related tenders.
+    Use this as the primary lookup when a user asks about a specific tender.
+    Returns matching tenders from the Neon database.
 
     Args:
         query: Search string — tender title, buyer name, or keywords
