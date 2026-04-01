@@ -8,7 +8,7 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: 9850fc8
+Latest commit: 4834b30
 
 ### What is deployed and working
 - Rich tenders schema live on production Neon (D31)
@@ -92,6 +92,8 @@ Must re-run after loaders complete and Railway redeploys.
 
 ## LAST COMMITS (all authorised)
 
+4834b30 — docs: final session sign-off fixes — D32, LANGSMITH set
+a4f0585 — docs: CLAUDE.md updated for 2026-04-01 session
 9850fc8 — fix: reduce CF v2 window to 7 days
 043c2c1 — feat: contracts_finder_v2_ingest.py — REST v2 API with SME flags
 752ab1e — feat: add contracts_finder_v2_ingest.py initial
@@ -142,9 +144,7 @@ Step 2: Start pre-2024 loads if 2024+ complete:
 
 Step 3: Run gate tests once Railway redeploys
 
-Step 4: Add LANGSMITH_API_KEY to Railway
-
-Step 5: Configure second + third Railway cron services
+Step 4: Configure second + third Railway cron services
 
 Step 6: Run validation queries:
   SELECT stage, COUNT(*) FROM tenders GROUP BY stage;
