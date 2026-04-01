@@ -430,3 +430,18 @@ PHASE 6 PLANNING NOTES (related deepagents middleware patterns):
 - Custom RetryMiddleware implementing AgentMiddleware protocol:
   correct fix for D21 (with_retry incompatibility). Wrap retry
   logic in middleware, not on the model object.
+
+---
+
+## D30 — DATE: 2026-04-01
+DECISION: Use operator.add reducer on state fields written
+by parallel tool calls.
+CONTEXT: LangGraph default state update is last-write-wins.
+When query_neon_tenders and visualise_tender_analytics run
+in parallel, both write to search_results — without a reducer
+one silently overwrites the other. No error is thrown.
+OUTCOME: Any state field written by concurrent nodes must use:
+  search_results: Annotated[list[dict], operator.add]
+All parallel tool nodes must catch exceptions internally and
+return errors as state data — never raise.
+REVERSIBLE: N/A — state schema design decision.
