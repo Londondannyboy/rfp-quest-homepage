@@ -5,10 +5,11 @@ Can run as one-time bulk load or daily cron (via Railway).
 
 Usage:
     cd apps/agent
-    uv run python src/find_a_tender_ingest.py              # Last 7 days
-    uv run python src/find_a_tender_ingest.py --full        # All available
-    uv run python src/find_a_tender_ingest.py --days=30     # Last 30 days
-    uv run python src/find_a_tender_ingest.py --limit=1000  # Max records
+    uv run python src/find_a_tender_ingest.py                          # Last 7 days
+    uv run python src/find_a_tender_ingest.py --full                   # From 2021-01-01
+    uv run python src/find_a_tender_ingest.py --from-date=2023-06-01   # From specific date
+    uv run python src/find_a_tender_ingest.py --days=30                # Last 30 days
+    uv run python src/find_a_tender_ingest.py --limit=1000             # Max records
 
 API: https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages
 No auth required. Public API. Cursor-based pagination via links.next.
@@ -18,6 +19,7 @@ import os
 import sys
 import time
 import json
+import math
 import argparse
 import uuid
 import httpx
@@ -36,6 +38,24 @@ DATABASE_URL = os.getenv("DATABASE_URL", "").replace(
 
 FAT_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages"
 REQUEST_DELAY = 0.5  # 500ms between requests, matching old TS implementation
+
+
+def sanitize_for_json(obj):
+    """Recursively replace Infinity/NaN with None for PostgreSQL JSONB compatibility."""
+    if isinstance(obj, float):
+        if math.isinf(obj) or math.isnan(obj):
+            return None
+        return obj
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    return obj
+
+
+def safe_json_dumps(obj) -> str:
+    """JSON serialize with Infinity/NaN sanitization."""
+    return json.dumps(sanitize_for_json(obj))
 
 
 def get_db():
@@ -164,7 +184,7 @@ def parse_release(release: dict) -> dict:
         "contract_end_date": contract_period.get("endDate"),
         "cpv_codes": json.dumps(extract_cpv_codes(release)),
         "region": extract_region(release),
-        "raw_ocds": json.dumps(release),
+        "raw_ocds": safe_json_dumps(release),
         "source": "find-a-tender",
     }
 
@@ -212,7 +232,8 @@ def main():
     sys.stdout.reconfigure(line_buffering=True)
 
     parser = argparse.ArgumentParser(description="Find a Tender ingestion")
-    parser.add_argument("--full", action="store_true", help="Fetch all available")
+    parser.add_argument("--full", action="store_true", help="From 2021-01-01")
+    parser.add_argument("--from-date", type=str, help="Start date YYYY-MM-DD")
     parser.add_argument("--days", type=int, default=7, help="Days to look back (default 7)")
     parser.add_argument("--limit", type=int, help="Max records to fetch")
     args = parser.parse_args()
@@ -230,26 +251,31 @@ def main():
 
     # Build initial URL
     params = "limit=100"
-    if not args.full:
+    if args.from_date:
+        params += f"&updatedFrom={args.from_date}T00:00:00Z"
+        print(f"Fetching Find a Tender releases from {args.from_date}")
+    elif args.full:
+        params += "&updatedFrom=2021-01-01T00:00:00Z"
+        print("Fetching ALL Find a Tender releases from 2021-01-01")
+    elif args.days:
         updated_from = (datetime.now() - timedelta(days=args.days)).isoformat()
         params += f"&updatedFrom={updated_from}"
         print(f"Fetching Find a Tender releases from last {args.days} days")
-    else:
-        print("Fetching ALL Find a Tender releases (full sync)")
 
     url = f"{FAT_API}?{params}"
     total_fetched = 0
     total_inserted = 0
+    page_num = 0
 
     try:
         while url:
+            page_num += 1
             releases, next_url = fetch_page(url)
 
             if not releases:
                 break
 
-            print(f"  Processing batch of {len(releases)} releases...", flush=True)
-
+            batch_inserted = 0
             with conn.cursor() as cur:
                 for release in releases:
                     if args.limit and total_fetched >= args.limit:
@@ -260,26 +286,31 @@ def main():
                     if not parsed["ocid"]:
                         continue
 
-                    cur.execute(INSERT_SQL, (
-                        parsed["ocid"], parsed["release_id"], parsed["title"],
-                        parsed["description"], parsed["status"], parsed["stage"],
-                        parsed["buyer_name"], parsed["buyer_id"],
-                        parsed["value_amount"], parsed["value_currency"],
-                        parsed["value_min"], parsed["value_max"],
-                        parsed["published_date"], parsed["tender_start_date"],
-                        parsed["tender_end_date"], parsed["contract_start_date"],
-                        parsed["contract_end_date"],
-                        parsed["cpv_codes"], parsed["region"],
-                        parsed["raw_ocds"], parsed["source"],
-                    ))
-                    if cur.rowcount:
-                        total_inserted += 1
+                    try:
+                        cur.execute("SAVEPOINT insert_row")
+                        cur.execute(INSERT_SQL, (
+                            parsed["ocid"], parsed["release_id"], parsed["title"],
+                            parsed["description"], parsed["status"], parsed["stage"],
+                            parsed["buyer_name"], parsed["buyer_id"],
+                            parsed["value_amount"], parsed["value_currency"],
+                            parsed["value_min"], parsed["value_max"],
+                            parsed["published_date"], parsed["tender_start_date"],
+                            parsed["tender_end_date"], parsed["contract_start_date"],
+                            parsed["contract_end_date"],
+                            parsed["cpv_codes"], parsed["region"],
+                            parsed["raw_ocds"], parsed["source"],
+                        ))
+                        cur.execute("RELEASE SAVEPOINT insert_row")
+                        if cur.rowcount:
+                            total_inserted += 1
+                            batch_inserted += 1
+                    except Exception as e:
+                        cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                        print(f"  Skipped {parsed['ocid']}: {str(e)[:100]}", flush=True)
                     total_fetched += 1
 
             conn.commit()
-
-            if total_fetched % 100 == 0:
-                print(f"  Progress: {total_fetched} processed, {total_inserted} inserted")
+            print(f"  p{page_num}: +{batch_inserted} new ({total_fetched} fetched, {total_inserted} inserted)", flush=True)
 
             if args.limit and total_fetched >= args.limit:
                 break
