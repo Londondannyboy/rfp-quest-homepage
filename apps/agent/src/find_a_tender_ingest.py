@@ -64,7 +64,7 @@ def get_db():
 
 def fetch_page(url: str) -> tuple[list, str | None]:
     """Fetch a page of releases, return (releases, next_url)."""
-    with httpx.Client(timeout=120) as client:
+    with httpx.Client(timeout=60) as client:
         resp = client.get(url, headers={"Accept": "application/json"})
 
         if resp.status_code in (429, 503):
@@ -228,6 +228,70 @@ INSERT_SQL = """
 """
 
 
+CHUNK_DAYS = 30
+
+
+def fetch_and_insert_chunk(conn, chunk_start, chunk_end, total_fetched, total_inserted):
+    """Fetch and insert all pages for one date chunk. Returns (fetched, inserted)."""
+    url = (
+        f"{FAT_API}?limit=100"
+        f"&updatedFrom={chunk_start.strftime('%Y-%m-%dT00:00:00Z')}"
+        f"&updatedTo={chunk_end.strftime('%Y-%m-%dT23:59:59Z')}"
+    )
+    page_num = 0
+    chunk_inserted = 0
+
+    while url:
+        page_num += 1
+        releases, next_url = fetch_page(url)
+
+        if not releases:
+            break
+
+        batch_inserted = 0
+        with conn.cursor() as cur:
+            for release in releases:
+                parsed = parse_release(release)
+                if not parsed["ocid"]:
+                    continue
+
+                try:
+                    cur.execute("SAVEPOINT insert_row")
+                    cur.execute(INSERT_SQL, (
+                        parsed["ocid"], parsed["release_id"], parsed["title"],
+                        parsed["description"], parsed["status"], parsed["stage"],
+                        parsed["buyer_name"], parsed["buyer_id"],
+                        parsed["value_amount"], parsed["value_currency"],
+                        parsed["value_min"], parsed["value_max"],
+                        parsed["published_date"], parsed["tender_start_date"],
+                        parsed["tender_end_date"], parsed["contract_start_date"],
+                        parsed["contract_end_date"],
+                        parsed["cpv_codes"], parsed["region"],
+                        parsed["raw_ocds"], parsed["source"],
+                    ))
+                    cur.execute("RELEASE SAVEPOINT insert_row")
+                    if cur.rowcount:
+                        total_inserted += 1
+                        batch_inserted += 1
+                        chunk_inserted += 1
+                except Exception as e:
+                    cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                    print(f"  Skipped {parsed['ocid']}: {str(e)[:100]}", flush=True)
+                total_fetched += 1
+
+        conn.commit()
+        print(f"  {chunk_start.date()} p{page_num}: +{batch_inserted} new ({total_fetched} fetched, {total_inserted} inserted)", flush=True)
+
+        if len(releases) < 100:
+            break
+
+        url = next_url
+        if url:
+            time.sleep(REQUEST_DELAY)
+
+    return total_fetched, total_inserted, chunk_inserted
+
+
 def main():
     sys.stdout.reconfigure(line_buffering=True)
 
@@ -235,8 +299,18 @@ def main():
     parser.add_argument("--full", action="store_true", help="From 2021-01-01")
     parser.add_argument("--from-date", type=str, help="Start date YYYY-MM-DD")
     parser.add_argument("--days", type=int, default=7, help="Days to look back (default 7)")
-    parser.add_argument("--limit", type=int, help="Max records to fetch")
     args = parser.parse_args()
+
+    # Determine start date
+    if args.from_date:
+        start_date = datetime.strptime(args.from_date, "%Y-%m-%d")
+        print(f"Fetching Find a Tender releases from {args.from_date}")
+    elif args.full:
+        start_date = datetime(2021, 1, 1)
+        print("Fetching ALL Find a Tender releases from 2021-01-01")
+    else:
+        start_date = datetime.now() - timedelta(days=args.days)
+        print(f"Fetching Find a Tender releases from last {args.days} days")
 
     conn = get_db()
 
@@ -245,79 +319,29 @@ def main():
     with conn.cursor() as cur:
         cur.execute(
             "INSERT INTO tender_sync_log (id, params) VALUES (%s, %s::jsonb)",
-            (log_id, json.dumps({"days": args.days, "full": args.full, "limit": args.limit, "source": "find-a-tender"}))
+            (log_id, json.dumps({"from_date": start_date.isoformat(), "full": args.full, "source": "find-a-tender"}))
         )
     conn.commit()
 
-    # Build initial URL
-    params = "limit=100"
-    if args.from_date:
-        params += f"&updatedFrom={args.from_date}T00:00:00Z"
-        print(f"Fetching Find a Tender releases from {args.from_date}")
-    elif args.full:
-        params += "&updatedFrom=2021-01-01T00:00:00Z"
-        print("Fetching ALL Find a Tender releases from 2021-01-01")
-    elif args.days:
-        updated_from = (datetime.now() - timedelta(days=args.days)).isoformat()
-        params += f"&updatedFrom={updated_from}"
-        print(f"Fetching Find a Tender releases from last {args.days} days")
-
-    url = f"{FAT_API}?{params}"
     total_fetched = 0
     total_inserted = 0
-    page_num = 0
+    today = datetime.now()
 
     try:
-        while url:
-            page_num += 1
-            releases, next_url = fetch_page(url)
+        chunk_start = start_date
+        while chunk_start < today:
+            chunk_end = min(chunk_start + timedelta(days=CHUNK_DAYS), today)
+            print(f"Chunk {chunk_start.date()} → {chunk_end.date()}", flush=True)
 
-            if not releases:
-                break
+            total_fetched, total_inserted, chunk_inserted = fetch_and_insert_chunk(
+                conn, chunk_start, chunk_end, total_fetched, total_inserted
+            )
 
-            batch_inserted = 0
-            with conn.cursor() as cur:
-                for release in releases:
-                    if args.limit and total_fetched >= args.limit:
-                        url = None
-                        break
+            if chunk_inserted == 0:
+                print(f"  0 releases", flush=True)
 
-                    parsed = parse_release(release)
-                    if not parsed["ocid"]:
-                        continue
-
-                    try:
-                        cur.execute("SAVEPOINT insert_row")
-                        cur.execute(INSERT_SQL, (
-                            parsed["ocid"], parsed["release_id"], parsed["title"],
-                            parsed["description"], parsed["status"], parsed["stage"],
-                            parsed["buyer_name"], parsed["buyer_id"],
-                            parsed["value_amount"], parsed["value_currency"],
-                            parsed["value_min"], parsed["value_max"],
-                            parsed["published_date"], parsed["tender_start_date"],
-                            parsed["tender_end_date"], parsed["contract_start_date"],
-                            parsed["contract_end_date"],
-                            parsed["cpv_codes"], parsed["region"],
-                            parsed["raw_ocds"], parsed["source"],
-                        ))
-                        cur.execute("RELEASE SAVEPOINT insert_row")
-                        if cur.rowcount:
-                            total_inserted += 1
-                            batch_inserted += 1
-                    except Exception as e:
-                        cur.execute("ROLLBACK TO SAVEPOINT insert_row")
-                        print(f"  Skipped {parsed['ocid']}: {str(e)[:100]}", flush=True)
-                    total_fetched += 1
-
-            conn.commit()
-            print(f"  p{page_num}: +{batch_inserted} new ({total_fetched} fetched, {total_inserted} inserted)", flush=True)
-
-            if args.limit and total_fetched >= args.limit:
-                break
-
-            url = next_url
-            if url:
-                time.sleep(REQUEST_DELAY)
+            chunk_start = chunk_end
+            time.sleep(REQUEST_DELAY)
 
         # Update sync log — success
         with conn.cursor() as cur:
