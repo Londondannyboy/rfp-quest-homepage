@@ -470,14 +470,17 @@ REVERSIBLE: No — schema migration is destructive.
 ---
 
 ## D33 — DATE: 2026-04-01
-DECISION: Contracts Finder OCDS API does not support
-page-based pagination. page parameter is ignored —
-every page returns identical results.
-CONTEXT: bulk_load_tenders.py looped indefinitely
-on page 1 of each window, fetching 19,700 releases
-that were all duplicates of the same 75-100 unique
-tenders. ON CONFLICT DO NOTHING prevented DB corruption
-but wasted hours of CPU time.
-OUTCOME: Remove pagination loop. Fetch page 1 only
-per 7-day window. ~100 rows per window maximum.
-REVERSIBLE: N/A — API behaviour, not our code choice.
+DECISION: Use Contracts Finder REST v2 API for bulk
+extraction, not the OCDS endpoint.
+CONTEXT: The OCDS endpoint ignores page parameter and
+returns identical results on every page — 19,700 fetches
+yielding only 75 unique rows. The REST v2 API at
+/api/rest/2/search_notices/json returns 1,000 results
+per request with hitCount, adaptive date narrowing,
+and goes back to 2000. It also returns SME flags,
+awarded supplier, notice type and all other fields
+we were planning to backfill from raw_ocds.
+OUTCOME: Replace bulk_load_tenders.py OCDS approach
+with contracts_finder_v2_ingest.py REST v2 approach.
+Coverage: 2000-01-01 to now. ~25 years of data.
+REVERSIBLE: Yes — OCDS endpoint still available.
