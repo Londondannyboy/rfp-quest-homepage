@@ -402,3 +402,31 @@ CONTEXT: Tako API requires X-API-Key header. Never hardcode.
 OUTCOME: Add to Railway environment variables and local .env.
 Load via os.getenv("TAKO_API_KEY") only.
 REVERSIBLE: No — required for Tako integration.
+
+---
+
+## D29 — DATE: 2026-03-31
+DECISION: Use SummarizationMiddleware for context management.
+CONTEXT: deepagents middleware stack includes SummarizationMiddleware
+which auto-offloads messages >80,000 chars and evicts tool results
+>80KB. Prevents context overflow on long tender analysis sessions.
+Model: claude-haiku-4-5-20251001 (cheap, fast for summarisation).
+OUTCOME: Agent maintains reasoning quality on long sessions.
+REVERSIBLE: Yes.
+STATUS: NOT YET IMPLEMENTED — reference for future session.
+
+IMPLEMENTATION NOTES (for when this is built):
+- Import: from langchain.agents.middleware import SummarizationMiddleware
+  (verify import path exists in installed deepagents version first)
+- Add to middleware list alongside CopilotKitMiddleware()
+- Config: max_tokens_before_summary=3000, messages_to_keep=20
+
+PHASE 6 PLANNING NOTES (related deepagents middleware patterns):
+- SubAgentMiddleware: for bulk tender analysis tasks
+- PostgresSaver checkpointer: uses existing Neon DATABASE_URL,
+  replaces BoundedMemorySaver for durable multi-day bid workflows
+- HumanInTheLoopMiddleware: already available — use for Phase 5c
+  Priority 3 graceful approval flows. Do not build custom HITL.
+- Custom RetryMiddleware implementing AgentMiddleware protocol:
+  correct fix for D21 (with_retry incompatibility). Wrap retry
+  logic in middleware, not on the model object.
