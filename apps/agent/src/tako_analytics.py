@@ -6,11 +6,15 @@ calls Tako Visualize API, returns embed_url for chart rendering.
 import os
 import io
 import csv
+import logging
 import httpx
 import psycopg2
 import psycopg2.extras
 from langchain.tools import tool
 from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 TAKO_VISUALIZE_URL = "https://tako.com/api/v1/beta/visualize"
@@ -167,13 +171,17 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
     """
     try:
         sql = _pick_sql(question)
+        logger.info(f"Tako analytics: question='{question}', sql template selected")
         csv_string = _query_to_csv(sql)
+        logger.info(f"Tako analytics: CSV generated, {len(csv_string)} bytes")
         embed_url = _call_tako(csv_string, question)
+        logger.info(f"Tako analytics: embed_url={embed_url}")
         return {
             "embed_url": embed_url,
             "title": question,
         }
     except Exception as e:
+        logger.error(f"Tako analytics error: {e}", exc_info=True)
         return {
             "error": str(e),
             "embed_url": "",
