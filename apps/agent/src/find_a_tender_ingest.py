@@ -64,7 +64,7 @@ def get_db():
 
 def fetch_page(url: str) -> tuple[list, str | None]:
     """Fetch a page of releases, return (releases, next_url)."""
-    with httpx.Client(timeout=60) as client:
+    with httpx.Client(timeout=120) as client:
         resp = client.get(url, headers={"Accept": "application/json"})
 
         if resp.status_code in (429, 503):
