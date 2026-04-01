@@ -466,3 +466,18 @@ created. 5,604 rows migrated from old DB
 (square-waterfall-95675895) to production
 (calm-dust-71989092).
 REVERSIBLE: No — schema migration is destructive.
+
+---
+
+## D33 — DATE: 2026-04-01
+DECISION: Contracts Finder OCDS API does not support
+page-based pagination. page parameter is ignored —
+every page returns identical results.
+CONTEXT: bulk_load_tenders.py looped indefinitely
+on page 1 of each window, fetching 19,700 releases
+that were all duplicates of the same 75-100 unique
+tenders. ON CONFLICT DO NOTHING prevented DB corruption
+but wasted hours of CPU time.
+OUTCOME: Remove pagination loop. Fetch page 1 only
+per 7-day window. ~100 rows per window maximum.
+REVERSIBLE: N/A — API behaviour, not our code choice.

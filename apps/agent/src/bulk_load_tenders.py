@@ -241,23 +241,19 @@ def upsert_batch(conn, parsed_releases):
 
 
 def fetch_and_insert_window(conn, date_from, date_to, cumulative_total):
-    """Fetch and insert one 7-day window, page by page. Returns rows added."""
-    page = 1
-    window_total = 0
-    while True:
-        releases = fetch_one_page(date_from, date_to, page)
-        if not releases:
-            break
-        parsed = [parse_release(r) for r in releases]
-        upsert_batch(conn, parsed)
-        window_total += len(releases)
-        cumulative_total += len(releases)
-        print(f"  {date_from.date()} p{page}: +{len(releases)} rows ({cumulative_total} total)", flush=True)
-        if len(releases) < 100:
-            break
-        page += 1
-        time.sleep(REQUEST_DELAY)
-    return window_total, cumulative_total
+    """Fetch and insert one 7-day window. Single page only — API ignores page param (D33)."""
+    releases = fetch_one_page(date_from, date_to, 1)
+    if not releases:
+        return 0, cumulative_total
+    parsed = [parse_release(r) for r in releases]
+    upsert_batch(conn, parsed)
+    cumulative_total += len(releases)
+    print(
+        f"  {date_from.date()} → {date_to.date()}: "
+        f"+{len(releases)} rows ({cumulative_total} total)",
+        flush=True
+    )
+    return len(releases), cumulative_total
 
 
 def main():
