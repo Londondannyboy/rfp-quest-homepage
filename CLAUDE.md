@@ -1,6 +1,6 @@
 # CLAUDE.md — rfp-quest-homepage
 # Standard: See CLAUDE-STANDARD.md
-# Sign-off status: SIGNED OFF 2026-03-28
+# Sign-off status: SIGNED OFF 2026-04-01
 
 ---
 
@@ -9,22 +9,30 @@
 This is the RFP.quest Generative UI homepage. It uses 
 OpenGenerativeUI (CopilotKit v2 + LangChain Deep Agents) 
 to render AI-generated HTML, SVG, Three.js, and Chart.js 
-visualisations in sandboxed iframes. It fetches live UK 
-government procurement data from the Contracts Finder 
-OCDS API and visualises it using the widgetRenderer 
-component. CopilotKit v2 is mandatory and cannot be 
-replaced by any alternative framework or pattern.
+visualisations in sandboxed iframes. It fetches UK 
+government procurement data from two sources: Contracts 
+Finder REST v2 API and Find a Tender OCDS API, stored 
+in Neon for fast querying. CopilotKit v2 is mandatory 
+and cannot be replaced by any alternative framework or 
+pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 4c COMPLETE, Phase 5c Priority 1 COMPLETE
+ACTIVE — Phase 4c COMPLETE, Phase 5c IN PROGRESS
 
-Phase 5c Priority 1 confirmed working on production 2026-03-31:
-- Neon tenders table live with pgvector
-- fetch_uk_tenders saves to Neon on fetch
-- query_neon_tenders tool deployed
-- Agent queries Neon first, falls back to live fetch only if empty
-- Single-call analyse confirmed working: Neon lookup → HITL
+Completed today (2026-04-01):
+- Rich tenders schema (37+ columns, 9 indexes, D31)
+- 5,604 Find a Tender rows migrated from old DB
+- bulk_load_tenders.py retired — replaced by CF v2 (D33)
+- contracts_finder_v2_ingest.py — REST v2 API with
+  SME flags, procedure type, 25yr history (D33)
+- find_a_tender_ingest.py — cursor pagination,
+  chunked by date, 2021→now
+- Both loaders running: 39,000+ rows and climbing
+- Tako integration deployed (visualise_tender_analytics
+  + StableIframe) — not yet gate-tested
+- LangSmith tracing enabled in Railway
+- fetch_uk_tenders removed from agent tools
 
 ## FROZEN SECTIONS
 
@@ -62,7 +70,7 @@ Skills are SKILL.md files in apps/agent/skills/[name]/
 The agent reads them on demand. UK tender skill is at:
 apps/agent/skills/uk-tenders/SKILL.md
 
-Tako integration pattern (when implemented):
+Tako integration pattern (DEPLOYED 2026-04-01):
   1. Run targeted Neon SQL query for the analytical question
   2. Convert to CSV: import io, csv; buf = io.StringIO();
      writer = csv.DictWriter(buf, fieldnames=rows[0].keys());
@@ -72,7 +80,7 @@ Tako integration pattern (when implemented):
   4. Extract embed_url from response knowledge_cards[0]
   5. Return embed_url to agent for widgetRenderer rendering
 
-Tako iframe rendering pattern (when implemented):
+Tako iframe rendering pattern (DEPLOYED 2026-04-01):
   - Extract iframe src, generate stable ID from src
   - Register in global Map (iframeRegistry) — never changes once set
   - Render as React.memo StableIframe siblings alongside ReactMarkdown
@@ -129,17 +137,21 @@ pnpm@9. Using pnpm@8 breaks Vercel deployment. See D18.
 DO NOT rely on Railway /health as a readiness indicator.
 Only a successful end-to-end render confirms readiness. See D17.
 
-DO NOT chain fetch_uk_tenders + analyzeBidDecision in a single prompt.
-This causes double-call timeout. Provide full tender details in prompt
-until Neon persistence is implemented. See D16.
+DO NOT chain multiple tool calls in a single prompt when each
+takes 10+ seconds. This causes timeout. See D16.
 
 DO NOT add Redis, Supabase, or Zep to this project before Phase 7.
 Use Neon with pgvector only. See D19 and D20.
 
-DO NOT call fetch_uk_tenders as the primary data source once
-Neon bulk loader has run. All tender data should be in Neon.
-Only use fetch_uk_tenders as a fallback when Neon is empty.
-See D24.
+DO NOT call fetch_uk_tenders — it has been removed from the
+agent tools list. All tender data is in Neon. See D24.
+
+DO NOT use bulk_load_tenders.py for Contracts Finder
+historical extraction. OCDS endpoint ignores pagination.
+Use contracts_finder_v2_ingest.py instead. See D33.
+
+DO NOT hardcode LANGSMITH_API_KEY.
+Use os.getenv("LANGSMITH_API_KEY") only.
 
 DO NOT pass the full Neon DATABASE_URL to psycopg2 without
 stripping channel_binding=require first. See D22.
@@ -239,20 +251,42 @@ Required environment variables:
 - ANTHROPIC_API_KEY (Railway — SET ✅)
 - LLM_MODEL=claude-opus-4-6 (Railway — SET ✅)
 - LANGGRAPH_DEPLOYMENT_URL (Vercel — SET ✅)
+- DATABASE_URL (Railway — SET ✅)
+- TAKO_API_KEY (Railway + Vercel — SET ✅)
+- LANGSMITH_API_KEY (Railway — SET ✅)
+- LANGCHAIN_TRACING_V2=true (set at startup if LANGSMITH_API_KEY present)
+- LANGCHAIN_PROJECT=rfp-quest (set at startup)
 
-OCDS API (no auth required):
-https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search
+Data sources:
+
+Contracts Finder REST v2 (primary for Contracts Finder data):
+- Endpoint: POST /api/rest/2/search_notices/json
+- No auth required
+- Returns SME flags, procedure type, awarded supplier
+- Coverage: 2000→now (bulk load in progress)
+- Script: apps/agent/src/contracts_finder_v2_ingest.py
+
+Find a Tender OCDS (primary for FaT data):
+- Endpoint: find-tender.service.gov.uk/api/1.0/ocdsReleasePackages
+- No auth required
+- Coverage: 2021→now (bulk load in progress)
+- Script: apps/agent/src/find_a_tender_ingest.py
+
+Old DB (decommission when ready):
+- rfp.quest (square-waterfall-95675895, EU West 2)
+- 5,604 rows migrated to production
 
 Neon:
 - Project: rfp-quest-production (US East 1)
 - Project ID: calm-dust-71989092
-- Table: tenders (18 rows as of 2026-03-31, growing)
+- Table: tenders (~39,000 rows as of 2026-04-01, growing)
+- Rich schema: 37+ columns, 9 indexes, tender_sync_log table
 - pgvector: enabled
 - DATABASE_URL: SET in Railway ✅
 - Note: strip channel_binding=require before psycopg2 connection
 
 Tako:
-- TAKO_API_KEY: NOT SET in Railway ❌ — required for Priority 1.6
+- TAKO_API_KEY: SET in Railway ✅
 - Visualize endpoint: https://tako.com/api/v1/beta/visualize
 - Method: POST inline CSV — no file upload needed
 - Returns: embed_url → render in widgetRenderer as iframe
@@ -262,39 +296,20 @@ Tako:
 
 **Phase 5c Priority 1** — COMPLETE ✅
 Neon tenders table, pgvector, query_neon_tenders tool,
-fetch saves to Neon, agent queries Neon first.
+agent queries Neon only (no live API calls).
 
-**Phase 5c Priority 1.5** — NEXT: Bulk ingestion pipeline
-Create apps/agent/src/bulk_load_tenders.py:
-  - Pages OCDS API backwards in 7-day windows from today to 2024-01-01
-  - Upserts to Neon in batches of 50
-  - Generates embeddings for each tender on insert
-  - Resumable (skips existing ocids)
-  - One-time historical load
+**Phase 5c Priority 1.5** — IN PROGRESS
+Rich schema deployed (D31). Both loaders running overnight:
+- FAT: 36,000+ rows, 2024-01-01→now
+- CF v2: 2,700+ rows, 2024-01-01→now
+Pre-2024 loads pending after current runs complete.
+Railway OCDS cron configured (0 6 * * *).
+Gate: 50,000+ rows, first query under 3 seconds.
 
-Create apps/agent/src/cron_ingest_tenders.py:
-  - Fetches last 25 hours of OCDS publications
-  - Upserts new tenders to Neon
-  - Railway cron: 0 6 * * * (daily 6am UTC)
-
-Update system prompt after bulk load:
-  - Remove fetch_uk_tenders fallback entirely
-  - Agent never calls live API — Neon only
-  - First user query becomes instant
-
-Gate: SELECT COUNT(*) FROM tenders returns 10,000+ rows
-Gate: First query renders from Neon in under 5 seconds
-
-**Phase 5c Priority 1.6** — Tako live analytics integration
-New tool: visualise_tender_analytics
-  - Queries Neon tenders table with targeted SQL
-  - Converts result to inline CSV string
-  - Calls Tako /v1/beta/visualize with csv + natural language query
-  - Returns embed_url → rendered in widgetRenderer as iframe
-  - Zero file upload, zero sync delay — fully live Neon data
-
-Environment: TAKO_API_KEY required in Railway + local .env
-
+**Phase 5c Priority 1.6** — DEPLOYED, NOT GATE-TESTED
+visualise_tender_analytics + StableIframe deployed.
+TAKO_API_KEY set. NHS chart gate test not yet passing —
+blocked pending sufficient value_amount data in Neon.
 Gate: "Show me NHS contract spend by year"
       → Tako chart iframe renders in conversation
 
@@ -328,8 +343,9 @@ Evaluate Zep for entity relationship graph on top of Neon data.
 Zep can build buyer/CPV/tender relationships from existing data
 without needing bid outcomes. Cheaper than Neo4j.
 
-**Phase 7** — Intelligent matched feed + multi-source ingestion
+**Phase 7** — Intelligent matched feed + additional sources
 Agent filters Neon by company CPV codes for logged-in users.
 Redis cache if Neon latency becomes noticeable at scale.
-Add Find a Tender, Proactis, Delta eSourcing as sources.
+Find a Tender and Contracts Finder v2 already integrated.
+Add Proactis, Delta eSourcing as additional sources.
 source column in tenders table tracks provenance.
