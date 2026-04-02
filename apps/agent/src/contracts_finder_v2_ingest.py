@@ -312,9 +312,8 @@ def main():
 
     print(f"Contracts Finder v2: {start_date.date()} → {datetime.now().date()}")
 
-    conn = get_db()
-
     # Sync log
+    conn = get_db()
     log_id = str(uuid.uuid4())
     with conn.cursor() as cur:
         cur.execute(
@@ -322,6 +321,7 @@ def main():
             (log_id, json.dumps({"from_date": start_date.isoformat(), "source": "contracts-finder-v2"}))
         )
     conn.commit()
+    conn.close()
 
     cumulative = 0
     today = datetime.now()
@@ -331,10 +331,16 @@ def main():
         chunk_start = start_date
         while chunk_start < today:
             chunk_end = min(chunk_start + timedelta(days=window_days), today)
+
+            # Fresh connection per window — Neon kills idle connections
+            conn = get_db()
             cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
+            conn.close()
+
             chunk_start = chunk_end
             time.sleep(REQUEST_DELAY)
 
+        conn = get_db()
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE tender_sync_log
@@ -343,21 +349,24 @@ def main():
                 WHERE id = %s
             """, (cumulative, cumulative, log_id))
         conn.commit()
+        conn.close()
 
     except Exception as e:
-        with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE tender_sync_log
-                SET completed_at = NOW(), status = 'error',
-                    records_fetched = %s, records_inserted = %s,
-                    error_message = %s
-                WHERE id = %s
-            """, (cumulative, cumulative, str(e), log_id))
-        conn.commit()
+        try:
+            conn = get_db()
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE tender_sync_log
+                    SET completed_at = NOW(), status = 'error',
+                        records_fetched = %s, records_inserted = %s,
+                        error_message = %s
+                    WHERE id = %s
+                """, (cumulative, cumulative, str(e), log_id))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
         raise
-
-    finally:
-        conn.close()
 
     print(f"\nDone. Total inserted: {cumulative}")
 

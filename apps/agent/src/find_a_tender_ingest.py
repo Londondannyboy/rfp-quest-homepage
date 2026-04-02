@@ -312,9 +312,8 @@ def main():
         start_date = datetime.now() - timedelta(days=args.days)
         print(f"Fetching Find a Tender releases from last {args.days} days")
 
-    conn = get_db()
-
     # Create sync log entry
+    conn = get_db()
     log_id = str(uuid.uuid4())
     with conn.cursor() as cur:
         cur.execute(
@@ -322,6 +321,7 @@ def main():
             (log_id, json.dumps({"from_date": start_date.isoformat(), "full": args.full, "source": "find-a-tender"}))
         )
     conn.commit()
+    conn.close()
 
     total_fetched = 0
     total_inserted = 0
@@ -333,9 +333,12 @@ def main():
             chunk_end = min(chunk_start + timedelta(days=CHUNK_DAYS), today)
             print(f"Chunk {chunk_start.date()} → {chunk_end.date()}", flush=True)
 
+            # Fresh connection per chunk — Neon kills idle connections
+            conn = get_db()
             total_fetched, total_inserted, chunk_inserted = fetch_and_insert_chunk(
                 conn, chunk_start, chunk_end, total_fetched, total_inserted
             )
+            conn.close()
 
             if chunk_inserted == 0:
                 print(f"  0 releases", flush=True)
@@ -344,6 +347,7 @@ def main():
             time.sleep(REQUEST_DELAY)
 
         # Update sync log — success
+        conn = get_db()
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE tender_sync_log
@@ -352,22 +356,25 @@ def main():
                 WHERE id = %s
             """, (total_fetched, total_inserted, log_id))
         conn.commit()
+        conn.close()
 
     except Exception as e:
         # Update sync log — error
-        with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE tender_sync_log
-                SET completed_at = NOW(), status = 'error',
-                    records_fetched = %s, records_inserted = %s,
-                    error_message = %s
-                WHERE id = %s
-            """, (total_fetched, total_inserted, str(e), log_id))
-        conn.commit()
+        try:
+            conn = get_db()
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE tender_sync_log
+                    SET completed_at = NOW(), status = 'error',
+                        records_fetched = %s, records_inserted = %s,
+                        error_message = %s
+                    WHERE id = %s
+                """, (total_fetched, total_inserted, str(e), log_id))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
         raise
-
-    finally:
-        conn.close()
 
     print(f"\nDone. Fetched: {total_fetched}, Inserted: {total_inserted}")
 
