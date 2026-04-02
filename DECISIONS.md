@@ -546,3 +546,32 @@ loads complete. Create tenders_summary materialized view
 refreshed daily by Railway cron. Tako queries hit the
 summary view instead of the full tenders table.
 REVERSIBLE: Yes — just query the full table instead.
+
+---
+
+## RESEARCH — DATE: 2026-04-02
+REFERENCE REPOS FOR PHASE 6:
+
+1. github.com/CopilotKit/shadify
+   Pattern: Pass shadcn component schema to agent as context.
+   Agent composes from known components instead of raw HTML.
+   Relevant for: tender card redesign, onboarding UI,
+   bid workspace components.
+   Action: Study component schema pattern before Phase 5a
+   card redesign work.
+
+2. github.com/CopilotKit/atomic-crm (forked from marmelab)
+   Full CRM: contacts, tasks, notes, email, Kanban pipeline,
+   activity logs. React + shadcn + Supabase (swappable to Neon).
+   Relevant for: Phase 6 bid workspace as CRM pipeline.
+   Tender = Deal. Buyer contact = Contact. Pre-market event = Task.
+   Action: Review schema before building company_profiles table.
+   Do NOT fork or install — reference only until Phase 6 begins.
+   Key file to read: supabase/migrations/ for schema patterns.
+
+3. github.com/CopilotKit/excalidraw-studio
+   MCPAppsMiddleware renders diagrams as iframes in chat.
+   Relevant for: Alternative Tako iframe rendering pattern,
+   Phase 6 onboarding visual profile builder.
+   Action: Compare MCPAppsMiddleware vs current StableIframe
+   approach before Phase 5c Priority 1.7 work.
