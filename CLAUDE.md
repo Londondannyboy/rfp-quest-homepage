@@ -303,12 +303,10 @@ Pre-2024 loads pending after current runs complete.
 Railway OCDS cron configured (0 6 * * *).
 Gate: 50,000+ rows, first query under 3 seconds.
 
-**Phase 5c Priority 1.6** — DEPLOYED, NOT GATE-TESTED
+**Phase 5c Priority 1.6** — COMPLETE ✅
 visualise_tender_analytics + StableIframe deployed.
-TAKO_API_KEY set. NHS chart gate test not yet passing —
-blocked pending sufficient value_amount data in Neon.
-Gate: "Show me NHS contract spend by year"
-      → Tako chart iframe renders in conversation
+Tako chart confirmed rendering in production 2026-04-02.
+Gate test: "Show me NHS contract spend by year" PASSING.
 
 **Phase 5c Priority 2** — Instant tender card while AI analyses
 Emit tender data immediately on identify via CopilotKit state.
