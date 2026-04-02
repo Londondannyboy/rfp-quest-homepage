@@ -499,3 +499,17 @@ OUTCOME: Replace bulk_load_tenders.py OCDS approach
 with contracts_finder_v2_ingest.py REST v2 approach.
 Coverage: 2000-01-01 to now. ~25 years of data.
 REVERSIBLE: Yes — OCDS endpoint still available.
+
+---
+
+## D34 — DATE: 2026-04-02
+DECISION: Reconnect to Neon per chunk in long-running loaders.
+CONTEXT: psycopg2 connections held open for hours are killed
+by Neon's idle connection timeout. Both overnight loaders
+died with InterfaceError: connection already closed.
+TRIED AND FAILED: Single connection held for entire run —
+dies mid-batch overnight.
+OUTCOME: Both find_a_tender_ingest.py and
+contracts_finder_v2_ingest.py now open a fresh psycopg2
+connection for each chunk and close it immediately after.
+REVERSIBLE: Yes — but don't. This is the correct pattern.
