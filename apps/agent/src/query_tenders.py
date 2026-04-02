@@ -44,7 +44,8 @@ def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
             SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
             FROM tenders
             WHERE to_tsvector('english', title) @@ plainto_tsquery('english', %s)
-            ORDER BY published_date DESC NULLS LAST, fetched_at DESC
+            ORDER BY (value_amount IS NOT NULL AND value_amount > 0) DESC,
+                     published_date DESC NULLS LAST, fetched_at DESC
             LIMIT 5
             """,
             (query,)
@@ -58,7 +59,8 @@ def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
                 SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
                 FROM tenders
                 WHERE title ILIKE %s OR buyer_name ILIKE %s
-                ORDER BY published_date DESC NULLS LAST, fetched_at DESC
+                ORDER BY (value_amount IS NOT NULL AND value_amount > 0) DESC,
+                         published_date DESC NULLS LAST, fetched_at DESC
                 LIMIT 5
                 """,
                 (f"%{query}%", f"%{query}%")

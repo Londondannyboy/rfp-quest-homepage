@@ -82,8 +82,11 @@ agent = create_deep_agent(
         3. Generate HTML to display these tenders as cards using this pattern:
            - Create a grid layout with tender cards
            - Each card should show: status badge, title, buyer, value (formatted as £1.2M), deadline
+           - If value is 0, show "Value not published" in grey text
+           - If deadline is empty, show "No deadline" in grey text
            - Use CSS variables for theming (var(--color-text-primary), etc.)
-           - Include "Analyse" and "View on CF" buttons for each tender
+           - Include Analyse button: onclick="sendPrompt('Analyse tender: [TITLE]')"
+           - Include Analytics button: onclick="sendPrompt('Show analytics for [BUYER] tenders')"
         Do NOT call plan_visualization for tender requests.
         After generating the HTML from tender data, call
         widgetRenderer directly. Skip the planning step
