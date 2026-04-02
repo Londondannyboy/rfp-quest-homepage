@@ -550,28 +550,42 @@ REVERSIBLE: Yes — just query the full table instead.
 ---
 
 ## RESEARCH — DATE: 2026-04-02
-REFERENCE REPOS FOR PHASE 6:
+CONFIRMED DIRECTION FOR PHASE 6:
+Use Atomic CRM v1.5 (marmelab/atomic-crm,
+CopilotKit fork) as bid workspace foundation.
 
-1. github.com/CopilotKit/shadify
-   Pattern: Pass shadcn component schema to agent as context.
-   Agent composes from known components instead of raw HTML.
-   Relevant for: tender card redesign, onboarding UI,
-   bid workspace components.
-   Action: Study component schema pattern before Phase 5a
-   card redesign work.
+Why confirmed:
+- v1.5 released March 2026 — actively maintained
+- Used in production by marmelab (serious React shop)
+- MCP server built — connects to Claude Code/Desktop
+- shadcn/ui (same as Shadify) — consistent design system
+- AGENTS.md + skill files — designed for Claude Code
+- OAuth identity provider — can auth RFP.quest users
+- Customisable Kanban stages — configure for bid pipeline
+- Supabase backend swappable to Neon (same Postgres)
+- MIT license
 
-2. github.com/CopilotKit/atomic-crm (forked from marmelab)
-   Full CRM: contacts, tasks, notes, email, Kanban pipeline,
-   activity logs. React + shadcn + Supabase (swappable to Neon).
-   Relevant for: Phase 6 bid workspace as CRM pipeline.
-   Tender = Deal. Buyer contact = Contact. Pre-market event = Task.
-   Action: Review schema before building company_profiles table.
-   Do NOT fork or install — reference only until Phase 6 begins.
-   Key file to read: supabase/migrations/ for schema patterns.
+Phase 6 architecture:
+- Fork marmelab/atomic-crm (not CopilotKit fork —
+  CopilotKit fork is newer but less battle-tested)
+- Swap Supabase for Neon — tenders + CRM in one DB
+- Configure Kanban stages for bid pipeline
+- Add tender_id FK to deals table
+- Connect Atomic CRM MCP server to RFP.quest agent
+- Authenticate RFP.quest users via Atomic CRM OAuth
+- Tavily + Exa populate contacts from buyer research
 
-3. github.com/CopilotKit/excalidraw-studio
-   MCPAppsMiddleware renders diagrams as iframes in chat.
-   Relevant for: Alternative Tako iframe rendering pattern,
-   Phase 6 onboarding visual profile builder.
-   Action: Compare MCPAppsMiddleware vs current StableIframe
-   approach before Phase 5c Priority 1.7 work.
+DO NOT start Phase 6 until Phase 5 complete.
+DO NOT fork or install until Phase 5c Priority 1.7
+and Phase 5c Priority 3 are done.
+
+Reference URLs:
+- github.com/marmelab/atomic-crm
+- marmelab.com/atomic-crm/doc/
+- marmelab.com/blog/2026/03/13/atomic-crm-1-5.html
+
+Other reference repos:
+- github.com/CopilotKit/shadify — component schema pattern
+  for agent-composed UI. Study before Phase 5a card redesign.
+- github.com/CopilotKit/excalidraw-studio — MCPAppsMiddleware
+  iframe pattern. Compare vs StableIframe before P1.7.
