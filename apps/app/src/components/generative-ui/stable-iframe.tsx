@@ -113,6 +113,7 @@ export const StableIframe = memo(function StableIframe({
         title={title || "Tako Analytics Chart"}
         width="100%"
         height={height}
+        allow="fullscreen"
         style={{
           border: "none",
           display: "block",

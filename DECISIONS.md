@@ -513,3 +513,36 @@ OUTCOME: Both find_a_tender_ingest.py and
 contracts_finder_v2_ingest.py now open a fresh psycopg2
 connection for each chunk and close it immediately after.
 REVERSIBLE: Yes — but don't. This is the correct pattern.
+
+---
+
+## D35 — DATE: 2026-04-02
+DECISION: Tako API response path is outputs.knowledge_cards,
+not knowledge_cards at top level.
+CONTEXT: visualise_tender_analytics tool was checking
+data["knowledge_cards"] but Tako returns the cards nested
+under data["outputs"]["knowledge_cards"]. Tool was raising
+"Tako returned no knowledge cards" on every call despite
+the API returning 200 with valid chart data.
+OUTCOME: Fixed to check data["outputs"]["knowledge_cards"]
+with fallback to data["knowledge_cards"]. Also removed
+sandbox attribute from StableIframe — Tako embeds are
+trusted third-party content that needs full JS execution.
+REVERSIBLE: N/A — bug fix.
+
+---
+
+## D36 — DATE: 2026-04-02
+DECISION: Pre-computed category insights planned for
+Phase 5c Priority 1.7.
+CONTEXT: Tako charts render live from Neon SQL queries,
+but common analytical questions (top buyers, spend by
+sector, SME breakdown) could be pre-computed into a
+materialized view or summary table. This would make
+Tako charts instant instead of waiting for a full
+table scan on 50,000+ rows.
+OUTCOME: Planned as Phase 5c Priority 1.7 after bulk
+loads complete. Create tenders_summary materialized view
+refreshed daily by Railway cron. Tako queries hit the
+summary view instead of the full tenders table.
+REVERSIBLE: Yes — just query the full table instead.
