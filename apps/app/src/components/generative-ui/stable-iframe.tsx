@@ -40,19 +40,27 @@ export const StableIframe = memo(function StableIframe({
   title,
 }: StableIframeProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(400);
+  const [height, setHeight] = useState(500);
   const stableId = getStableId(embed_url);
 
   const handleMessage = useCallback(
     (e: MessageEvent) => {
+      // Tako resize messages
       if (
         e.data?.type === "tako::resize" &&
         typeof e.data.height === "number"
       ) {
-        // Only handle messages from our iframe
-        if (iframeRef.current?.contentWindow === e.source) {
-          setHeight(Math.min(Math.max(e.data.height, 200), 2000));
-        }
+        console.log("tako::resize received", e.data);
+        setHeight(Math.min(Math.max(e.data.height, 200), 2000));
+      }
+      // Tako may also send resize without the type prefix
+      if (
+        e.data?.height &&
+        typeof e.data.height === "number" &&
+        e.origin?.includes("tako.com")
+      ) {
+        console.log("tako resize (origin-based)", e.data);
+        setHeight(Math.min(Math.max(e.data.height, 200), 2000));
       }
     },
     []
@@ -105,7 +113,6 @@ export const StableIframe = memo(function StableIframe({
         title={title || "Tako Analytics Chart"}
         width="100%"
         height={height}
-        sandbox="allow-scripts allow-same-origin"
         style={{
           border: "none",
           display: "block",
