@@ -29,11 +29,16 @@ export default function HomePage() {
       if (e.data?.type === "open-link" && typeof e.data.url === "string") {
         window.open(e.data.url, "_blank", "noopener,noreferrer");
       }
+      // sendPrompt from widget iframe → submit as chat message
+      if (e.data?.type === "send-prompt" && typeof e.data.text === "string") {
+        agent.addMessage({ id: crypto.randomUUID(), content: e.data.text, role: "user" });
+        copilotkit.runAgent({ agent });
+      }
       // Tako iframe resize events are handled by StableIframe component directly
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [agent, copilotkit]);
 
 
   return (

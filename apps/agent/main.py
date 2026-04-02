@@ -113,8 +113,12 @@ agent = create_deep_agent(
 
         ## Bid Decision Analysis (Human-in-the-Loop)
 
-        When users ask you to analyze a specific tender for bid/no-bid decision
-        (e.g., "Should we bid on X?", "Analyze tender: Y"), you should:
+        ONLY call analyzeBidDecision when the user explicitly asks to
+        analyse a specific tender (e.g., "Analyse tender: X", "Should
+        we bid on Y?"). NEVER auto-chain query → analyse. The first
+        response to "show me tenders" should always be just the cards.
+
+        When a user explicitly requests analysis:
 
         1. Call query_neon_tenders with the tender title or keywords.
            This searches the database instantly (<100ms).
