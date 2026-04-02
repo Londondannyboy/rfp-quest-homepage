@@ -575,6 +575,25 @@ Phase 6 architecture:
 - Authenticate RFP.quest users via Atomic CRM OAuth
 - Tavily + Exa populate contacts from buyer research
 
+AUTHENTICATION: Neon Auth (not Atomic CRM OAuth)
+Reason: All data — tenders, company profiles, CRM
+contacts, deals, tasks, users — must be in one Neon
+database for cross-referencing queries to work in
+real time. Fragmented data across Supabase + Neon
+breaks the intelligence layer.
+
+Atomic CRM contribution: data model + shadcn UI
+components only. Backend runs on Neon, not Supabase.
+
+Core intelligence pattern:
+When user shows interest in opportunity X:
+1. Query active bids for same buyer/sector
+2. Surface outstanding tasks on related bids
+3. Identify named contacts at that buyer
+4. Compare CPV codes, value range, framework
+5. Show last award winner + value
+= Proactive bid intelligence, not reactive search
+
 DO NOT start Phase 6 until Phase 5 complete.
 DO NOT fork or install until Phase 5c Priority 1.7
 and Phase 5c Priority 3 are done.
