@@ -210,14 +210,15 @@ Prerequisites: fresh browser tab, no API calls in prior 30 minutes.
 2. "Show me recent UK government tenders"
    Expected: 20 tender cards render in widgetRenderer ✅
 
-3. "Analyse tender: BWV Support & Maintenance by Cambridgeshire
-   Constabulary, value £128K, deadline 31 Mar 2026"
+3. "Analyse tender: Service Wing Demolition (RAAC)"
+   Expected: Agent calls query_neon_tenders, finds tender
+   by North West Anglia NHS Foundation Trust (£10.6M)
    Expected: HITL bid decision card renders ✅
    Expected: Ignoring HITL does not crash agent ✅
 
-CRITICAL NOTE: Gate test 3 requires full tender details in prompt.
-Do not ask agent to find tender first — double-call timeout.
-Do not run any gate test during active development sessions.
+CRITICAL NOTE: Full tender details no longer needed in prompt —
+Neon lookup finds the tender by title. Do not run any gate test
+during active development sessions.
 
 Phase 5c Priority 1 (CONFIRMED ON PRODUCTION 2026-03-31):
 Prerequisites: 18+ rows in Neon tenders table.
@@ -226,14 +227,10 @@ Prerequisites: 18+ rows in Neon tenders table.
    → Tender cards render ✅
    → SELECT COUNT(*) FROM tenders returns 18+ rows ✅
 
-2. "Analyse tender: BWV Support & Maintenance"
-   (no buyer/value/deadline provided)
-   → Agent calls query_neon_tenders (not fetch_uk_tenders) ✅
+2. "Analyse tender: Service Wing Demolition (RAAC)"
+   → Agent calls query_neon_tenders ✅
+   → Finds North West Anglia NHS Foundation Trust, £10.6M
    → HITL bid decision card renders within 45 seconds ✅
-
-CRITICAL NOTE: Gate test 2 now works WITHOUT full tender details
-because Neon lookup replaces the live feed fetch.
-The old workaround (providing full details) is no longer needed.
 
 ## ENVIRONMENT
 
