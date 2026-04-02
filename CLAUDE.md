@@ -331,17 +331,50 @@ replaced with real tender queries.
 Server-side render tender titles into page HTML.
 Required before rfp.quest domain switch.
 
-**Phase 6** — Company profile + bid tracker + Zep evaluation
-Company registration: name, Companies House number, CPV codes,
-certifications, framework memberships.
-Bid tracker table in Neon.
-Evaluate Zep for entity relationship graph on top of Neon data.
-Zep can build buyer/CPV/tender relationships from existing data
-without needing bid outcomes. Cheaper than Neo4j.
+**Phase 6** — Company profile + personalised matching
+The session that turns RFP.quest from generic search into
+a product worth paying £300/month for.
+
+Part 1 — Schema:
+  company_profiles: name, Companies House number, region,
+    sectors, min/max contract value, is_sme, certifications.
+  company_users: email, company_id FK, role. Multi-user
+    from day one — profile belongs to company, not individual.
+  buyer_taxonomy: maps raw buyer_name → parent_org, org_type,
+    region, normalised_name. Top 200 buyers classified.
+
+Part 2 — Conversational onboarding (CopilotKit HITL):
+  NOT a form. Agent asks 6 questions conversationally:
+  company name, sector, region, contract size range,
+  SME status, certifications. HITL confirmation card.
+  First thing a new user sees — "Welcome to RFP.quest.
+  Let me set up your company profile."
+
+Part 3 — Personalised query:
+  query_neon_tenders accepts optional company_id.
+  Filters by sector, value range, SME suitability.
+  Sorts local buyers first (buyer_taxonomy.region match).
+  Highlights LOCAL matches differently in tender cards.
+  NHS procurement regionalism surfaced automatically:
+  "3 of last 5 cleaning contracts at Yorkshire NHS trusts
+  went to Leeds-based companies."
+
+Part 4 — Neon Auth:
+  JWT-based, native Neon Auth, Next.js SDK.
+  Company profile tied to org ID, team invites via email.
+  No Auth0, no Supabase — all within Neon.
+
+Gate:
+  1. Fresh session → onboarding HITL fires automatically
+  2. After onboarding → personalised results filtered
+  3. Local buyer highlighted differently in card
+  4. Second team member accesses same company profile
 
 **Phase 7** — Intelligent matched feed + additional sources
-Agent filters Neon by company CPV codes for logged-in users.
 Redis cache if Neon latency becomes noticeable at scale.
-Find a Tender and Contracts Finder v2 already integrated.
 Add Proactis, Delta eSourcing as additional sources.
 source column in tenders table tracks provenance.
+Bid tracker table in Neon.
+Evaluate Zep for entity relationship graph on top of
+Neon data — buyer/CPV/tender relationships from existing
+data without needing bid outcomes.
