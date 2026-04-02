@@ -83,7 +83,9 @@ def _call_tako(csv_string: str, question: str) -> str:
     if "error" in data:
         raise ValueError(f"Tako API error: {data['error']}")
 
-    cards = data.get("knowledge_cards", [])
+    # Tako nests cards under outputs.knowledge_cards
+    outputs = data.get("outputs", data)
+    cards = outputs.get("knowledge_cards", [])
     if not cards:
         raise ValueError("Tako returned no knowledge cards")
 
