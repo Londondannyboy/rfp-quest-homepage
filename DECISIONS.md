@@ -608,3 +608,36 @@ Other reference repos:
   for agent-composed UI. Study before Phase 5a card redesign.
 - github.com/CopilotKit/excalidraw-studio — MCPAppsMiddleware
   iframe pattern. Compare vs StableIframe before P1.7.
+
+---
+
+## ARCHITECTURAL QUESTION — DATE: 2026-04-02
+OPEN: Real-time CRM updates — Neon vs Supabase
+
+CONTEXT: Atomic CRM uses Supabase for real-time
+Kanban updates via Postgres logical replication.
+Neon does not have native real-time subscriptions.
+Real-time matters for team accounts (2+ users
+editing the same bid pipeline simultaneously).
+
+OPTIONS:
+A. Neon + thin real-time layer (PartyKit/Ably)
+B. Neon for tenders + Supabase for CRM tables
+C. Neon only — defer real-time until team use case
+
+DECISION: Option C — build on Neon, defer.
+Real-time Kanban is a team feature.
+First users are likely solo or 2-person.
+Revisit when first team account requests it.
+REVERSIBLE: Yes.
+
+OPEN: HubSpot/Salesforce integration
+CONTEXT: Target customers likely already use
+HubSpot or Salesforce. RFP.quest should complement
+not replace. Integration strategy:
+- Inbound: sync existing procurement contacts
+- Outbound: push new contacts discovered via
+  Tavily/Exa back to existing CRM
+- Position as "bid intelligence layer on top of
+  your existing CRM" not "CRM replacement"
+Status: DEFER to Phase 7. Document the pattern now.
