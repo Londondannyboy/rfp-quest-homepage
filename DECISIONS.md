@@ -668,3 +668,20 @@ OUTCOME: Neon Pro plan active. All 47 projects set to
 0.25 CU with scale-to-zero (5 min suspend timeout).
 Cost minimised — compute only runs when queried.
 REVERSIBLE: Yes — can downgrade if rows reduced.
+
+---
+
+## D39 — DATE: 2026-04-02
+DECISION: Add connection retry logic to both loaders
+plus disable Neon scale-to-zero during historical loads.
+CONTEXT: Loaders died three times with
+"cursor already closed" — Neon compute suspending
+mid-chunk despite per-chunk reconnection pattern (D34).
+The 5-min suspend timeout was too aggressive for loaders
+that pause 0.5-1s between API calls.
+OUTCOME: Retry wrapper on get_db() with 3 attempts.
+Chunk loop catches OperationalError + InterfaceError
+and retries with fresh connection after 10s delay.
+Scale-to-zero disabled during load runs.
+Re-enable scale-to-zero after historical loads complete.
+REVERSIBLE: Yes — revert Neon setting post-load.

@@ -32,8 +32,13 @@ Session 2026-04-02:
 - Tako integration confirmed working (D35)
 - Dead code cleanup: uk_tenders.py, bulk_load_tenders.py deleted
 - Unused imports removed (ChatOpenAI, asyncio, APIStatusError)
-- Both loaders running: 47,600+ rows and climbing
+- Both loaders running: 58,030 rows (46.7K FAT + 11.1K CF v2)
 - fetch_uk_tenders fully removed from codebase
+- notice_type backfilled for all FAT rows from stage column
+- CF v2 raw_ocds set to None — all fields parsed (D37)
+- Neon Pro plan activated, all 47 projects at 0.25 CU
+  with scale-to-zero (D38)
+- Data quality audit: gaps identified, backfill planned
 
 ## FROZEN SECTIONS
 
@@ -153,6 +158,9 @@ Use contracts_finder_v2_ingest.py instead. See D33.
 
 DO NOT hardcode LANGSMITH_API_KEY.
 Use os.getenv("LANGSMITH_API_KEY") only.
+
+DO NOT null raw_ocds for any source — contains unextracted
+fields needed for future features. Pro plan handles storage. See D37.
 
 DO NOT pass the full Neon DATABASE_URL to psycopg2 without
 stripping channel_binding=require first. See D22.
@@ -277,9 +285,10 @@ Old DB (decommission when ready):
 Neon:
 - Project: rfp-quest-production (US East 1)
 - Project ID: calm-dust-71989092
-- Table: tenders (~39,000 rows as of 2026-04-01, growing)
+- Table: tenders (~58,030 rows as of 2026-04-02, growing)
 - Rich schema: 37+ columns, 9 indexes, tender_sync_log table
 - pgvector: enabled
+- Neon Pro plan — 10 GB storage, 0.25 CU, scale-to-zero
 - DATABASE_URL: SET in Railway ✅
 - Note: strip channel_binding=require before psycopg2 connection
 

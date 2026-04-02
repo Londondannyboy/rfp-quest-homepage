@@ -63,8 +63,18 @@ def strip_html(text: str | None) -> str | None:
     return re.sub(r"<[^>]+>", " ", text).strip()
 
 
-def get_db():
-    return psycopg2.connect(DATABASE_URL)
+def get_db(retries=3, delay=5):
+    for attempt in range(retries):
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            conn.autocommit = False
+            return conn
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"DB connect failed, retry {attempt+1}: {e}", flush=True)
+                time.sleep(delay)
+            else:
+                raise
 
 
 def fetch_notices(date_from: datetime, date_to: datetime, size: int = 1000) -> tuple[list, int]:
@@ -332,10 +342,17 @@ def main():
         while chunk_start < today:
             chunk_end = min(chunk_start + timedelta(days=window_days), today)
 
-            # Fresh connection per window — Neon kills idle connections
-            conn = get_db()
-            cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
-            conn.close()
+            # Fresh connection per window — retry on Neon suspension (D38)
+            try:
+                conn = get_db()
+                cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
+                conn.close()
+            except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+                print(f"  Connection lost, retrying window: {e}", flush=True)
+                time.sleep(10)
+                conn = get_db()
+                cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
+                conn.close()
 
             chunk_start = chunk_end
             time.sleep(REQUEST_DELAY)
