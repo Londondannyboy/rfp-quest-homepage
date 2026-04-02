@@ -1,6 +1,6 @@
 # HANDOFF.md — rfp-quest-homepage
 # Session date: 2026-04-02
-# Sign-off status: SIGNED OFF — gate tests passing, cleanup complete, Phase 5a next.
+# Sign-off status: SIGNED OFF — 2026-04-02
 
 ## CURRENT STATE (verified 2026-04-02)
 
@@ -8,7 +8,7 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: c4db4a2
+Latest commit: fd42cc7
 
 ### Gate tests — ALL PASSING ✅
 1. "Draw a red circle" → red circle renders ✅
@@ -61,31 +61,31 @@ Latest commit: c4db4a2
 8. NO RFP.QUEST BRANDING — Phase 5a
 9. NO SSR TENDER FEED — Phase 5b
 
-## NEXT ACTION — Phase 5a: RFP.quest Rebrand (~30 min)
+## NEXT ACTION
 
-Step 1: Read CLAUDE.md Phase 5a section
-Step 2: Update apps/app/src/app/page.tsx header:
-  Change "Open Generative UI" → "RFP.quest"
-  Change "powered by CopilotKit" → "Beta"
-Step 3: Update apps/app/src/components/demo-data.ts
-  Replace demo prompts with:
-  - "Show me recent NHS tenders"
-  - "Show me NHS contract spend by year"
-  - "Analyse tender: Service Wing Demolition (RAAC)"
-Step 4: Update page title in apps/app/src/app/layout.tsx
-  Change title to "RFP.quest — UK Procurement Intelligence"
-Step 5: Remove or replace demo gallery if it shows
-  irrelevant demos (car axle, 3D sphere etc)
-Step 6: Commit:
-  git add -A
-  git commit -m "feat: Phase 5a — RFP.quest rebrand"
-  git push origin main
-Step 7: Verify on production Vercel URL
-Step 8: Update HANDOFF.md sign-off status and paste
-  to Claude.ai for sign-off
+Step 1: Housekeeping (do first, ~10 min):
+  Restart FAT loader:
+  cd apps/agent
+  nohup uv run python src/find_a_tender_ingest.py \
+    --from-date=2024-11-26 > /tmp/fat_2024.log 2>&1 &
+  Regenerate LANGSMITH_API_KEY in Railway.
+  Configure two Railway cron services (see items 5+6 above).
 
-Gate: Production URL shows RFP.quest branding,
-demo prompts show real tender queries.
+Step 2: Phase 5c Priority 1.7 — Pre-computed Tako insights
+  Create category_insights table in Neon.
+  Build nightly cron generating Tako charts per category:
+  NHS, Construction, IT, Education, Defence, Facilities,
+  Transport, Social Care, Police.
+  Store embed_url in category_insights.
+  Agent checks category_insights before calling Tako live.
+  Gate: "Show me NHS contract spend" returns chart in <3s.
+
+Step 3: Phase 6 foundation — company profile + matching
+  See conversation with Claude.ai 2026-04-02 for full spec:
+  - company_profiles + company_users tables
+  - buyer_taxonomy table (top 200 buyers classified)
+  - Onboarding tool via HITL (conversational, not a form)
+  - Personalised query_neon_tenders with local buyer highlight
 
 ## LAST COMMITS (all authorised)
 
@@ -147,4 +147,4 @@ DO NOT add sandbox attribute to StableIframe (D35).
 
 ## SIGN-OFF STATUS
 
-SIGNED OFF — gate tests passing, cleanup complete, Phase 5a next.
+SIGNED OFF — 2026-04-02
