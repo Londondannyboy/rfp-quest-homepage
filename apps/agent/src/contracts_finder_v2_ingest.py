@@ -159,7 +159,7 @@ def parse_notice(notice: dict) -> dict:
         "contract_end_date": item.get("end") or None,
         "cpv_codes": json.dumps(cpv_codes),
         "region": (item.get("region") or "")[:255] or None,
-        "raw_ocds": None,
+        "raw_ocds": safe_json_dumps(item),
         "source": "contracts-finder-v2",
         "notice_type": notice_type,
         "procedure_type": item.get("procedureType"),

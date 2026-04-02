@@ -641,3 +641,30 @@ not replace. Integration strategy:
 - Position as "bid intelligence layer on top of
   your existing CRM" not "CRM replacement"
 Status: DEFER to Phase 7. Document the pattern now.
+
+---
+
+## D37 — DATE: 2026-04-02
+DECISION REVERSED — retain raw_ocds for CF v2.
+CONTEXT: Pro plan storage (10GB) makes cost negligible.
+CF v2 contains unextracted fields: description,
+coordinates, approachMarketDate, isSubNotice,
+cpvCodesExtended, regionText, lastNotifiableUpdate.
+These are valuable for future feature development
+and cannot be recovered without full re-ingestion.
+OUTCOME: raw_ocds stored for all sources. Do not null.
+REVERSIBLE: Yes — can null later once all useful
+fields are confirmed extracted into schema columns.
+
+---
+
+## D38 — DATE: 2026-04-02
+DECISION: Upgrade Neon to Pro plan.
+CONTEXT: Free tier has 512 MB storage limit. At 58K rows
+the tenders table is 285 MB. Historical loads (pre-2024)
+will push past 512 MB. Pro plan gives 10 GB included.
+At ~5 KB/row average, 500K rows would be ~2.5 GB.
+OUTCOME: Neon Pro plan active. All 47 projects set to
+0.25 CU with scale-to-zero (5 min suspend timeout).
+Cost minimised — compute only runs when queried.
+REVERSIBLE: Yes — can downgrade if rows reduced.
