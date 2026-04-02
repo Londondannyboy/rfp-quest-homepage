@@ -1,6 +1,6 @@
 # CLAUDE.md — rfp-quest-homepage
 # Standard: See CLAUDE-STANDARD.md
-# Sign-off status: SIGNED OFF 2026-04-01
+# Sign-off status: SIGNED OFF 2026-04-02
 
 ---
 
@@ -20,19 +20,20 @@ pattern.
 
 ACTIVE — Phase 4c COMPLETE, Phase 5c IN PROGRESS
 
-Completed today (2026-04-01):
+Session 2026-04-01:
 - Rich tenders schema (37+ columns, 9 indexes, D31)
 - 5,604 Find a Tender rows migrated from old DB
-- bulk_load_tenders.py retired — replaced by CF v2 (D33)
-- contracts_finder_v2_ingest.py — REST v2 API with
-  SME flags, procedure type, 25yr history (D33)
-- find_a_tender_ingest.py — cursor pagination,
-  chunked by date, 2021→now
-- Both loaders running: 39,000+ rows and climbing
-- Tako integration deployed (visualise_tender_analytics
-  + StableIframe) — not yet gate-tested
+- contracts_finder_v2_ingest.py — REST v2 API (D33)
+- find_a_tender_ingest.py — cursor pagination, chunked
 - LangSmith tracing enabled in Railway
-- fetch_uk_tenders removed from agent tools
+
+Session 2026-04-02:
+- All 4 gate tests passing on production ✅
+- Tako integration confirmed working (D35)
+- Dead code cleanup: uk_tenders.py, bulk_load_tenders.py deleted
+- Unused imports removed (ChatOpenAI, asyncio, APIStatusError)
+- Both loaders running: 47,600+ rows and climbing
+- fetch_uk_tenders fully removed from codebase
 
 ## FROZEN SECTIONS
 
@@ -296,11 +297,10 @@ Neon tenders table, pgvector, query_neon_tenders tool,
 agent queries Neon only (no live API calls).
 
 **Phase 5c Priority 1.5** — IN PROGRESS
-Rich schema deployed (D31). Both loaders running overnight:
-- FAT: 36,000+ rows, 2024-01-01→now
-- CF v2: 2,700+ rows, 2024-01-01→now
-Pre-2024 loads pending after current runs complete.
-Railway OCDS cron configured (0 6 * * *).
+Rich schema deployed (D31). Both loaders running:
+- FAT: 40,500+ rows, 2024→now
+- CF v2: 6,900+ rows, 2024→now (47,600+ total)
+Pre-2024 loads pending. Railway OCDS cron configured.
 Gate: 50,000+ rows, first query under 3 seconds.
 
 **Phase 5c Priority 1.6** — COMPLETE ✅
@@ -323,8 +323,9 @@ analyzeBidDecision. Graceful error message if Opus overloaded.
 **Phase 5c Priority 5** — Neon Auth
 JWT-based, native Neon Auth, Next.js SDK.
 
-**Phase 5a** — RFP.quest rebrand (cosmetic, ~30 min)
-Header, title, Beta badge, demo-data.ts prompts.
+**Phase 5a** — NEXT: RFP.quest rebrand (cosmetic, ~30 min)
+Header → "RFP.quest", title, Beta badge, demo prompts
+replaced with real tender queries.
 
 **Phase 5b** — SSR tender feed (SEO, ~30 min)
 Server-side render tender titles into page HTML.
