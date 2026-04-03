@@ -1098,3 +1098,99 @@ automatically drafts bid-level USPs by combining
 company profile + tender requirements + past wins
 in same CPV/sector. User refines and confirms.
 REVERSIBLE: Yes.
+
+## D49 — DATE: 2026-04-03
+DECISION: Kanban pipeline dropped. Product is a team
+skills graph and bid intelligence network.
+CONTEXT: Atomic CRM's Kanban was added as a default
+assumption. No user has requested it. The genuinely
+differentiated feature is the team skills graph —
+a 3D force-directed visualization of individual skills,
+certifications, past wins, and CPV experience that
+forms into a collective bid capability when people
+join a team. No procurement software models teams.
+They all model companies. This is the insight.
+OUTCOME: Phase 6 pivot. Drop Kanban entirely.
+Build in this order:
+
+PHASE 6a — Foundation (unchanged):
+Neon Auth, company claim by domain, Companies House
++ Tavily auto-populate, HITL onboarding, personalised
+query_neon_tenders. Standard but necessary.
+
+PHASE 6b — Individual skills graph:
+Each person who joins gets a 3D force graph of
+themselves. Not a profile page. A living graph.
+Nodes: person, skills, certifications, past wins,
+CPV categories, sectors, employers, frameworks.
+Edges: person→has→skill, person→won→contract,
+skill→qualifies→CPV, win→in→sector.
+Technology: React Force Graph 3D (Three.js/WebGL).
+Data: Zep graph DB ingests from:
+  - LinkedIn URL (user-provided, Tavily scrapes)
+  - Companies House history
+  - User-entered past wins (structured)
+  - Certifications with expiry dates
+  - HITL confirmation before anything is published
+The person sees themselves — their skills, experience,
+and credibility — visualised for the first time as
+an interconnected graph. This is unprecedented.
+
+PHASE 6c — Team graph:
+When a second person joins a company or bid team,
+their graph merges with the first. The combined
+graph shows:
+  - Coverage: skills and CPV codes the team covers
+  - Gaps: required skills/certs not yet in team
+  - Strength: depth of experience per node
+  - Suggested connections: people in network who
+    fill the gaps (bid managers, sector specialists)
+Graph changes colour and shape in real time as
+team members are added. A bid manager joining
+who has 5+ NHS wins in the target CPV turns the
+relevant nodes green. A gap turns red.
+Technology: React Force Graph 3D, Zep graph DB,
+pgvector similarity for suggested connections.
+
+PHASE 6d — Bid intelligence:
+When a tender is identified (live or manual),
+the agent overlays the tender's requirements
+onto the team graph:
+  - Which team nodes satisfy which requirements
+  - Which gaps must be filled before bidding
+  - Suggested external specialists to recruit
+  - LinkedIn outreach drafted via Trigify MCP
+  - Past win nodes in same CPV highlighted
+  - "Teams that win contracts like this have X"
+This is the shock-and-awe moment: a person sees,
+possibly for the first time ever, exactly how their
+skills and team connect to a specific contract
+opportunity. Not a score. A graph.
+
+ATOMIC CRM: Use data model only (contacts, companies).
+Do not fork or host Atomic CRM application.
+Copy Postgres schema patterns into Neon directly.
+Use shadcn/ui components as reference, not dependency.
+No separate Atomic CRM deployment.
+
+ZEP: Graph database for entity relationships.
+Person, skill, certification, win, CPV, sector,
+buyer, framework — all as Zep entities.
+Relationships between them as Zep edges.
+Query: "find people whose skill graph overlaps
+with this tender's CPV requirements by >70%"
+
+REACT FORCE GRAPH 3D: Frontend visualisation.
+github.com/vasturiano/react-force-graph
+Three.js/WebGL, interactive, supports 3D node/edge
+graph with click, hover, zoom, rotation.
+Node colours encode: person, skill, win, gap, match.
+Edge thickness encodes relationship strength.
+
+DO NOT build Kanban.
+DO NOT build pipeline stages.
+DO NOT build document vault before graph is working.
+DO NOT start Phase 6b until Phase 6a gate tests pass.
+REVERSIBLE: Yes — Kanban can be added later if
+users request it. Graph cannot be easily removed
+once it becomes the product identity.

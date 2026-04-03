@@ -78,33 +78,38 @@ All 4 gates tested in a SINGLE browser tab session.
 
 Phase 5a COMPLETE ✅ (rebrand done)
 Phase 5c Priority 1.7 COMPLETE ✅
-Next: Phase 6 — Company profile + personalised matching
+Next: Phase 6 — Team skills graph + bid intelligence (D49)
 
-Phase 6 Part 1 — Schema:
-  company_profiles: name, Companies House number, region,
-    sectors, min/max contract value, is_sme, certifications.
-  company_users: email, company_id FK, role. Multi-user
-    from day one.
-  buyer_taxonomy: maps raw buyer_name → parent_org, org_type,
-    region, normalised_name. Top 200 buyers classified.
+Phase 6a — Foundation (current):
+  Neon Auth JWT. Company claimed by domain (unique).
+  Companies House API + Tavily auto-populate profile.
+  HITL onboarding. Personalised query_neon_tenders.
+  Schema: company_profiles + person_profiles tables
+  already created in Neon (2026-04-03).
 
-Phase 6 Part 2 — Conversational onboarding (CopilotKit HITL):
-  NOT a form. Agent asks 6 questions conversationally.
-  First thing a new user sees.
+Phase 6b — Individual skills graph (target product):
+  Each person gets a 3D force graph of their skills,
+  certifications, past wins, and CPV experience.
+  React Force Graph 3D + Zep graph DB.
+  This is the product differentiator. See D49.
 
-Phase 6 Part 3 — Personalised query:
-  query_neon_tenders accepts optional company_id.
-  Filters by sector, value range, SME suitability.
-  Highlights local buyer matches differently.
+Phase 6c — Team graph:
+  Graphs merge on team formation. Gaps surface.
+  Suggested connections fill missing skills.
 
-Phase 6 Part 4 — Neon Auth:
-  JWT-based, native Neon Auth, Next.js SDK.
+Phase 6d — Bid intelligence overlay:
+  Tender requirements overlaid onto team graph.
 
-Gate tests:
-  1. Fresh session → onboarding HITL fires automatically
-  2. After onboarding → personalised results filtered
-  3. Local buyer highlighted differently in card
-  4. Second team member accesses same company profile
+Kanban pipeline DROPPED (D49).
+DO NOT build pipeline stages or deal objects.
+
+Gate tests for Phase 6a:
+  1. New user → onboarding HITL fires automatically
+  2. Enter domain → Companies House + Tavily populate
+  3. HITL confirmation → saved to Neon
+  4. Tender results filtered and tagged by match strength
+  5. Team member invited → joins same company profile
+  6. Duplicate domain rejected
 
 ## LAST COMMITS (this session — all authorised)
 
@@ -154,8 +159,8 @@ Railway cron services:
 **Phase 5c Priority 2** — DEFERRED (instant tender card)
 **Phase 5c Priority 3** — DEFERRED (loading states + multi-query fix D42)
 **Phase 5b** — DEFERRED (SSR tender feed)
-**Phase 6** — NEXT: Company profile + personalised matching
-**Phase 7** — Intelligent matched feed + additional sources
+**Phase 6** — NEXT: Team skills graph + bid intelligence (D49)
+**Phase 7** — Additional sources + messaging + scale
 
 ## DO NOT
 

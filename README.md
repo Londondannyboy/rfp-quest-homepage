@@ -247,7 +247,7 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 
 ## Roadmap
 
-Phase 6 (in development): Company profiles, Neon Auth, and personalised tender matching. Built on Atomic CRM v1.5 data model with Neon backend.
+Phase 6 (in development): 3D team skills graph and bid intelligence network. Each person sees their skills, certifications and past wins as an interactive force graph. Teams form by combining graphs — gaps surface automatically. Built on Neon Auth, Zep graph DB, and React Force Graph 3D.
 
 ## License
 

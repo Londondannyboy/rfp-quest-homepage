@@ -383,32 +383,38 @@ replaced with real tender queries.
 Server-side render tender titles into page HTML.
 Required before rfp.quest domain switch.
 
-**Phase 6** — Bid intelligence workspace (NEXT)
-Built on Atomic CRM v1.5 + Neon Auth. See D44-D48.
+**Phase 6** — Team skills graph + bid intelligence (NEXT)
+Built on Neon Auth + Zep graph DB + React Force Graph 3D.
+See D44-D49. Kanban pipeline dropped (D49).
 
-Phase 6a — Auth + company profile + personalised matching:
-  Fork marmelab/atomic-crm, swap Supabase for Neon.
+Phase 6a — Foundation:
   Neon Auth JWT. Company claimed by domain (unique).
   Companies House API + Tavily auto-populate profile.
   HITL onboarding: certifications, frameworks, sectors,
   contract value range, SME status, USPs, past wins.
   query_neon_tenders personalised by company profile.
+  Atomic CRM data model (contacts, companies) copied
+  into Neon directly — no fork, no separate deployment.
 
-Phase 6b — Bid pipeline (three opportunity types, D46):
-  Live tender, known target, relationship deal.
-  All as deal objects with tender_id FK (nullable).
-  Atomic CRM Kanban: Identified→Qualifying→Bidding→
-  Submitted→Won/Lost. Win probability AI-scored.
+Phase 6b — Individual skills graph:
+  Each person gets a 3D force graph of themselves.
+  Nodes: person, skills, certs, past wins, CPV, sectors.
+  Data from: LinkedIn (user-provided URL), Companies House,
+  user-entered wins, certifications with expiry dates.
+  Technology: React Force Graph 3D (Three.js/WebGL).
+  Zep graph DB for entity relationships and queries.
 
-Phase 6c — Decision maker intelligence (D47):
-  Buyer contact discovery via Tavily + Trigify MCP.
-  LinkedIn outreach drafted per deal.
-  Relationship stage tracked per contact.
+Phase 6c — Team graph:
+  Graphs merge when people join a company or bid team.
+  Coverage, gaps, and strength visualised in real time.
+  Suggested connections: people who fill team gaps.
+  pgvector similarity for connection recommendations.
 
-Phase 6d — Bid workspace (D48):
-  USP library at company + bid level.
-  Document vault. PQQ pre-population.
-  Saved searches + daily alert cron.
+Phase 6d — Bid intelligence overlay:
+  Tender requirements overlaid onto team graph.
+  Which nodes satisfy which requirements. Gaps shown.
+  LinkedIn outreach drafted via Trigify MCP.
+  "Teams that win contracts like this have X."
 
 Gate tests for Phase 6a:
   1. New user → onboarding HITL fires automatically
@@ -418,11 +424,8 @@ Gate tests for Phase 6a:
   5. Team member invited → joins same company profile
   6. Duplicate domain rejected
 
-**Phase 7** — Intelligent matched feed + additional sources
-Redis cache if Neon latency becomes noticeable at scale.
+**Phase 7** — Additional sources + scale
 Add Proactis, Delta eSourcing as additional sources.
 source column in tenders table tracks provenance.
-Bid tracker table in Neon.
-Evaluate Zep for entity relationship graph on top of
-Neon data — buyer/CPV/tender relationships from existing
-data without needing bid outcomes.
+Redis cache if Neon latency becomes noticeable.
+Messaging between connections.
