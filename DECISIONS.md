@@ -774,7 +774,31 @@ REVERSIBLE: N/A — bug fix required.
 
 ## D44 — DATE: 2026-04-03
 DECISION: Phase 6 full specification — network-based
-auth, company profiles, and HITL onboarding.
+auth, company profiles, HITL onboarding, built on
+Atomic CRM (marmelab/atomic-crm) data model + shadcn UI.
+
+FOUNDATION: ATOMIC CRM
+Fork marmelab/atomic-crm for:
+- Data model: contacts, companies, deals, tasks, tags
+- shadcn/ui component library (consistent with project)
+- Kanban pipeline (configure for bid stages)
+- MCP server (connects to Claude Code/Desktop)
+- MIT license
+Swap Supabase backend for Neon — all data in one DB.
+See RESEARCH section (2026-04-02) for full rationale.
+
+USER → COMPANY RELATIONSHIP (LinkedIn model):
+A person signs up first. They exist independently.
+Then they either:
+a) Create a new company (becomes admin), or
+b) Accept an invitation to join an existing company
+A person always has a profile, even without a company.
+A company is created BY a person, not the other way.
+One person can be admin of one company and connected
+to others as contractor/consultant.
+Atomic CRM contacts table maps to person_profiles.
+Atomic CRM companies table maps to company_profiles.
+Atomic CRM deals table maps to bid pipeline (Phase 6 Part 3).
 
 NETWORK MODEL:
 Not classic SaaS seats. RFP.quest is a professional
@@ -845,20 +869,38 @@ from the person. Companies House + public web only for
 company data.
 
 HITL ONBOARDING FLOW (conversational, not a form):
-First thing a new user sees after auth:
-Agent: "Welcome to RFP.quest. Let me set up your
-profile. What's your company's website?"
-→ User provides domain
-→ Agent scrapes + populates
-→ HITL confirmation card
-→ "What's your role? Are you the main person handling
-   procurement for [company]?"
+Person-first, then company. Like LinkedIn sign-up.
+
+Step 1 — Person profile (always):
+Agent: "Welcome to RFP.quest. Let's set up your profile.
+What's your name and job title?"
+→ Optional: "Paste your LinkedIn profile URL if you'd
+   like me to fill in your background automatically."
+→ If LinkedIn URL provided: Tavily scrapes, HITL confirm
+→ HITL card: person profile draft, confirm/edit
+
+Step 2 — Company (optional but prompted):
+Agent: "Do you work for a company that bids on
+government contracts? If so, what's the company website?"
+→ If yes: domain provided
+→ Agent checks if company_profiles already has that domain
+→ If exists: "I found [company] already on RFP.quest.
+   I'll send a request to join. Their admin will approve."
+→ If new: Tavily scrapes + Companies House API
+→ HITL confirmation card for company profile
+→ Person becomes admin of new company
 → "What sectors does [company] work in?"
 → "What's your typical contract size range?"
 → "Are you an SME?"
-→ "Any frameworks or certifications we should know
-   about? (G-Cloud, Crown Commercial, ISO 9001 etc)"
-→ Final HITL card: full profile summary, confirm.
+→ "Any frameworks or certifications? (G-Cloud, Crown
+   Commercial, ISO 9001 etc)"
+→ Final HITL card: full company profile, confirm.
+
+Step 3 — If no company:
+Agent: "No problem — you can still browse tenders and
+connect with companies on RFP.quest. You can set up
+a company profile anytime."
+→ Person profile saved, no company association.
 
 SCHEMA (Neon):
 company_profiles:
@@ -890,24 +932,34 @@ messages:
   (Phase 7 — schema defined now, built later)
 
 IMPLEMENTATION ORDER:
-Phase 6 Part 1 — Auth + company profile:
-  Neon Auth setup, company_profiles table,
-  domain-based uniqueness, Companies House API,
-  Tavily company scrape, HITL confirmation
+Phase 6 Part 1 — Auth + person profile:
+  Neon Auth setup (JWT, native),
+  person_profiles table,
+  conversational onboarding (person-first),
+  optional LinkedIn URL + Tavily scrape,
+  HITL person profile confirmation.
+  Atomic CRM contacts table → person_profiles.
 
-Phase 6 Part 2 — Person profile + onboarding:
-  person_profiles table, conversational onboarding
-  flow, optional LinkedIn URL + Tavily scrape,
-  HITL person profile confirmation
+Phase 6 Part 2 — Company profile:
+  company_profiles table, domain-based uniqueness,
+  Companies House API, Tavily company scrape,
+  HITL company profile confirmation,
+  person becomes admin of new company.
+  Atomic CRM companies table → company_profiles.
+  Join-existing-company flow for known domains.
 
-Phase 6 Part 3 — Team membership:
+Phase 6 Part 3 — Team + bid pipeline:
   company_users table, admin invite flow,
-  accept/decline membership, role display
+  accept/decline membership, role display.
+  Atomic CRM deals table → bid pipeline.
+  Kanban stages: Identified → Qualifying →
+  Writing → Submitted → Awarded/Lost.
+  tender_id FK on deals for linking bids to tenders.
 
 Phase 6 Part 4 — Personalised results:
   query_neon_tenders accepts company_id,
   filters by sector + value range,
-  local buyer highlighted differently
+  local buyer highlighted differently.
 
 Phase 7 — Connections + network:
   connections table, send/accept requests,
