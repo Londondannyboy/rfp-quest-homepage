@@ -197,6 +197,17 @@ Do not proceed. Do not install alternative packages.
 Do not switch to a different framework or pattern.
 Report and wait for instruction.
 
+## KNOWN ISSUES
+
+Second query on same thread crashes frontend:
+  CopilotKit @next (1.54.0-next.6) throws
+  "Cannot read properties of undefined (reading 'length')"
+  on second tool-calling query in same browser tab.
+  Backend is clean (200 OK, LangSmith traces all ✅).
+  Bug is in CopilotKit React canary, not our code.
+  Workaround: gate tests use fresh tabs per query.
+  Phase 5c Priority 3 should add error boundary.
+
 ## GATE TESTS
 
 Phase 4 gate test results:
@@ -256,6 +267,18 @@ Frontend local: http://localhost:3002
 Agent local: http://localhost:8123
 Agent production: https://rfp-quest-generative-agent-production.up.railway.app
   Railway project: c65f3508-7e52-4cde-a6f3-9cec50115b4c
+
+Debugging tools (use instead of asking user to paste logs):
+- Railway CLI: linked to rfp-quest-generative-agent production
+  railway logs — check production agent logs
+  railway variables — check env vars
+- LangSmith SDK: query traces programmatically
+  LANGCHAIN_API_KEY=$(railway variables --json | python3 -c "import sys,json; print(json.load(sys.stdin).get('LANGSMITH_API_KEY',''))") python3 -c "
+  from langsmith import Client; client = Client()
+  runs = list(client.list_runs(project_name='rfp-quest', limit=5, is_root=True))
+  for r in runs: print(r.start_time, r.status, r.error)"
+- Python 3.12 PINNED via apps/agent/.python-version
+  copilotkit requires <3.13. DO NOT upgrade.
 
 Vercel team: team_nBAZLJTbCMBi2wrIMVlsmGjZ
 Vercel project: prj_tJzSjC5nfXvUisD1CmEjlXQ19KPt
