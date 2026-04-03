@@ -715,3 +715,23 @@ NOTE: pg_cron installs dropping -39.8%.
 Market moving toward external schedulers (Inngest).
 Confirms decision to evaluate Inngest for cron work.
 REVERSIBLE: Yes.
+
+## D40 — DATE: 2026-04-03
+DECISION: Render Tako iframes via widgetRenderer,
+not takoVisualize frontend component.
+CONTEXT: The two-step chain (backend tool → frontend
+useComponent) leaves an orphaned tool_use block with
+no corresponding tool_result in the thread checkpoint.
+Anthropic rejects subsequent queries with 400 error:
+"tool_use ids found without tool_result blocks".
+Diagnosed via LangSmith trace inspection: msg[9] had
+tool_use for takoVisualize but no msg[10] tool_result.
+widgetRenderer works because it is a frontend component
+called directly by the LLM after plan_visualization
+(a backend tool that properly records tool_result).
+OUTCOME: visualise_tender_analytics now returns an html
+field containing a self-contained iframe tag. Agent
+passes this directly to widgetRenderer. Single tool
+chain, no orphaned tool_use, thread stays clean.
+takoVisualize component still registered but not called.
+REVERSIBLE: Yes — revert system prompt to use takoVisualize.

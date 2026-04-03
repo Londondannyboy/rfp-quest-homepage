@@ -223,7 +223,8 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
                   e.g. "Show me NHS contract spend by year"
 
     Returns:
-        Dictionary with embed_url (string) and title (string) for the chart.
+        Dictionary with html (string for widgetRenderer), embed_url (string),
+        and title (string) for the chart.
     """
     try:
         # Check for pre-computed category insight first
@@ -233,6 +234,7 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
             if cached_url:
                 logger.info(f"Tako analytics: cache HIT for category '{category}'")
                 return {
+                    "html": f'<iframe src="{cached_url}" width="100%" height="500px" style="border:none;" allow="fullscreen"></iframe>',
                     "embed_url": cached_url,
                     "title": question,
                     "cached": True,
@@ -246,6 +248,7 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
         embed_url = _call_tako(csv_string, question)
         logger.info(f"Tako analytics: embed_url={embed_url}")
         return {
+            "html": f'<iframe src="{embed_url}" width="100%" height="500px" style="border:none;" allow="fullscreen"></iframe>',
             "embed_url": embed_url,
             "title": question,
         }
@@ -254,5 +257,6 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
         return {
             "error": str(e),
             "embed_url": "",
+            "html": "",
             "title": question,
         }

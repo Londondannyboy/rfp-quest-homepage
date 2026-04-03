@@ -109,7 +109,10 @@ agent = create_deep_agent(
         in under 3 seconds if available. Otherwise it queries Neon live,
         converts to CSV, and calls the Tako API.
 
-        Pass the returned embed_url to the takoVisualize component for rendering.
+        When visualise_tender_analytics returns, call widgetRenderer with
+        the html field it provides. Do NOT call takoVisualize. Do NOT call
+        plan_visualization for analytics. Just pass the html directly to
+        widgetRenderer with the title from the result.
 
         Example queries:
         - "Show me NHS contract spend by year"
