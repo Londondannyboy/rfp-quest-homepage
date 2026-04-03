@@ -1679,3 +1679,71 @@ IMPLEMENTATION ORDER:
 DO NOT start devolved portal ingestion until
 Phase 6a gate tests pass. Data pipeline is Phase 7
 infrastructure but can be prototyped earlier.
+
+## D57 — DATE: 2026-04-03
+DECISION: Skills graph operates on two layers —
+formal taxonomy compliance and real-world expertise.
+CONTEXT: Formal procurement frameworks (DOS, CPV
+codes, G-Cloud lots) represent the compliance gate.
+A team that does not satisfy formal capability
+requirements is eliminated before evaluation begins.
+But formal taxonomies lag real-world knowledge
+by 12-24 months. The DOS framework was last updated
+February 2022 — predating LLMs, RAG, fine-tuning
+as mainstream procurement capabilities. Winning
+requires demonstrating both layers.
+
+LAYER 1 — FORMAL TAXONOMY (compliance gate):
+Structured mapping to recognised frameworks:
+- DOS capability categories and sub-capabilities
+- CPV codes (procurement taxonomy)
+- G-Cloud lots and service definitions
+- ISO certifications and their scope
+- Crown Commercial Service framework lots
+Stored as structured nodes in Zep.
+Enables: automatic gap analysis against formal
+tender requirements. Binary: covered or not.
+
+LAYER 2 — REAL-WORLD EXPERTISE (winning layer):
+Natural language description of actual domain
+knowledge, specific technologies, sector experience.
+Examples of what Layer 2 captures that Layer 1 misses:
+- "LLM fine-tuning for clinical decision support"
+  (Layer 1 says: "machine learning")
+- "RAG architecture for legal document retrieval"
+  (Layer 1 says: "software development")
+- "RAAC structural assessment methodology"
+  (Layer 1 says: "service delivery")
+Stored as free-text nodes in Zep connected to
+Layer 1 taxonomy nodes.
+Enables: semantic matching between team expertise
+and tender description beyond taxonomy keywords.
+The RFP LLM reads tender descriptions and maps
+them to Layer 2 expertise, not just Layer 1 tags.
+
+TEMPORAL MISMATCH:
+Formal taxonomies are static. Technology moves fast.
+Users can tag capabilities that do not yet exist in
+any formal framework. These are Layer 2 only until
+a framework update includes them.
+Examples: prompt engineering, AI safety evaluation,
+LLM orchestration — real procurement needs today,
+not yet in any formal UK taxonomy.
+Cron job: monthly Tavily check of DOS framework
+update pages, G-Cloud lot updates, CPV taxonomy
+changes. Alert when formal taxonomy updates to
+incorporate previously Layer-2-only capabilities.
+
+RFP LLM ROLE:
+Trained on tender descriptions and award outcomes.
+Learns the gap between formal taxonomy language
+and actual buyer need language.
+Can map a tender description to the real-world
+expertise required, not just the formal capability
+category ticked on the scorecard.
+"This tender says machine learning but means
+RAG with NHS data governance constraints" is
+the kind of inference the model learns.
+
+REVERSIBLE: Yes — layer structure can be extended
+or simplified as product evolves.
