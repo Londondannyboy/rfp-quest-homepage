@@ -1016,3 +1016,85 @@ D44 network model, onboarding flow, and gate tests
 remain valid — only the schema implementation changes.
 REVERSIBLE: Yes — can extract to custom schema if
 Atomic CRM fork proves too constraining.
+
+## D46 — DATE: 2026-04-03
+DECISION: RFP.quest bid pipeline has three opportunity
+types, all managed as deal objects in Atomic CRM.
+CONTEXT: Not all commercial opportunities are formal
+tenders. UK procurement includes direct awards,
+framework call-offs, and relationship-led deals that
+never appear in Contracts Finder or Find a Tender.
+OPPORTUNITY TYPES:
+1. Live tender — auto-created from matched OCDS notice.
+   tender_id FK populated. Deadline and value known.
+2. Known target — user creates manually. Company and
+   opportunity exist, no tender notice yet. When a
+   matching tender appears, auto-merges with existing
+   deal object.
+3. Relationship deal — no tender will ever exist.
+   Direct award or framework call-off. Pure CRM deal.
+DEAL OBJECT FIELDS (additions to Atomic CRM deals):
+- tender_id (nullable FK → tenders table)
+- source: "tender"|"manual"|"framework"
+- stage: Identified→Qualifying→Bidding→Submitted→Won/Lost
+- win_probability (AI-generated, 0-100)
+- decision_makers (contacts array)
+- usps (jsonb — bid-specific selling points)
+- competitor_intel (jsonb)
+- documents (FK → document_vault)
+OUTCOME: Every commercial opportunity, regardless of
+source, lives as a unified deal object with full
+pipeline tracking, decision maker mapping, and
+document management.
+REVERSIBLE: Yes.
+
+## D47 — DATE: 2026-04-03
+DECISION: Decision maker discovery via Tavily + Trigify
+with LinkedIn outreach drafting.
+CONTEXT: Winning UK public sector contracts requires
+knowing and influencing the right people before the
+tender is published. Post-publication relationship
+building is too late for most contracts.
+FLOW:
+1. Deal object created (tender or manual)
+2. Agent identifies buyer organisation
+3. Tavily scrapes buyer website — finds procurement
+   team, category managers, heads of department
+4. Trigify MCP signals job changes, LinkedIn activity
+   at target buyer organisations
+5. Agent drafts personalised LinkedIn connection
+   request referencing shared procurement context
+6. Contact logged in Atomic CRM against the deal
+7. Relationship stage tracked: Unknown→Connected→
+   Meeting→Engaged→Advocate
+TRIGIFY: Already connected as MCP server.
+Use for job-change signals and LinkedIn activity.
+DO NOT scrape LinkedIn directly — use Trigify signals
+and user-provided URLs only.
+REVERSIBLE: Yes.
+
+## D48 — DATE: 2026-04-03
+DECISION: Company USP and key selling points stored
+at two levels — company and bid.
+CONTEXT: A company's core strengths are consistent
+(ISO certifications, years of experience, sector
+expertise). But bid-specific selling points vary
+per opportunity. Both need to be stored and combined
+when the agent drafts bid content.
+COMPANY LEVEL (set during onboarding, editable):
+- Core USPs (text array)
+- Differentiators vs competitors
+- Key past wins (structured: buyer, value, outcome)
+- Certifications and frameworks
+- Sector expertise narrative
+BID LEVEL (set per deal, agent-assisted):
+- Specific relevance to this buyer/contract
+- Team members assigned to this bid
+- Specific past experience relevant to this CPV
+- Pricing strategy notes
+- Risk factors identified
+AGENT BEHAVIOUR: When user opens a deal, agent
+automatically drafts bid-level USPs by combining
+company profile + tender requirements + past wins
+in same CPV/sector. User refines and confirms.
+REVERSIBLE: Yes.
