@@ -1496,3 +1496,93 @@ trained on it = proprietary intelligence.
 
 REVERSIBLE: Yes — pipeline stages are independent.
 Each stage can be rerun as data grows.
+
+## D54 — DATE: 2026-04-03
+DECISION: Expand tender data sources to all major
+UK procurement portals. Current coverage is
+England-centric. Devolved nations are underserved
+by competitors and represent lower-competition
+opportunity density.
+
+PRIORITY ORDER FOR INGESTION:
+
+1. PUBLIC CONTRACTS SCOTLAND (immediate)
+   URL: publiccontractsscotland.gov.uk
+   Format: OCDS-compatible, REST API available
+   Buyer base: Scottish Government, NHS Scotland,
+   32 local councils, Police Scotland, universities
+   Why now: OCDS format matches existing ingestion
+   pipeline. Minimal new code required.
+   Add source tag: "public-contracts-scotland"
+
+2. SELL2WALES (immediate)
+   URL: sell2wales.gov.wales
+   Format: Proactis-based, has export feeds
+   Buyer base: Welsh Government, NHS Wales,
+   22 local authorities, housing associations
+   Add source tag: "sell2wales"
+
+3. eTENDERSNI (short term)
+   URL: etendersni.gov.uk
+   Buyer base: NI Executive, 11 councils,
+   health trusts, universities
+   Add source tag: "etenders-ni"
+
+4. eSourcingNI (short term)
+   URL: esourcingni.co.uk
+   Buyer base: NI Housing Executive specifically
+   Niche but high value for construction/FM
+   Add source tag: "esourcing-ni"
+
+5. PROACTIS REGIONAL PORTALS (medium term)
+   YORtender, NEPO, Supplying the South West,
+   London Tenders — all Proactis instances
+   Requires either Proactis supplier API access
+   or scheduled Tavily crawl of notice pages
+   This is where £50K-£500K local authority
+   contracts live — below-threshold, high volume,
+   low competition from large consultancies
+   Add source tag: "proactis-[region]"
+
+6. EARLY SIGNAL SOURCES (Phase 7 / RFP LLM era)
+   Council meeting minutes: public PDFs on
+   council websites, published on schedule
+   Government whitepapers and spending reviews
+   NHS long-term plans and ICB strategies
+   Tavily crawls known URLs on daily schedule
+   RFP LLM extracts buying signals from text
+   "This ICB document mentions a £2M digital
+   transformation procurement in Q3 2026 —
+   no tender published yet"
+   This is pre-tender intelligence. Nobody
+   else is systematically doing this at scale.
+
+COMPETITIVE INTELLIGENCE IMPLICATION:
+Win rate data from devolved nation portals will
+reveal competitors invisible in current dataset.
+Companies dominant in Scotland or Wales are
+unknown to England-centric consultancies.
+Adding these sources changes the competitor graph
+materially — new nodes, new edges, new patterns.
+
+FRAMEWORK INTELLIGENCE:
+DOS framework membership data is public.
+Which suppliers are on which lots = competitor
+qualification data. Ingest into Zep as framework
+membership edges. "This competitor is on G-Cloud
+Lot 3 and DOS Lot 2 — they can bid on call-offs
+your company cannot."
+Framework renewal calendar:
+4-year frameworks → alert at 3.5 years
+2-year frameworks → alert at 18 months
+Application windows are the opportunity —
+not the call-offs themselves.
+
+DOMAIN NOTE:
+rfp.quest domain suggests RFP focus but UK
+public sector uses ITT (Invitation to Tender),
+PIN (Prior Information Notice), and framework
+call-off terminology. The product should use
+UK-native language throughout. "Tender" not
+"RFP" in all user-facing copy. RFP.quest is
+the brand; the language inside is British.
