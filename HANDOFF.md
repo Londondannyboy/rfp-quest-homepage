@@ -66,8 +66,8 @@ All 4 gates tested in a SINGLE browser tab session (not fresh tabs).
 
 1. MULTI-QUERY BUG — D42 (PRODUCT BLOCKER)
    ag_ui_langgraph "Message ID not found in history".
-   Affects ALL second queries, including second Tako charts.
-   User cannot ask two analytical questions in one session.
+   Affects some second queries — not 100% repro.
+   Second Tako chart DOES replace first (verified 2026-04-03).
    Phase 5c Priority 3.
 
 2. PRE-2024 DATA NOT LOADED
