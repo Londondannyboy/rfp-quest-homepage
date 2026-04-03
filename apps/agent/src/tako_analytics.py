@@ -16,10 +16,8 @@ from datetime import datetime, timedelta, timezone
 import httpx
 import psycopg2
 import psycopg2.extras
-from langchain.tools import tool, ToolRuntime
-from langchain.messages import ToolMessage
-from langgraph.types import Command
-from typing import Dict, Any, Optional, Union
+from langchain.tools import tool
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -50,8 +48,13 @@ def _get_db_connection():
 
 
 def _match_category(question: str) -> Optional[str]:
-    """Match a user question to a pre-computed category, or None."""
+    """Match a user question to a pre-computed category, or None.
+    Only matches for 'by year' queries — other breakdowns (by month,
+    by buyer, etc.) skip the cache and go live."""
     q = question.lower()
+    # Only use cache for "by year" type queries
+    if not any(w in q for w in ["by year", "per year", "annual", "yearly"]):
+        return None
     for category, keywords in CATEGORY_KEYWORDS.items():
         if any(kw in q for kw in keywords):
             return category
@@ -113,6 +116,7 @@ def _query_to_csv(query: str, params: tuple = ()) -> str:
 
 def _call_tako(csv_string: str, question: str) -> str:
     """POST inline CSV to Tako Visualize API, return embed_url."""
+    logger.info(f"Tako CSV preview:\n{csv_string[:500]}")
     api_key = os.getenv("TAKO_API_KEY")
     if not api_key:
         raise RuntimeError("TAKO_API_KEY not set")
@@ -185,6 +189,14 @@ SQL_TEMPLATES = {
         ORDER BY value_amount DESC
         LIMIT 20
     """,
+    "spend_by_month": """
+        SELECT TO_CHAR(COALESCE(published_date, fetched_at), 'YYYY-MM') as month,
+               COUNT(*) as tender_count
+        FROM tenders
+        WHERE value_amount > 0
+        GROUP BY month
+        ORDER BY month
+    """,
     "general": """
         SELECT buyer_name as buyer, title, value_amount as value, status,
                TO_CHAR(COALESCE(published_date, fetched_at), 'YYYY-MM') as month
@@ -203,6 +215,8 @@ def _pick_sql(question: str) -> str:
         return SQL_TEMPLATES["spend_by_buyer"]
     if any(w in q for w in ["by year", "per year", "annual", "yearly", "over time"]):
         return SQL_TEMPLATES["spend_by_year"]
+    if any(w in q for w in ["by month", "per month", "monthly"]):
+        return SQL_TEMPLATES["spend_by_month"]
     if any(w in q for w in ["status", "open vs", "awarded"]):
         return SQL_TEMPLATES["status_breakdown"]
     if any(w in q for w in ["highest value", "biggest", "largest", "top value"]):
@@ -211,11 +225,11 @@ def _pick_sql(question: str) -> str:
 
 
 @tool
-def visualise_tender_analytics(question: str, runtime: ToolRuntime) -> Command:
+def visualise_tender_analytics(question: str) -> str:
     """
     Create a Tako analytics chart from Neon tender data.
     Queries the tenders database, converts to CSV, sends to Tako Visualize API,
-    and stores the embed_url in agent state for the frontend to render.
+    and returns the embed_url for the chart.
 
     Use this when users ask analytical questions about tenders — trends,
     spending breakdowns, comparisons by buyer/sector/year, etc.
@@ -225,10 +239,11 @@ def visualise_tender_analytics(question: str, runtime: ToolRuntime) -> Command:
                   e.g. "Show me NHS contract spend by year"
 
     Returns:
-        Command that updates analytics_embed_url in agent state.
+        The Tako chart embed URL. Include this URL on its own line in your
+        response so the frontend can render it as an interactive chart.
     """
-    embed_url = ""
     try:
+        embed_url = ""
         # Check for pre-computed category insight first
         category = _match_category(question)
         if category:
@@ -247,25 +262,8 @@ def visualise_tender_analytics(question: str, runtime: ToolRuntime) -> Command:
             embed_url = _call_tako(csv_string, question)
             logger.info(f"Tako analytics: embed_url={embed_url}")
 
+        return embed_url
+
     except Exception as e:
         logger.error(f"Tako analytics error: {e}", exc_info=True)
-        return Command(update={
-            "messages": [
-                ToolMessage(
-                    content=f"Analytics error: {e}",
-                    tool_call_id=runtime.tool_call_id,
-                )
-            ]
-        })
-
-    return Command(update={
-        "analytics_embed_url": embed_url,
-        "messages": [
-            ToolMessage(
-                content=f"Chart is now rendering in the analytics panel automatically. "
-                        f"Do NOT call widgetRenderer or takoVisualize — the chart is already visible. "
-                        f"Just describe what the chart shows in plain text.",
-                tool_call_id=runtime.tool_call_id,
-            )
-        ]
-    })
+        return f"Analytics error: {e}"

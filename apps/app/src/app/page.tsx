@@ -10,6 +10,11 @@ import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
+const TAKO_REGEX = /TAKO_CHART:\s*(https:\/\/tako\.com\/embed\/[^\s]+)/g;
+
+// Global registry — survives component remounts and hot reloads
+const globalTakoUrls = new Set<string>();
+
 export default function HomePage() {
   useGenerativeUIExamples();
   useExampleSuggestions();
@@ -17,7 +22,35 @@ export default function HomePage() {
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
-  const analyticsEmbedUrl = agent.state?.analytics_embed_url as string | undefined;
+
+  // Detect Tako chart URLs in agent messages — global registry, survives remounts
+  const [takoUrls, setTakoUrls] = useState<string[]>(() => [...globalTakoUrls]);
+  useEffect(() => {
+    const messages = agent.state?.messages;
+    if (!messages) return;
+    const msgArray = Array.isArray(messages) ? messages : (messages as any)?.value || [];
+    let added = false;
+    for (const msg of msgArray) {
+      let text = "";
+      if (typeof msg?.content === "string") {
+        text = msg.content;
+      } else if (Array.isArray(msg?.content)) {
+        text = msg.content
+          .filter((b: any) => b?.type === "text")
+          .map((b: any) => b?.text || "")
+          .join(" ");
+      }
+      const regex = /TAKO_CHART:\s*(https:\/\/tako\.com\/embed\/[^\s]+)/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        if (!globalTakoUrls.has(match[1])) {
+          globalTakoUrls.add(match[1]);
+          added = true;
+        }
+      }
+    }
+    if (added) setTakoUrls([...globalTakoUrls]);
+  }, [agent.state?.messages]);
 
   const handleTryDemo = (demo: DemoItem) => {
     setDemoDrawerOpen(false);
@@ -107,23 +140,26 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Tako analytics chart panel — always mounted to prevent CopilotChat remount */}
+          <div className="mx-4 mt-3 mb-2 rounded-xl border overflow-hidden"
+            style={{
+              borderColor: "var(--color-border-tertiary, #e5e7eb)",
+              background: "var(--color-background-primary, #fff)",
+              maxHeight: "40vh",
+              display: takoUrls.length > 0 ? "block" : "none",
+            }}>
+            {takoUrls.map((url) => (
+              <StableIframe key={url} embed_url={url} title="" />
+            ))}
+          </div>
+
           <ExampleLayout chatContent={
-            <>
-              <CopilotChat
-                labels={{
-                  welcomeMessageText: "What do you want to visualize today?",
-                  chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
-                }}
-              />
-              {analyticsEmbedUrl && (
-                <div className="px-4 pb-4">
-                  <StableIframe
-                    embed_url={analyticsEmbedUrl}
-                    title="Tender Analytics"
-                  />
-                </div>
-              )}
-            </>
+            <CopilotChat
+              labels={{
+                welcomeMessageText: "What do you want to visualize today?",
+                chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
+              }}
+            />
           } />
           <ExplainerCardsPortal />
         </div>

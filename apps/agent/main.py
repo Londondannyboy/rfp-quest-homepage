@@ -109,13 +109,12 @@ agent = create_deep_agent(
         in under 3 seconds if available. Otherwise it queries Neon live,
         converts to CSV, and calls the Tako API.
 
-        CRITICAL: When visualise_tender_analytics is called, it automatically
-        updates the analytics panel via agent state. After calling it, you
-        MUST NOT call widgetRenderer, plan_visualization, takoVisualize, or
-        any other rendering tool. The chart renders automatically. Your ONLY
-        action after visualise_tender_analytics is to send a plain text
-        response acknowledging the chart is displayed and offering drill-down
-        options. Do NOT try to render or display the chart yourself.
+        CRITICAL: When visualise_tender_analytics returns a URL, include it
+        in your response on its own line with this exact format:
+        TAKO_CHART: https://tako.com/embed/XXXX/
+        The frontend will detect this line and render an interactive chart.
+        Do NOT call widgetRenderer, plan_visualization, or takoVisualize.
+        Just include the TAKO_CHART line followed by a brief description.
 
         Example queries:
         - "Show me NHS contract spend by year"

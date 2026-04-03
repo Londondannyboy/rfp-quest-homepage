@@ -14,7 +14,7 @@ import {
 import { PieChart, PieChartProps } from "@/components/generative-ui/charts/pie-chart";
 import { BarChart, BarChartProps } from "@/components/generative-ui/charts/bar-chart";
 import { WidgetRenderer, WidgetRendererProps } from "@/components/generative-ui/widget-renderer";
-import { StableIframe } from "@/components/generative-ui/stable-iframe";
+
 import { MeetingTimePicker } from "@/components/generative-ui/meeting-time-picker";
 import { BidDecision } from "@/components/generative-ui/bid-decision";
 import { ToolReasoning } from "@/components/tool-rendering";
@@ -65,20 +65,8 @@ export const useGenerativeUIExamples = () => {
     render: WidgetRenderer,
   });
 
-  // --------------------------
-  // 🪁 Tako Analytics: Stable iframe for Tako chart embeds
-  // --------------------------
-  useComponent({
-    name: "takoVisualize",
-    description:
-      "Renders a Tako analytics chart from an embed URL. " +
-      "Use for tender analytics, spending breakdowns, and trend visualizations.",
-    parameters: z.object({
-      embed_url: z.string().describe("Tako chart embed URL"),
-      title: z.string().describe("Chart title"),
-    }),
-    render: StableIframe,
-  });
+  // Tako analytics charts are rendered via agent state (analytics_embed_url)
+  // in page.tsx, not via useComponent. See D40.
 
   // --------------------------
   // 🪁 Plan Visualization: Custom rendering for the planning step
