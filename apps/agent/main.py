@@ -25,7 +25,9 @@ from src.tako_analytics import visualise_tender_analytics
 load_dotenv()
 
 # LangSmith observability
-if os.getenv("LANGSMITH_API_KEY"):
+_langsmith_set = bool(os.getenv("LANGSMITH_API_KEY"))
+print(f"LangSmith enabled: {_langsmith_set}")
+if _langsmith_set:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_PROJECT"] = os.getenv(
         "LANGCHAIN_PROJECT", "rfp-quest"
@@ -33,8 +35,7 @@ if os.getenv("LANGSMITH_API_KEY"):
     os.environ["LANGCHAIN_API_KEY"] = os.getenv(
         "LANGSMITH_API_KEY", ""
     )
-    import logging
-    logging.getLogger(__name__).info("LangSmith tracing enabled")
+print(f"Tracing: {os.getenv('LANGCHAIN_TRACING_V2')}")
 
 base_model = ChatAnthropic(
     model="claude-opus-4-6",
