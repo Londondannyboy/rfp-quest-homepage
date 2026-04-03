@@ -90,6 +90,14 @@ Latest commit: d2832b2
 8. NO RFP.QUEST BRANDING — Phase 5a
 9. NO SSR TENDER FEED — Phase 5b
 
+10. TAKO CHART PLACEMENT WRONG
+    Current: chart appears above chat in panel (not natural)
+    Target: split-screen layout, chat left, charts right
+    Reference: takodata/tako-copilotkit
+      src/components/ResearchCanvas.tsx
+      src/app/Main.tsx (react-split layout)
+    Category gate tests blocked until layout correct.
+
 ## NEXT ACTION
 
 Step 1: Deploy to production

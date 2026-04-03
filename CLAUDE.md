@@ -318,7 +318,8 @@ Tako:
 - TAKO_API_KEY: SET in Railway ✅
 - Visualize endpoint: https://tako.com/api/v1/beta/visualize
 - Method: POST inline CSV — no file upload needed
-- Returns: embed_url → render in widgetRenderer as iframe
+- Returns: embed_url → agent writes TAKO_CHART: marker →
+  frontend StableIframe (D41)
 - Key: os.getenv("TAKO_API_KEY") only, never hardcode
 
 ## PHASE ROADMAP
@@ -334,16 +335,14 @@ Rich schema deployed (D31). Both loaders running:
 Pre-2024 loads pending. Railway OCDS cron configured.
 Gate: 50,000+ rows, first query under 3 seconds.
 
-**Phase 5c Priority 1.6** — COMPLETE ✅
-visualise_tender_analytics + StableIframe deployed.
-Tako chart confirmed rendering in production 2026-04-02.
-Gate test: "Show me NHS contract spend by year" PASSING.
+**Phase 5c Priority 1.6** — WORKING LOCALLY ✅
+TAKO_CHART marker pattern confirmed 2026-04-03.
+Chart renders above chat. Canvas panel layout pending.
+Reference: takodata/tako-copilotkit ResearchCanvas.tsx
 
-**Phase 5c Priority 1.7** — COMPLETE ✅
-category_insights table in Neon (9 categories, all populated).
-cron_category_insights.py chained into rfp-quest-cron-job (0 6 * * *).
-visualise_tender_analytics checks cache (<24h) before live Tako call.
-Tested: cached 1.3s vs live 7.3s. Gate: NHS spend chart <3s ✅
+**Phase 5c Priority 1.7** — WORKING LOCALLY ✅
+category_insights table: 9 categories pre-computed.
+Cache-first path: 1.3s locally. Production deploy pending.
 
 **Phase 5c Priority 2** — Instant tender card while AI analyses
 Emit tender data immediately on identify via CopilotKit state.
