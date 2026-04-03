@@ -671,17 +671,20 @@ REVERSIBLE: Yes — can downgrade if rows reduced.
 
 ---
 
-## D39 — DATE: 2026-04-02
-DECISION: Add connection retry logic to both loaders
-plus disable Neon scale-to-zero during historical loads.
-CONTEXT: Loaders died three times with
-"cursor already closed" — Neon compute suspending
-mid-chunk despite per-chunk reconnection pattern (D34).
-The 5-min suspend timeout was too aggressive for loaders
-that pause 0.5-1s between API calls.
-OUTCOME: Retry wrapper on get_db() with 3 attempts.
-Chunk loop catches OperationalError + InterfaceError
-and retries with fresh connection after 10s delay.
+## D39 — DATE: 2026-04-02 (updated 2026-04-03)
+DECISION: Full retry logic at every layer in both loaders.
+CONTEXT: Loaders died repeatedly with "cursor already closed".
+Root cause: savepoint ROLLBACK inside upsert_batch fails when
+connection is dead, but the except block tried to execute SQL
+on the dead cursor, crashing the entire function before the
+outer retry could catch it.
+OUTCOME: Three-layer retry:
+1. get_db() retries 3x on connection failure
+2. Savepoint rollback wrapped in try/except — reraises on
+   failure so outer retry handles it instead of crashing
+3. Entire chunk/window wrapped in 3-retry loop with 30s
+   backoff, catching OperationalError + InterfaceError +
+   InFailedSqlTransaction. Fresh connection on each retry.
 Scale-to-zero disabled during load runs.
-Re-enable scale-to-zero after historical loads complete.
-REVERSIBLE: Yes — revert Neon setting post-load.
+Re-enable after historical loads complete.
+REVERSIBLE: Yes.

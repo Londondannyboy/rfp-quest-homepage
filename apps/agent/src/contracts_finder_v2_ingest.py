@@ -257,7 +257,10 @@ def upsert_batch(conn, parsed_notices):
                 if cur.rowcount:
                     inserted += 1
             except Exception as e:
-                cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                try:
+                    cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                except Exception:
+                    raise  # connection dead — let outer retry handle it
                 print(f"  Skipped {t['ocid']}: {str(e)[:100]}", flush=True)
     conn.commit()
     return inserted
@@ -342,17 +345,24 @@ def main():
         while chunk_start < today:
             chunk_end = min(chunk_start + timedelta(days=window_days), today)
 
-            # Fresh connection per window — retry on Neon suspension (D38)
-            try:
-                conn = get_db()
-                cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
-                conn.close()
-            except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-                print(f"  Connection lost, retrying window: {e}", flush=True)
-                time.sleep(10)
-                conn = get_db()
-                cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
-                conn.close()
+            # Retry entire window on any DB error (D39)
+            for chunk_attempt in range(3):
+                try:
+                    conn = get_db()
+                    cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
+                    conn.close()
+                    break
+                except (psycopg2.OperationalError, psycopg2.InterfaceError,
+                        psycopg2.errors.InFailedSqlTransaction) as e:
+                    print(f"  Window failed attempt {chunk_attempt+1}: {e}", flush=True)
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                    if chunk_attempt < 2:
+                        time.sleep(30)
+                    else:
+                        raise
 
             chunk_start = chunk_end
             time.sleep(REQUEST_DELAY)

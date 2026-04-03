@@ -285,7 +285,10 @@ def fetch_and_insert_chunk(conn, chunk_start, chunk_end, total_fetched, total_in
                         batch_inserted += 1
                         chunk_inserted += 1
                 except Exception as e:
-                    cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                    try:
+                        cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                    except Exception:
+                        raise  # connection dead — let outer retry handle it
                     print(f"  Skipped {parsed['ocid']}: {str(e)[:100]}", flush=True)
                 total_fetched += 1
 
@@ -343,21 +346,27 @@ def main():
             chunk_end = min(chunk_start + timedelta(days=CHUNK_DAYS), today)
             print(f"Chunk {chunk_start.date()} → {chunk_end.date()}", flush=True)
 
-            # Fresh connection per chunk — retry on Neon suspension (D38)
-            try:
-                conn = get_db()
-                total_fetched, total_inserted, chunk_inserted = fetch_and_insert_chunk(
-                    conn, chunk_start, chunk_end, total_fetched, total_inserted
-                )
-                conn.close()
-            except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-                print(f"  Connection lost, retrying chunk: {e}", flush=True)
-                time.sleep(10)
-                conn = get_db()
-                total_fetched, total_inserted, chunk_inserted = fetch_and_insert_chunk(
-                    conn, chunk_start, chunk_end, total_fetched, total_inserted
-                )
-                conn.close()
+            # Retry entire chunk on any DB error (D39)
+            chunk_inserted = 0
+            for chunk_attempt in range(3):
+                try:
+                    conn = get_db()
+                    total_fetched, total_inserted, chunk_inserted = fetch_and_insert_chunk(
+                        conn, chunk_start, chunk_end, total_fetched, total_inserted
+                    )
+                    conn.close()
+                    break
+                except (psycopg2.OperationalError, psycopg2.InterfaceError,
+                        psycopg2.errors.InFailedSqlTransaction) as e:
+                    print(f"  Chunk failed attempt {chunk_attempt+1}: {e}", flush=True)
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                    if chunk_attempt < 2:
+                        time.sleep(30)
+                    else:
+                        raise
 
             if chunk_inserted == 0:
                 print(f"  0 releases", flush=True)
