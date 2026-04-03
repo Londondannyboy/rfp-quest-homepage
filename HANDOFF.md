@@ -92,7 +92,7 @@ Latest commit: d2832b2
 
 10. TAKO CHART PLACEMENT WRONG
     Current: chart appears above chat in panel (not natural)
-    Target: split-screen layout, chat left, charts right
+    Target: two-panel layout — charts/content left, chat right
     Reference: takodata/tako-copilotkit
       src/components/ResearchCanvas.tsx
       src/app/Main.tsx (react-split layout)
