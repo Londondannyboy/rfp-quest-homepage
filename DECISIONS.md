@@ -1194,3 +1194,125 @@ DO NOT start Phase 6b until Phase 6a gate tests pass.
 REVERSIBLE: Yes — Kanban can be added later if
 users request it. Graph cannot be easily removed
 once it becomes the product identity.
+
+## D50 — DATE: 2026-04-03
+DECISION: Career graph — a lifetime of bid outcomes
+visualised as an intertwined win/loss trajectory.
+Not a CV. Not a LinkedIn profile. A truthful record
+of a procurement career including failures, pivots,
+supporting roles, and the path between them.
+CONTEXT: LinkedIn shows titles and dates. It hides
+losses, demotions in responsibility, supporting roles,
+and the messy reality of how careers actually develop.
+A junior SDR who contributed to a £50K win in year
+one, then supported a £50M win in year five as
+coordinator, then led a £2M win as bid manager in
+year seven has a richer story than any CV captures.
+Losses are as important as wins — they show domain
+exposure, resilience, and experience in specific CPV
+categories regardless of outcome.
+
+THE CAREER GRAPH STRUCTURE:
+Each bid outcome is a node. Nodes are connected
+chronologically and by relationship type, forming
+two intertwined threads:
+
+WIN THREAD — upward arc, solid nodes:
+- Sized by contract value
+- Coloured by CPV category / sector
+- Role shown as node annotation
+- Connected sequentially: junior→senior→lead→advisor
+
+LOSS THREAD — parallel arc, hollow nodes:
+- Same sizing and colouring as wins
+- Losses do not diminish the graph — they enrich it
+- A loss in the same CPV as a win shows persistence
+- A loss that preceded a win tells the learning story
+- "Lost MOD cybersecurity 2019, won MOD cybersecurity
+  2022 — we learned what they actually wanted"
+
+THE INTERTWINING:
+Win and loss threads are not separate timelines.
+They weave. A person who won a small deal, lost a
+large one in the same sector, pivoted to a support
+role on a giant win, then returned as lead on a
+medium win — that arc is visible as a braided path.
+Wins and losses in the same CPV category cluster
+together, connected by edges labelled with time gap
+and role progression.
+
+ROLE EVOLUTION IS A THIRD DIMENSION:
+Role on each bid (from taxonomy) shown as Z-axis
+or node depth in the 3D graph:
+- Coordinator / support: closer to viewer (front)
+- Technical Author / SME: mid-depth
+- Bid Manager / Commercial Lead: deeper
+- Rainmaker / Executive Sponsor: deepest (back)
+A career that starts front (support) and moves back
+(strategic) over time is visible as a trajectory
+moving away from the viewer — depth as seniority.
+
+ROLE TAXONOMY:
+- Rainmaker: relationship, access, opened the door
+- Bid Manager: orchestrated response, owned timeline
+- Technical Author: wrote solution/methodology
+- Commercial Lead: pricing, risk, commercial terms
+- Coordinator: portal management, submissions, admin
+- Subject Matter Expert: specific technical sections
+- Executive Sponsor: sign-off, relationship credibility
+- Delivery Lead: post-award credibility
+
+HITL ONBOARDING — conversational, never a form:
+Agent opens with: "Tell me about a bid you remember
+— win or loss, big or small, any role you played."
+Person tells the story naturally.
+Agent extracts: contract name, buyer, approximate
+value, year, outcome, role, contribution in their
+own words. Maps CPV automatically. Confirms.
+Saves to Zep as entities and edges.
+Agent then: "Tell me another — maybe one you lost,
+or one where you were supporting someone else."
+This continues until person stops. Even two entries
+create a visible graph. The graph grows over time
+as person adds more.
+Losses explicitly encouraged: "Losses count just
+as much — they show where you've been and what
+you learned."
+
+COMPARATIVE VISUALIZATION:
+When two people's career graphs are viewed together
+(same team, same bid):
+- Overlapping CPV wins cluster and glow
+- Complementary roles shown as connecting bridges
+- One person's loss in a CPV where another won
+  creates a "learned from" edge — experience without
+  the scar
+- Gaps visible as empty space between the two graphs
+  where no team member has experience
+
+AGAINST A LIVE TENDER:
+When a tender is identified, the team's combined
+career graph is overlaid with the tender's CPV
+requirements, value range, and buyer type:
+- Nodes that match pulse or change colour
+- Losses in the same CPV highlighted as domain
+  experience even without wins
+- Role gaps shown explicitly: "No Rainmaker with
+  NHS experience on this team"
+- "The last 3 teams that won this type of contract
+  had at least one person with a win in CPV 72000000
+  (IT services) over £1M. Your team has two."
+
+PRIVACY AND CONTROL:
+All data is user-entered and user-controlled.
+User can mark any node private (team-only visibility).
+User can export their career graph as a PDF or
+interactive HTML at any time.
+Nothing scraped without explicit URL consent.
+REVERSIBLE: Yes — nodes deletable by user at any time.
+
+TECHNOLOGY:
+React Force Graph 3D for visualisation (Three.js/WebGL)
+Zep graph DB for entity storage and relationship queries
+pgvector for similarity matching (team → tender CPV)
+HITL via CopilotKit for onboarding conversation
