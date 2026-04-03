@@ -1316,3 +1316,97 @@ React Force Graph 3D for visualisation (Three.js/WebGL)
 Zep graph DB for entity storage and relationship queries
 pgvector for similarity matching (team → tender CPV)
 HITL via CopilotKit for onboarding conversation
+
+## D51 — DATE: 2026-04-03
+DECISION: Competitor intelligence and buyer graph
+built from existing Neon awarded contract data.
+CONTEXT: 101K+ tenders in Neon include winner field
+from CF v2 awarded notices. CPV codes, values, regions,
+buyer names, and dates are all present. This is a
+complete competitor intelligence dataset requiring
+only a visualisation and enrichment layer.
+
+COMPETITOR GRAPH (Phase 7):
+Each awarded supplier in Neon becomes a competitor
+entity in Zep with edges to:
+- CPV categories they win in (frequency as weight)
+- Regions they win in (geographic concentration)
+- Buyer types they win from (NHS, MOD, LA, central)
+- Contract value bands they target
+- Certifications implied by CPV wins
+- Win rate trajectory over time (Zep temporal memory)
+Visualised in React Force Graph 3D alongside team
+career graph. Immediate comparison: where you
+overlap, where they dominate, where gaps exist.
+
+CLAY ENRICHMENT PIPELINE:
+Winner names from Neon awarded contracts → Clay
+Clay enriches: Companies House number, employee
+count, LinkedIn company page, recent job postings,
+decision maker contacts, recent news.
+Enriched data returns to Zep as competitor entities.
+Job posting signals: competitor hiring bid writers
+in NHS = gearing up for framework renewal.
+Trigify tracks individual job moves within
+competitor and buyer organisations.
+
+BUYER INTELLIGENCE GRAPH:
+Procurement decision makers are graph entities.
+When a buyer moves organisation (Trigify signal):
+- Their previous awards travel with them as edges
+- Their evaluation preferences are inferred from
+  historical award patterns
+- Their new organisation gets a "familiar buyer"
+  flag for companies they previously awarded to
+Framework membership as first-class entity:
+- G-Cloud, CCS, NHS SBS, ESPO, YPO etc
+- Companies, CPV categories, and buyers connected
+  through framework membership nodes
+- Framework renewal dates tracked as temporal edges
+
+TIMING INTELLIGENCE:
+Contract end dates in Neon surfaced as signals:
+- 4-year frameworks: renewal alert at 3.5 years
+- Historical pattern: buyer publishes X days before
+  expiry (calculated from past award → next tender)
+- "This CPV for this buyer renews in ~6 months.
+  No tender published yet. Position now."
+This is proactive intelligence — opportunities
+surfaced before they are public.
+
+ZEP SPECIFIC CAPABILITIES USED:
+- Temporal memory: entity state changes over time
+  (win rate trajectory, buyer moves, team changes)
+- Entity resolution: variant buyer names unified
+  ("NHS Yorkshire" = "Yorkshire NHS FT" = "HNYHICB")
+- Relationship traversal: "find companies whose
+  win graph overlaps with this CPV by >60% and
+  who have won from this buyer type before"
+- Graph diffing: team graph before/after member
+  joins — what changed, what gaps closed
+
+REVERSIBLE: Yes — Zep entities can be rebuilt
+from Neon source data at any time.
+
+## D52 — DATE: 2026-04-03
+DECISION: Framework membership and timing
+intelligence are first-class product features.
+CONTEXT: UK procurement increasingly routes through
+frameworks. A company not on G-Cloud cannot win
+G-Cloud call-offs regardless of capability. Framework
+membership is a qualification gate that most tender
+tools ignore. Timing intelligence — knowing when a
+contract is due for renewal before it is advertised
+— is the highest-value intelligence in procurement.
+OUTCOME:
+Framework entities in Zep: name, lot structure,
+member companies, CPV coverage, renewal date,
+managing authority (CCS, NHS SBS, ESPO etc).
+Renewal alerts surfaced 6 months before expiry.
+Historical pattern analysis: how many days before
+expiry does this buyer publish? Applied to predict
+unpublished opportunity windows.
+"You are not on G-Cloud. This tender is likely
+a G-Cloud call-off. Apply to Lot 3 before the
+window closes — deadline is [date]."
+REVERSIBLE: Yes.
