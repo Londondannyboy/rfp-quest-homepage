@@ -986,3 +986,33 @@ on production (red circle, recent tenders,
 RAAC analysis, NHS chart in right panel).
 REVERSIBLE: Yes — network can simplify to seats
 model if adoption requires it.
+
+## D45 — DATE: 2026-04-03
+DECISION: Phase 6 company onboarding and profiles are
+built on Atomic CRM v1.5, not a bespoke schema.
+CONTEXT: D44 specified custom tables (company_profiles,
+person_profiles, connections). This contradicts the
+confirmed Phase 6 direction (RESEARCH entry 2026-04-02)
+to use Atomic CRM as the bid workspace foundation.
+Building a parallel CRM schema would duplicate Atomic
+CRM's company, contact, and deal entities.
+OUTCOME:
+- Fork marmelab/atomic-crm
+- Swap Supabase for Neon (same Postgres as tenders)
+- Atomic CRM company entity = RFP.quest company profile
+- Atomic CRM contact entity = person profiles + buyers
+- Atomic CRM deals = bid pipeline (add tender_id FK)
+- HITL onboarding populates Atomic CRM company +
+  contact records via agent, not custom tables
+- Tavily scrape pre-fills Atomic CRM company fields
+- Companies House API verifies company record
+- Domain uniqueness enforced on company entity
+- Neon Auth for JWT — Atomic CRM auth layer on top
+- Network/connections layer (D44) added in Phase 7
+  on top of Atomic CRM's contact graph
+D44 custom schema tables are SUPERSEDED by Atomic CRM
+entities for company, person, and deal data.
+D44 network model, onboarding flow, and gate tests
+remain valid — only the schema implementation changes.
+REVERSIBLE: Yes — can extract to custom schema if
+Atomic CRM fork proves too constraining.
