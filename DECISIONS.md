@@ -771,3 +771,166 @@ OUTCOME: Must be fixed in Phase 5c Priority 3. Options:
 3. Frontend: generate new thread_id per query if checkpoint
    recovery fails
 REVERSIBLE: N/A — bug fix required.
+
+## D44 — DATE: 2026-04-03
+DECISION: Phase 6 full specification — network-based
+auth, company profiles, and HITL onboarding.
+
+NETWORK MODEL:
+Not classic SaaS seats. RFP.quest is a professional
+network for UK procurement. Connection types:
+
+- Company admin: owns the company profile, controls
+  team membership, sees full bid pipeline
+- Company member: internal team, invited by admin,
+  full pipeline access
+- External connection: bid writers, consultants,
+  framework specialists — connected to a person,
+  not a company. Limited access unless explicitly
+  granted.
+- Contractor: explicitly flagged connection type,
+  can be attached to specific bids by admin
+- General connection: like LinkedIn — visible in
+  network, can message, can be invited to bid teams
+
+ACTIONS USERS CAN TAKE:
+- Send connection request (person to person)
+- Accept/decline connection request
+- Invite someone to join your company as member
+- Accept company membership invitation
+- Flag a connection as contractor
+- Message a connection (Phase 7)
+- Search for people by name, company, specialism
+- View public profile (company + person)
+- Edit own profile
+
+COMPANY PROFILE:
+- Unique identifier: company domain URL (not name)
+  e.g. acmeconstruction.co.uk — one profile per domain
+- Also linked to Companies House number for verification
+- Fields: name, domain, CH number, region, sectors,
+  contract value range, is_sme, certifications,
+  description, logo_url
+- Admin claims a company by verifying domain ownership
+  (send email to admin@domain or info@domain)
+- Only one company per domain — prevents duplicates
+
+COMPANY AUTO-POPULATION VIA TAVILY:
+When admin enters their domain:
+1. Agent calls Tavily to scrape public web presence
+2. Extracts: company description, sector, services,
+   approximate size, any public procurement history
+3. Also queries Companies House API (free, no ToS risk)
+   for: registered name, SIC codes, incorporation date,
+   filing status, registered address
+4. Pre-populates company profile fields
+5. HITL confirmation card: "Here's what I found about
+   [company]. Does this look right? You can edit any
+   field before confirming."
+6. User confirms or edits, then profile is saved
+
+PERSON PROFILE AUTO-POPULATION:
+When person creates account:
+1. They provide their name + job title
+2. They optionally paste their LinkedIn URL
+   (they consent explicitly — we do not scrape without
+   consent. Tavily scrapes the public LinkedIn page
+   they provide.)
+3. Tavily extracts: current role, experience summary,
+   skills, past employers
+4. HITL confirmation: "Here's your profile draft.
+   Edit anything before publishing."
+NOTE: Never scrape LinkedIn without explicit URL consent
+from the person. Companies House + public web only for
+company data.
+
+HITL ONBOARDING FLOW (conversational, not a form):
+First thing a new user sees after auth:
+Agent: "Welcome to RFP.quest. Let me set up your
+profile. What's your company's website?"
+→ User provides domain
+→ Agent scrapes + populates
+→ HITL confirmation card
+→ "What's your role? Are you the main person handling
+   procurement for [company]?"
+→ "What sectors does [company] work in?"
+→ "What's your typical contract size range?"
+→ "Are you an SME?"
+→ "Any frameworks or certifications we should know
+   about? (G-Cloud, Crown Commercial, ISO 9001 etc)"
+→ Final HITL card: full profile summary, confirm.
+
+SCHEMA (Neon):
+company_profiles:
+  id, domain (unique), companies_house_number,
+  name, region, sectors (jsonb), min_contract_value,
+  max_contract_value, is_sme, certifications (jsonb),
+  description, logo_url, verified, created_at
+
+company_users:
+  id, company_id FK, user_id (Neon Auth),
+  role (admin|member), invited_by, joined_at
+
+person_profiles:
+  id, user_id (Neon Auth), display_name, job_title,
+  linkedin_url (optional, user-provided),
+  bio, specialisms (jsonb), created_at
+
+connections:
+  id, from_user_id, to_user_id,
+  connection_type (connection|contractor|member),
+  status (pending|accepted|declined),
+  company_context_id (nullable FK — which company
+  this contractor is attached to),
+  created_at, updated_at
+
+messages:
+  id, from_user_id, to_user_id, body,
+  read_at, created_at
+  (Phase 7 — schema defined now, built later)
+
+IMPLEMENTATION ORDER:
+Phase 6 Part 1 — Auth + company profile:
+  Neon Auth setup, company_profiles table,
+  domain-based uniqueness, Companies House API,
+  Tavily company scrape, HITL confirmation
+
+Phase 6 Part 2 — Person profile + onboarding:
+  person_profiles table, conversational onboarding
+  flow, optional LinkedIn URL + Tavily scrape,
+  HITL person profile confirmation
+
+Phase 6 Part 3 — Team membership:
+  company_users table, admin invite flow,
+  accept/decline membership, role display
+
+Phase 6 Part 4 — Personalised results:
+  query_neon_tenders accepts company_id,
+  filters by sector + value range,
+  local buyer highlighted differently
+
+Phase 7 — Connections + network:
+  connections table, send/accept requests,
+  contractor flagging, people search,
+  messaging, reputation layer
+
+GATE TESTS FOR PHASE 6:
+1. New user → onboarding HITL fires automatically
+2. Enter domain → Tavily scrapes → profile pre-filled
+3. HITL confirmation → profile saved to Neon
+4. Invite team member → they receive link → join
+5. After onboarding → tender results filtered by sector
+6. Second team member sees same company profile
+7. Company domain is unique — duplicate domain rejected
+
+DO NOT:
+DO NOT use Auth0, Clerk, or Supabase Auth.
+Use Neon Auth only — JWT, org-level, native.
+DO NOT scrape LinkedIn without explicit user-provided
+URL and consent confirmation.
+DO NOT build messaging in Phase 6 — schema only.
+DO NOT start Phase 6 until gate tests 1-4 pass
+on production (red circle, recent tenders,
+RAAC analysis, NHS chart in right panel).
+REVERSIBLE: Yes — network can simplify to seats
+model if adoption requires it.
