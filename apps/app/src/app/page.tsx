@@ -110,8 +110,8 @@ export default function HomePage() {
                   <span className="text-lg sm:text-xl leading-none" role="img" aria-label="CopilotKit">🪁</span>
                 </div>
                 <p className="text-sm sm:text-base font-semibold m-0 leading-snug" style={{ color: "var(--text-primary)" }}>
-                  Open Generative UI
-                  <span className="hidden sm:inline font-normal" style={{ color: "var(--text-secondary)" }}> — powered by CopilotKit</span>
+                  RFP.quest
+                  <span className="hidden sm:inline font-normal" style={{ color: "var(--text-secondary)" }}> Beta</span>
                 </p>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -129,19 +129,6 @@ export default function HomePage() {
                   <GridIcon size={15} />
                   <span className="hidden sm:inline">Demos</span>
                 </button>
-                <a
-                  href="https://github.com/CopilotKit/OpenGenerativeUI"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-white no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
-                  style={{
-                    background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))",
-                    boxShadow: "0 1px 4px rgba(149,153,204,0.3)",
-                    fontFamily: "var(--font-family)",
-                  }}
-                >
-                  Get started
-                </a>
               </div>
             </div>
           </div>
@@ -173,7 +160,7 @@ export default function HomePage() {
               <ExampleLayout chatContent={
                 <CopilotChat
                   labels={{
-                    welcomeMessageText: "What do you want to visualize today?",
+                    welcomeMessageText: "Welcome to RFP.quest Beta. Ask me about UK government tenders, or try a demo from the gallery.",
                     chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
                   }}
                 />
