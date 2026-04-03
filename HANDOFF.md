@@ -72,20 +72,12 @@ Latest commit: d2832b2
 
 2. LANGSMITH_API_KEY — REGENERATED ✅ (production tracing working)
 
-3. TAKO CHART NOT RENDERING VISIBLY — Phase 5c Priority 1.7
-   Root cause chain:
-   a) takoVisualize as useComponent → orphaned tool_use (D40)
-   b) widgetRenderer with nested iframe → sandbox blocks Tako
-   c) State-based approach (analytics_embed_url) → agent still
-      calls widgetRenderer despite CRITICAL prompt instruction
-   Current state: visualise_tender_analytics returns Command
-   that writes analytics_embed_url to agent state. StableIframe
-   in page.tsx reads state and renders below chat. But agent
-   also calls widgetRenderer which shows "content blocked".
-   Latest fix: stronger prompt exception for analytics in
-   visualization workflow. NOT YET TESTED after latest change.
-   Tako renders perfectly in plain localhost iframe test ✅
-   Reference: takodata/tako-copilotkit MarkdownRenderer.tsx
+3. TAKO CHART UX POLISH NEEDED (working locally)
+   Pipeline proven: Neon→CSV→Tako→TAKO_CHART marker→StableIframe
+   UX issues for next session:
+   a) Chart panel accumulates — should show latest only
+   b) Chart shows tender count not spend value
+   c) TAKO_CHART: text visible in chat — hide with CSS
 
 4. SECOND + THIRD RAILWAY CRONS NOT CONFIGURED
    - rfp-quest-find-a-tender-cron: 0 7 * * *
@@ -155,7 +147,7 @@ Railway (rfp-quest-generative-agent):
 - ANTHROPIC_API_KEY: SET ✅
 - DATABASE_URL: SET ✅
 - TAKO_API_KEY: SET ✅
-- LANGSMITH_API_KEY: COMPROMISED — REGENERATE ❌
+- LANGSMITH_API_KEY: SET ✅ (regenerated 2026-04-03)
 
 Vercel (rfp-quest-homepage):
 - LANGGRAPH_DEPLOYMENT_URL: SET ✅

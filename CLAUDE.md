@@ -84,24 +84,15 @@ Skills are SKILL.md files in apps/agent/skills/[name]/
 The agent reads them on demand. UK tender skill is at:
 apps/agent/skills/uk-tenders/SKILL.md
 
-Tako integration pattern (DEPLOYED 2026-04-01):
-  1. Run targeted Neon SQL query for the analytical question
-  2. Convert to CSV: import io, csv; buf = io.StringIO();
-     writer = csv.DictWriter(buf, fieldnames=rows[0].keys());
-     writer.writeheader(); writer.writerows(rows);
-     csv_string = buf.getvalue()
-  3. POST to Tako with csv=[csv_string] and query=user_question
-  4. Extract embed_url from response knowledge_cards[0]
-  5. Return embed_url to agent for widgetRenderer rendering
-
-Tako iframe rendering pattern (DEPLOYED 2026-04-01):
-  - Extract iframe src, generate stable ID from src
-  - Register in global Map (iframeRegistry) — never changes once set
-  - Render as React.memo StableIframe siblings alongside ReactMarkdown
-  - Never inside ReactMarkdown component tree — causes flickering
-  - Handle tako::resize postMessage for dynamic height adjustment
-  Reference implementation: takodata/tako-copilotkit
-    src/components/MarkdownRenderer.tsx (StableIframe + iframeRegistry)
+Tako chart rendering pattern (WORKING 2026-04-03):
+  1. visualise_tender_analytics queries Neon → CSV
+  2. POSTs to Tako Visualize API → gets embed_url
+  3. Returns embed_url as plain string to agent
+  4. Agent includes 'TAKO_CHART: [url]' on its own line
+  5. Frontend detects marker via regex → renders StableIframe
+  DO NOT use widgetRenderer for Tako.
+  DO NOT use takoVisualize useComponent.
+  Reference: TAKO_CHART marker pattern (D41)
 
 ## EXPLICIT DO NOT LIST
 

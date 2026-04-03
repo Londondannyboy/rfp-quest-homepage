@@ -735,3 +735,21 @@ passes this directly to widgetRenderer. Single tool
 chain, no orphaned tool_use, thread stays clean.
 takoVisualize component still registered but not called.
 REVERSIBLE: Yes — revert system prompt to use takoVisualize.
+SUPERSEDED BY: D41 — widgetRenderer also fails (sandbox blocks Tako).
+
+## D41 — DATE: 2026-04-03
+DECISION: Use TAKO_CHART marker pattern for chart rendering.
+CONTEXT: Every other approach failed:
+- takoVisualize useComponent → orphaned tool_use (D40)
+- widgetRenderer nested iframe → sandbox blocks Tako content
+- analytics_embed_url state field → CopilotKit agent.state
+  only exposes messages/tools/copilotkit, not custom fields
+- copilotkit_emit_state from @tool → crashes ag_ui_langgraph
+  with "tool_call_name Input should be a valid string"
+TRIED AND FAILED: All of the above across one full session.
+OUTCOME: Tool returns embed_url as string. Agent writes
+'TAKO_CHART: https://tako.com/embed/XXXX/' on its own line.
+Frontend regex detects this in agent messages, renders
+StableIframe in always-mounted container above chat.
+Confirmed working locally with real Neon data 2026-04-03.
+REVERSIBLE: Yes.
