@@ -753,3 +753,21 @@ Frontend regex detects this in agent messages, renders
 StableIframe in always-mounted container above chat.
 Confirmed working locally with real Neon data 2026-04-03.
 REVERSIBLE: Yes.
+
+## D42 — DATE: 2026-04-03
+DECISION: Multi-query CopilotKit bug is a product blocker,
+not a testing protocol issue.
+CONTEXT: ag_ui_langgraph raises "Message ID not found in
+history" on second query in same browser tab. Previous
+workaround was "use fresh tabs per query" for gate tests.
+This is unacceptable — real users send multiple queries in
+one session. The HANDOFF gate test protocol of fresh tabs
+masked this as a testing concern when it is a product defect.
+OUTCOME: Must be fixed in Phase 5c Priority 3. Options:
+1. Upgrade ag_ui_langgraph — check if newer version fixes
+   the checkpoint lookup regression
+2. Patch prepare_regenerate_stream to handle missing message
+   IDs gracefully (catch ValueError, start fresh thread)
+3. Frontend: generate new thread_id per query if checkpoint
+   recovery fails
+REVERSIBLE: N/A — bug fix required.
