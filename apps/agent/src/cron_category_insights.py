@@ -40,47 +40,47 @@ CATEGORIES = [
     {
         "name": "NHS",
         "where": "title ILIKE '%nhs%' OR buyer_name ILIKE '%nhs%' OR buyer_name ILIKE '%health%'",
-        "question": "Bar chart comparing NHS procurement total spend in GBP and tender count by year",
+        "question": "Bar chart of NHS procurement spend in millions GBP by year",
     },
     {
         "name": "Construction",
         "where": "title ILIKE '%construction%' OR title ILIKE '%building%' OR title ILIKE '%demolition%'",
-        "question": "Bar chart comparing construction contract total spend in GBP and tender count by year",
+        "question": "Bar chart of construction contract spend in millions GBP by year",
     },
     {
         "name": "IT",
         "where": "title ILIKE '%digital%' OR title ILIKE '%software%' OR title ILIKE '%IT %' OR title ILIKE '%technology%'",
-        "question": "Bar chart comparing IT and digital contract total spend in GBP and tender count by year",
+        "question": "Bar chart of IT and digital contract spend in millions GBP by year",
     },
     {
         "name": "Education",
         "where": "title ILIKE '%school%' OR title ILIKE '%university%' OR title ILIKE '%education%' OR buyer_name ILIKE '%university%'",
-        "question": "Bar chart comparing education sector contract total spend in GBP and tender count by year",
+        "question": "Bar chart of education sector contract spend in millions GBP by year",
     },
     {
         "name": "Defence",
         "where": "title ILIKE '%defence%' OR title ILIKE '%military%' OR buyer_name ILIKE '%ministry of defence%'",
-        "question": "Bar chart comparing defence contract total spend in GBP and tender count by year",
+        "question": "Bar chart of defence contract spend in millions GBP by year",
     },
     {
         "name": "Facilities",
         "where": "title ILIKE '%facilities%' OR title ILIKE '%cleaning%' OR title ILIKE '%maintenance%' OR title ILIKE '%catering%'",
-        "question": "Bar chart comparing facilities management contract total spend in GBP and tender count by year",
+        "question": "Bar chart of facilities management contract spend in millions GBP by year",
     },
     {
         "name": "Transport",
         "where": "title ILIKE '%transport%' OR title ILIKE '%highway%' OR title ILIKE '%road%' OR title ILIKE '%rail%'",
-        "question": "Bar chart comparing transport contract total spend in GBP and tender count by year",
+        "question": "Bar chart of transport contract spend in millions GBP by year",
     },
     {
         "name": "Social Care",
         "where": "title ILIKE '%social care%' OR title ILIKE '%care home%' OR title ILIKE '%domiciliary%' OR buyer_name ILIKE '%social care%'",
-        "question": "Bar chart comparing social care contract total spend in GBP and tender count by year",
+        "question": "Bar chart of social care contract spend in millions GBP by year",
     },
     {
         "name": "Police",
         "where": "title ILIKE '%police%' OR buyer_name ILIKE '%police%' OR title ILIKE '%policing%'",
-        "question": "Bar chart comparing police and policing contract total spend in GBP and tender count by year",
+        "question": "Bar chart of police and policing contract spend in millions GBP by year",
     },
 ]
 
@@ -90,11 +90,11 @@ def get_db():
 
 
 def query_category_csv(conn, category):
-    """Query Neon for a category's tender count and spend by year, return CSV string."""
+    """Query Neon for a category's spend by year, return CSV string."""
     sql = f"""
         SELECT EXTRACT(YEAR FROM COALESCE(published_date, fetched_at))::int AS year,
                COUNT(*) AS tender_count,
-               COALESCE(SUM(value_amount), 0)::bigint AS total_spend_gbp
+               ROUND(COALESCE(SUM(value_amount), 0) / 1000000, 1) AS "spend_millions_GBP"
         FROM tenders
         WHERE {category['where']}
         GROUP BY year
@@ -108,11 +108,15 @@ def query_category_csv(conn, category):
     if not rows:
         return None, 0
 
+    total_count = sum(r["tender_count"] for r in rows)
+
+    # Send only year and spend to Tako — forces it to chart spend
     buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=rows[0].keys())
+    writer = csv.DictWriter(buf, fieldnames=["year", "spend_millions_GBP"])
     writer.writeheader()
-    writer.writerows(rows)
-    return buf.getvalue(), sum(r["tender_count"] for r in rows)
+    for r in rows:
+        writer.writerow({"year": r["year"], "spend_millions_GBP": r["spend_millions_GBP"]})
+    return buf.getvalue(), total_count
 
 
 def call_tako(csv_string, question):
