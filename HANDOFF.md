@@ -170,7 +170,7 @@ Railway cron services:
 **Phase 5c Priority 1** — COMPLETE ✅
 **Phase 5c Priority 1.5** — IN PROGRESS (47K rows, loaders running)
 **Phase 5c Priority 1.6** — COMPLETE ✅ (Tako working)
-**Phase 5c Priority 1.7** — WORKING LOCALLY: Tako chart renders via TAKO_CHART marker (D36, D40)
+**Phase 5c Priority 1.7** — WORKING LOCALLY: Tako chart renders via TAKO_CHART marker (D36, D41)
 **Phase 5a** — NEXT: RFP.quest rebrand
 **Phase 5b** — SSR tender feed
 **Phase 5c Priority 2** — Instant tender card
