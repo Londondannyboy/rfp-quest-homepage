@@ -8,7 +8,7 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: 74aac8d
+Latest commit: d2832b2
 
 ### Gate tests
 1. "Draw a red circle" → red circle renders ✅
@@ -17,19 +17,35 @@ Latest commit: 74aac8d
    → Neon lookup, HITL card renders ✅
 4. "Show me NHS contract spend by year" → BLOCKED ❌
    Tako embed_url returned correctly, state updated,
-   but agent also calls widgetRenderer (sandboxed → blocked).
-   State-based StableIframe rendering not yet confirmed.
+   Tako chart RENDERING LOCALLY via TAKO_CHART marker ✅
+   Pipeline: Neon → CSV → Tako API → embed URL → StableIframe
+   Not yet deployed to production.
 
-### What is deployed and working
+### What works (verified locally 2026-04-03)
+- Tako chart rendering: TAKO_CHART marker → StableIframe ✅
+- No sandbox blocking, no orphaned tool_use ✅
+- Real Neon data → Tako bar chart visible ✅
+- Always-mounted container prevents CopilotChat remount ✅
+- Agent calls ONLY visualise_tender_analytics (no widgetRenderer) ✅
+- Cache-first for "by year" queries, live Tako for others ✅
 - Rich tenders schema (37+ columns, 9 indexes, D31)
 - query_neon_tenders: full-text → ILIKE fallback, prefers valued tenders
-- visualise_tender_analytics: cache-first, returns Command with state update
-- category_insights: 9 categories pre-computed, cached path 1.3s
+- category_insights: 9 categories pre-computed, 2-column CSV
 - sendPrompt bridge: Analyse button → chat message
 - Agent: Neon only, no auto-chaining query → analyse
 - LangSmith tracing enabled at startup (production)
 - Python 3.12 pinned via .python-version (copilotkit requires <3.13)
 - Railway CLI linked, LangSmith SDK available for debugging
+
+### Known issues (next session)
+- Chart panel shows ALL charts not just latest
+  Fix: replace globalTakoUrls on new query, not append
+- Intermittent AbortError on fast repeated queries
+  Root cause: ag_ui_langgraph race condition
+  Workaround: wait 3s between queries
+- Chart shows tender count not spend value
+  Fix: improve SQL in cron_category_insights.py
+- .env.local points to localhost — revert before production test
 - Railway cron rfp-quest-cron-job: 0 6 * * * ✅
 - Dead code removed: uk_tenders.py, bulk_load_tenders.py
 - Unused imports removed: ChatOpenAI, asyncio, APIStatusError
@@ -84,29 +100,26 @@ Latest commit: 74aac8d
 
 ## NEXT ACTION
 
-Step 1: Fix Tako chart rendering (BLOCKING — do first)
-  Local test after latest prompt fix:
-    cd /Users/dankeegan/rfp-quest-homepage
-    Start agent: cd apps/agent && uv run uvicorn main:app \
-      --host 0.0.0.0 --port 8123 --reload &
-    Start frontend: npx pnpm dev (runs on port 3000)
-    Fresh tab → localhost:3000 → "Show me NHS contract spend by year"
-    Check: does agent call ONLY visualise_tender_analytics?
-    Check: does StableIframe appear below chat with Tako chart?
+Step 1: Deploy to production
+  Revert apps/app/.env.local to production URL:
+    LANGGRAPH_DEPLOYMENT_URL=https://rfp-quest-generative-agent-production.up.railway.app
+  git push already done — Railway + Vercel will auto-deploy.
+  Wait for Railway deploy, then test production gate tests.
 
-  If agent still calls widgetRenderer, study reference:
-    Clone: git clone https://github.com/takodata/tako-copilotkit /tmp/tako-copilotkit
-    Key files:
-      /tmp/tako-copilotkit/agents/python/src/lib/chat.py
-      /tmp/tako-copilotkit/src/components/MarkdownRenderer.tsx
-    Copy the exact working pattern. Tako renders in a canvas panel
-    via state.report, not via tool calls.
+Step 2: Fix chart panel UX
+  - Replace chart on new query (clear globalTakoUrls, show latest only)
+  - Improve SQL: show spend value not just tender count
+  - Regenerate all 9 category insights with better data
 
-  If working locally, commit and deploy to Railway + Vercel.
-  Gate: "Show me NHS contract spend" → chart visible in <3s.
+Step 3: Production gate tests (fresh tabs)
+  1. "Draw a red circle" → renders ✅
+  2. "Show me recent UK government tenders" → cards render
+  3. "Analyse tender: Service Wing Demolition (RAAC)" → HITL
+  4. "Show me NHS contract spend by year" → Tako chart visible
 
-Step 2: Remaining housekeeping
-  Configure two Railway cron services (see items 4+5 above).
+Step 4: Configure Railway cron services
+  - rfp-quest-find-a-tender-cron: 0 7 * * *
+  - rfp-quest-cf-v2-cron: 0 8 * * *
 
 Step 3: Phase 6 foundation — company profile + matching
   See conversation with Claude.ai 2026-04-02 for full spec:
@@ -165,7 +178,7 @@ Railway cron services:
 **Phase 5c Priority 1** — COMPLETE ✅
 **Phase 5c Priority 1.5** — IN PROGRESS (47K rows, loaders running)
 **Phase 5c Priority 1.6** — COMPLETE ✅ (Tako working)
-**Phase 5c Priority 1.7** — BLOCKED: Pre-computed insights built, chart rendering blocked (D36, D40)
+**Phase 5c Priority 1.7** — WORKING LOCALLY: Tako chart renders via TAKO_CHART marker (D36, D40)
 **Phase 5a** — NEXT: RFP.quest rebrand
 **Phase 5b** — SSR tender feed
 **Phase 5c Priority 2** — Instant tender card
@@ -187,6 +200,6 @@ DO NOT add sandbox attribute to StableIframe (D35).
 ## SIGN-OFF STATUS
 
 DRAFT — 2026-04-03
-Phase 5c Priority 1.7 backend complete, Tako chart rendering BLOCKED.
-State-based approach implemented but agent still calls widgetRenderer.
-Latest prompt fix not yet tested. Local testing required next session.
+Phase 5c Priority 1.7 WORKING LOCALLY — Tako chart renders.
+Production deploy pending. Chart UX polish needed (show latest only).
+Gate test 4 confirmed locally with real Neon data.
