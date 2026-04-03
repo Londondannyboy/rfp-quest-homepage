@@ -14,6 +14,7 @@ class Todo(TypedDict):
 
 class AgentState(BaseAgentState):
     todos: list[Todo]
+    analytics_embed_url: str
 
 @tool
 def manage_todos(todos: list[Todo], runtime: ToolRuntime) -> Command:

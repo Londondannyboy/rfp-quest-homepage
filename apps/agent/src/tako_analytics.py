@@ -16,8 +16,10 @@ from datetime import datetime, timedelta, timezone
 import httpx
 import psycopg2
 import psycopg2.extras
-from langchain.tools import tool
-from typing import Dict, Any, Optional
+from langchain.tools import tool, ToolRuntime
+from langchain.messages import ToolMessage
+from langgraph.types import Command
+from typing import Dict, Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -209,11 +211,11 @@ def _pick_sql(question: str) -> str:
 
 
 @tool
-def visualise_tender_analytics(question: str) -> Dict[str, Any]:
+def visualise_tender_analytics(question: str, runtime: ToolRuntime) -> Command:
     """
     Create a Tako analytics chart from Neon tender data.
     Queries the tenders database, converts to CSV, sends to Tako Visualize API,
-    and returns an embed_url for rendering as an interactive chart.
+    and stores the embed_url in agent state for the frontend to render.
 
     Use this when users ask analytical questions about tenders — trends,
     spending breakdowns, comparisons by buyer/sector/year, etc.
@@ -223,9 +225,9 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
                   e.g. "Show me NHS contract spend by year"
 
     Returns:
-        Dictionary with html (string for widgetRenderer), embed_url (string),
-        and title (string) for the chart.
+        Command that updates analytics_embed_url in agent state.
     """
+    embed_url = ""
     try:
         # Check for pre-computed category insight first
         category = _match_category(question)
@@ -233,30 +235,37 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
             cached_url = _check_cached_insight(category)
             if cached_url:
                 logger.info(f"Tako analytics: cache HIT for category '{category}'")
-                return {
-                    "html": f'<iframe src="{cached_url}" width="100%" height="500px" style="border:none;" allow="fullscreen"></iframe>',
-                    "embed_url": cached_url,
-                    "title": question,
-                    "cached": True,
-                }
-            logger.info(f"Tako analytics: cache MISS for category '{category}'")
+                embed_url = cached_url
 
-        sql = _pick_sql(question)
-        logger.info(f"Tako analytics: question='{question}', sql template selected")
-        csv_string = _query_to_csv(sql)
-        logger.info(f"Tako analytics: CSV generated, {len(csv_string)} bytes")
-        embed_url = _call_tako(csv_string, question)
-        logger.info(f"Tako analytics: embed_url={embed_url}")
-        return {
-            "html": f'<iframe src="{embed_url}" width="100%" height="500px" style="border:none;" allow="fullscreen"></iframe>',
-            "embed_url": embed_url,
-            "title": question,
-        }
+        if not embed_url:
+            if category:
+                logger.info(f"Tako analytics: cache MISS for category '{category}'")
+            sql = _pick_sql(question)
+            logger.info(f"Tako analytics: question='{question}', sql template selected")
+            csv_string = _query_to_csv(sql)
+            logger.info(f"Tako analytics: CSV generated, {len(csv_string)} bytes")
+            embed_url = _call_tako(csv_string, question)
+            logger.info(f"Tako analytics: embed_url={embed_url}")
+
     except Exception as e:
         logger.error(f"Tako analytics error: {e}", exc_info=True)
-        return {
-            "error": str(e),
-            "embed_url": "",
-            "html": "",
-            "title": question,
-        }
+        return Command(update={
+            "messages": [
+                ToolMessage(
+                    content=f"Analytics error: {e}",
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ]
+        })
+
+    return Command(update={
+        "analytics_embed_url": embed_url,
+        "messages": [
+            ToolMessage(
+                content=f"Chart is now rendering in the analytics panel automatically. "
+                        f"Do NOT call widgetRenderer or takoVisualize — the chart is already visible. "
+                        f"Just describe what the chart shows in plain text.",
+                tool_call_id=runtime.tool_call_id,
+            )
+        ]
+    })

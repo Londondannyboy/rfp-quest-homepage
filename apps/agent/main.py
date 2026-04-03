@@ -109,10 +109,13 @@ agent = create_deep_agent(
         in under 3 seconds if available. Otherwise it queries Neon live,
         converts to CSV, and calls the Tako API.
 
-        When visualise_tender_analytics returns, call widgetRenderer with
-        the html field it provides. Do NOT call takoVisualize. Do NOT call
-        plan_visualization for analytics. Just pass the html directly to
-        widgetRenderer with the title from the result.
+        CRITICAL: When visualise_tender_analytics is called, it automatically
+        updates the analytics panel via agent state. After calling it, you
+        MUST NOT call widgetRenderer, plan_visualization, takoVisualize, or
+        any other rendering tool. The chart renders automatically. Your ONLY
+        action after visualise_tender_analytics is to send a plain text
+        response acknowledging the chart is displayed and offering drill-down
+        options. Do NOT try to render or display the chart yourself.
 
         Example queries:
         - "Show me NHS contract spend by year"
@@ -171,8 +174,10 @@ agent = create_deep_agent(
 
         ## Visualization Workflow (MANDATORY)
 
-        When producing ANY visual response (widgetRenderer, pieChart, barChart), you MUST
-        follow this exact sequence:
+        When producing visual responses EXCEPT tender analytics (widgetRenderer,
+        pieChart, barChart), you MUST follow this exact sequence.
+        EXCEPTION: visualise_tender_analytics handles its own rendering via
+        state — never call widgetRenderer or plan_visualization for analytics.
 
         1. **Acknowledge** — Reply with 1-2 sentences of plain text acknowledging the
            request and setting context for what the visualization will show.

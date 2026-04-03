@@ -7,6 +7,7 @@ import { ExplainerCardsPortal } from "@/components/explainer-cards";
 import { DemoGallery, type DemoItem } from "@/components/demo-gallery";
 import { GridIcon } from "@/components/demo-gallery/grid-icon";
 import { DesktopTipModal } from "@/components/desktop-tip-modal";
+import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
 export default function HomePage() {
@@ -16,6 +17,7 @@ export default function HomePage() {
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
+  const analyticsEmbedUrl = agent.state?.analytics_embed_url as string | undefined;
 
   const handleTryDemo = (demo: DemoItem) => {
     setDemoDrawerOpen(false);
@@ -106,12 +108,22 @@ export default function HomePage() {
           </div>
 
           <ExampleLayout chatContent={
-            <CopilotChat
-              labels={{
-                welcomeMessageText: "What do you want to visualize today?",
-                chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
-              }}
-            />
+            <>
+              <CopilotChat
+                labels={{
+                  welcomeMessageText: "What do you want to visualize today?",
+                  chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
+                }}
+              />
+              {analyticsEmbedUrl && (
+                <div className="px-4 pb-4">
+                  <StableIframe
+                    embed_url={analyticsEmbedUrl}
+                    title="Tender Analytics"
+                  />
+                </div>
+              )}
+            </>
           } />
           <ExplainerCardsPortal />
         </div>
