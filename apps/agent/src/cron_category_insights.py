@@ -40,47 +40,47 @@ CATEGORIES = [
     {
         "name": "NHS",
         "where": "title ILIKE '%nhs%' OR buyer_name ILIKE '%nhs%' OR buyer_name ILIKE '%health%'",
-        "question": "NHS contract spend by year",
+        "question": "Bar chart comparing NHS procurement total spend in GBP and tender count by year",
     },
     {
         "name": "Construction",
         "where": "title ILIKE '%construction%' OR title ILIKE '%building%' OR title ILIKE '%demolition%'",
-        "question": "Construction contract spend by year",
+        "question": "Bar chart comparing construction contract total spend in GBP and tender count by year",
     },
     {
         "name": "IT",
         "where": "title ILIKE '%digital%' OR title ILIKE '%software%' OR title ILIKE '%IT %' OR title ILIKE '%technology%'",
-        "question": "IT and digital contract spend by year",
+        "question": "Bar chart comparing IT and digital contract total spend in GBP and tender count by year",
     },
     {
         "name": "Education",
         "where": "title ILIKE '%school%' OR title ILIKE '%university%' OR title ILIKE '%education%' OR buyer_name ILIKE '%university%'",
-        "question": "Education sector contract spend by year",
+        "question": "Bar chart comparing education sector contract total spend in GBP and tender count by year",
     },
     {
         "name": "Defence",
         "where": "title ILIKE '%defence%' OR title ILIKE '%military%' OR buyer_name ILIKE '%ministry of defence%'",
-        "question": "Defence contract spend by year",
+        "question": "Bar chart comparing defence contract total spend in GBP and tender count by year",
     },
     {
         "name": "Facilities",
         "where": "title ILIKE '%facilities%' OR title ILIKE '%cleaning%' OR title ILIKE '%maintenance%' OR title ILIKE '%catering%'",
-        "question": "Facilities management contract spend by year",
+        "question": "Bar chart comparing facilities management contract total spend in GBP and tender count by year",
     },
     {
         "name": "Transport",
         "where": "title ILIKE '%transport%' OR title ILIKE '%highway%' OR title ILIKE '%road%' OR title ILIKE '%rail%'",
-        "question": "Transport contract spend by year",
+        "question": "Bar chart comparing transport contract total spend in GBP and tender count by year",
     },
     {
         "name": "Social Care",
         "where": "title ILIKE '%social care%' OR title ILIKE '%care home%' OR title ILIKE '%domiciliary%' OR buyer_name ILIKE '%social care%'",
-        "question": "Social care contract spend by year",
+        "question": "Bar chart comparing social care contract total spend in GBP and tender count by year",
     },
     {
         "name": "Police",
         "where": "title ILIKE '%police%' OR buyer_name ILIKE '%police%' OR title ILIKE '%policing%'",
-        "question": "Police and policing contract spend by year",
+        "question": "Bar chart comparing police and policing contract total spend in GBP and tender count by year",
     },
 ]
 
