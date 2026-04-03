@@ -7,37 +7,35 @@ const cards = [
   {
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-        <path d="M22 12A10 10 0 0 0 12 2v10z" />
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
     ),
-    title: "Generative UI",
+    title: "Find Every Opportunity",
     description:
-      "AI generates interactive charts, visualizations, and rich components directly in the conversation.",
+      "100,000+ UK government tenders from Contracts Finder and Find a Tender, searchable in seconds.",
   },
   {
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-        <line x1="8" y1="21" x2="16" y2="21" />
-        <line x1="12" y1="17" x2="12" y2="21" />
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
       </svg>
     ),
-    title: "Interactive Widgets",
+    title: "Match to Your Strengths",
     description:
-      "Complex HTML/JS visualizations run in sandboxed iframes — try asking for an animation or diagram.",
+      "AI analyses each tender against your sector, region, and contract history to surface the best fits.",
   },
   {
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2" />
-        <polyline points="2 17 12 22 22 17" />
-        <polyline points="2 12 12 17 22 12" />
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
       </svg>
     ),
-    title: "Visualize Anything",
+    title: "Win More Bids",
     description:
-      "Ask for algorithm visualizations, 3D animations, diagrams, or any interactive visual explanation.",
+      "Spend analytics, buyer insights, and AI bid recommendations so you focus on contracts you can win.",
   },
 ];
 
