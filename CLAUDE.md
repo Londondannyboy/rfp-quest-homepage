@@ -40,13 +40,23 @@ Session 2026-04-02:
   with scale-to-zero (D38)
 - Data quality audit: gaps identified, backfill planned
 
-Session 2026-04-03:
+Session 2026-04-03 (morning):
 - Phase 5c Priority 1.7 COMPLETE — pre-computed Tako insights
 - category_insights table: 9 categories, all populated
 - cron_category_insights.py chained into existing Railway cron
 - visualise_tender_analytics: cache-first (<24h), live fallback
 - Cached path 1.3s vs live 7.3s (gate: <3s ✅)
 - Extension roadmap added to DECISIONS.md (pg_trgm, pg_search, pg_ivm)
+
+Session 2026-04-03 (evening):
+- ALL 4 GATE TESTS PASSING ON PRODUCTION ✅
+- query_neon_tenders fixed: word ILIKE fallback + browse mode, LIMIT 20
+- Chart panel: shows latest chart only (globalTakoUrls replaced)
+- Category insights: spend in millions GBP, tender_count removed from CSV
+- TAKO_CHART marker hidden in chat via CSS
+- Multi-query CopilotKit bug documented as product blocker (D42)
+- 101,788 Neon rows (69K FAT + 31K CF v2)
+- Phase 5c Priority 1.7 SIGNED OFF
 
 ## FROZEN SECTIONS
 
