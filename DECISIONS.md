@@ -687,4 +687,31 @@ OUTCOME: Three-layer retry:
    InFailedSqlTransaction. Fresh connection on each retry.
 Scale-to-zero disabled during load runs.
 Re-enable after historical loads complete.
+
+## EXTENSIONS UPDATE — DATE: 2026-04-02
+ACTIVATE IMMEDIATELY:
+- pg_trgm: already on Neon, just needs enabling
+  CREATE EXTENSION IF NOT EXISTS pg_trgm;
+  CREATE INDEX idx_tenders_buyer_trgm ON tenders 
+  USING GIN (buyer_name gin_trgm_ops);
+  Improves buyer name fuzzy matching for taxonomy.
+
+INVESTIGATE BEFORE PHASE 5c Priority 3:
+- pg_search (ParadeDB): #22 fastest growing extension.
+  BM25 + hybrid search. May replace GIN full-text index
+  + pgvector search with single superior search tool.
+  Test against current query_neon_tenders performance.
+  URL: paradedb.com
+
+PHASE 6:
+- pg_ivm: incremental view maintenance for 
+  live_tenders and awarded_contracts views.
+  Keeps views current without manual REFRESH.
+- rag/rag_bge_small_en_v15: in-database embedding 
+  generation on tender insert. Eliminates external 
+  embedding API call.
+
+NOTE: pg_cron installs dropping -39.8%.
+Market moving toward external schedulers (Inngest).
+Confirms decision to evaluate Inngest for cron work.
 REVERSIBLE: Yes.
