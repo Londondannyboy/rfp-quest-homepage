@@ -51,6 +51,19 @@ export default function HomePage() {
     copilotkit.runAgent({ agent });
   };
 
+  // Hide TAKO_CHART: marker text from chat messages
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('[data-testid="copilot-assistant-message"] p').forEach((p) => {
+        if (p.textContent?.includes("TAKO_CHART:")) {
+          (p as HTMLElement).style.display = "none";
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   // Widget bridge: handle messages from widget iframes
   useEffect(() => {
     const handler = (e: MessageEvent) => {

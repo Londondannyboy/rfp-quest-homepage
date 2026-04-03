@@ -548,9 +548,12 @@ body, html {
   display: none !important;
 }
 
-/* Hide TAKO_CHART: marker lines in chat messages —
-   CopilotKit renders the URL as a link inside a paragraph */
+/* Hide TAKO_CHART: marker lines in chat messages */
 [data-testid="copilot-assistant-message"] a[href*="tako.com/embed"] {
+  display: none !important;
+}
+/* Hide paragraph containing TAKO_CHART text — :has() targets the parent p */
+[data-testid="copilot-assistant-message"] p:has(a[href*="tako.com/embed"]) {
   display: none !important;
 }
 
