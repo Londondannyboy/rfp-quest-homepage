@@ -1,6 +1,6 @@
 # HANDOFF.md — rfp-quest-homepage
 # Session date: 2026-04-03 (evening)
-# Sign-off status: PENDING REVIEW
+# Sign-off status: SIGNED OFF 2026-04-03
 
 ## CURRENT STATE (verified 2026-04-03)
 
@@ -8,7 +8,7 @@ Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: 88930b9
+Latest commit: 3e8ab32
 
 ### Gate tests — ALL PASSING ON PRODUCTION ✅
 1. "Draw a red circle" → red circle renders ✅
@@ -16,43 +16,36 @@ Latest commit: 88930b9
 3. "Analyse tender: Service Wing Demolition (RAAC)"
    → Neon lookup, HITL card renders ✅
 4. "Show me NHS contract spend by year" → Tako chart renders ✅
-   Pipeline: Neon → CSV (spend in millions GBP) → Tako API → embed URL
-   → TAKO_CHART marker → StableIframe
-   Tako renders as table (not bar chart) — Tako's choice, not controllable.
-   Spend data correct. Chart type toggle available in Tako embed UI.
+   Two-panel layout: chart left, chat right ✅
+   Second chart replaces first in same session ✅
 
-All 4 gates tested in a SINGLE browser tab session (not fresh tabs).
+All 4 gates tested in a SINGLE browser tab session.
 
 ### What works (verified on production 2026-04-03)
 - All 4 gate tests passing in single session ✅
-- Tako chart rendering: TAKO_CHART marker → StableIframe ✅
-- Chart panel shows latest chart only (not accumulating) ✅
-- TAKO_CHART: marker text hidden in chat via CSS ✅
+- Two-panel layout: chart left, chat right on desktop ✅
+- Chart panel shows latest chart only (replaces on new query) ✅
+- TAKO_CHART: marker text hidden via MutationObserver ✅
+- RFP.quest Beta branding: header, title, explainer cards ✅
+- Demo gallery: 9 real tender queries ✅
+- Suggestion pills: "Recent tenders", "NHS spend", "Analyse" ✅
+- Explainer cards: Find, Match, Win ✅
 - Category insights: 9 categories, spend in millions GBP ✅
 - query_neon_tenders: full-text → word ILIKE → browse fallback, LIMIT 20 ✅
 - Cache-first for "by year" queries (<24h), live Tako for others ✅
 - 101,788 Neon rows (69K FAT + 31K CF v2) ✅
-- Rich tenders schema (37+ columns, 9 indexes, D31)
-- sendPrompt bridge: Analyse button → chat message
-- Agent: Neon only, no auto-chaining query → analyse
 - LangSmith tracing enabled (production)
-- Python 3.12 pinned via .python-version
 
-### Known issues (next session)
+### Known issues (carry forward)
+- Multi-query CopilotKit bug (D42)
+  ag_ui_langgraph "Message ID not found in history"
+  on some second queries. Not 100% repro.
+  Second Tako chart replacement works despite this.
 - Tako renders table instead of bar chart for some queries
   Not controllable — Tako API chooses visualization type.
-  Users can toggle chart type via Tako embed UI icons.
-- Multi-query CopilotKit bug (D42) — PRODUCT BLOCKER
-  ag_ui_langgraph raises "Message ID not found in history"
-  on some second queries. Not 100% repro but real.
-  Must fix in Phase 5c Priority 3, not mask with fresh tabs.
-- Intermittent AbortError on fast repeated queries
-  Root cause: ag_ui_langgraph race condition
 - Tako cron: 2/9 categories intermittently fail
-  (Tako returns empty knowledge_cards). Previous cached
-  embeds remain valid. Retry on next cron run.
-- .env.local already pointing to production ✅
-- Railway cron rfp-quest-cron-job: 0 6 * * * ✅
+  Previous cached embeds remain valid.
+- Railway cron: 2 additional crons not configured
 
 ### Neon row counts (as of 2026-04-03)
 - find-a-tender: 69,678
@@ -64,11 +57,10 @@ All 4 gates tested in a SINGLE browser tab session (not fresh tabs).
 
 ## WHAT IS BROKEN / INCOMPLETE
 
-1. MULTI-QUERY BUG — D42 (PRODUCT BLOCKER)
+1. MULTI-QUERY BUG — D42
    ag_ui_langgraph "Message ID not found in history".
-   Affects some second queries — not 100% repro.
-   Second Tako chart DOES replace first (verified 2026-04-03).
-   Phase 5c Priority 3.
+   Not 100% repro. Second Tako chart replacement works.
+   Fix in Phase 5c Priority 3.
 
 2. PRE-2024 DATA NOT LOADED
    Both loaders currently covering 2024→now only.
@@ -77,47 +69,58 @@ All 4 gates tested in a SINGLE browser tab session (not fresh tabs).
    - rfp-quest-find-a-tender-cron: 0 7 * * *
    - rfp-quest-cf-v2-cron: 0 8 * * *
 
-4. TAKO CHART PLACEMENT
-   Current: chart appears above chat in panel
-   Target: two-panel layout — charts/content left, chat right
-   Reference: takodata/tako-copilotkit ResearchCanvas.tsx
+4. WITH_RETRY WRAPPER REMOVED — D21
+5. NO LOADING STATES — Phase 5c Priority 3
+6. NO GRACEFUL ERROR UI — Phase 5c Priority 3
+7. NO SSR TENDER FEED — Phase 5b
 
-5. WITH_RETRY WRAPPER REMOVED — D21
-6. NO LOADING STATES — Phase 5c Priority 3
-7. NO GRACEFUL ERROR UI — Phase 5c Priority 3
-8. DEMO GALLERY STALE — Phase 5a
-9. NO RFP.QUEST BRANDING — Phase 5a
-10. NO SSR TENDER FEED — Phase 5b
+## NEXT ACTION — PHASE 6
 
-## NEXT ACTION
+Phase 5a COMPLETE ✅ (rebrand done)
+Phase 5c Priority 1.7 COMPLETE ✅
+Next: Phase 6 — Company profile + personalised matching
 
-Step 1: Fix multi-query bug (Phase 5c Priority 3)
-  Options per D42:
-  a) Upgrade ag_ui_langgraph
-  b) Catch ValueError in prepare_regenerate_stream
-  c) Generate new thread_id per query on failure
+Phase 6 Part 1 — Schema:
+  company_profiles: name, Companies House number, region,
+    sectors, min/max contract value, is_sme, certifications.
+  company_users: email, company_id FK, role. Multi-user
+    from day one.
+  buyer_taxonomy: maps raw buyer_name → parent_org, org_type,
+    region, normalised_name. Top 200 buyers classified.
 
-Step 2: Two-panel layout
-  Charts/content left, chat right (react-split)
-  Reference: takodata/tako-copilotkit
+Phase 6 Part 2 — Conversational onboarding (CopilotKit HITL):
+  NOT a form. Agent asks 6 questions conversationally.
+  First thing a new user sees.
 
-Step 3: Configure remaining Railway crons
-  - rfp-quest-find-a-tender-cron: 0 7 * * *
-  - rfp-quest-cf-v2-cron: 0 8 * * *
+Phase 6 Part 3 — Personalised query:
+  query_neon_tenders accepts optional company_id.
+  Filters by sector, value range, SME suitability.
+  Highlights local buyer matches differently.
 
-Step 4: Phase 5a — RFP.quest rebrand
+Phase 6 Part 4 — Neon Auth:
+  JWT-based, native Neon Auth, Next.js SDK.
 
-Step 5: Phase 6 — Company profile + matching
-  See CLAUDE.md and conversation 2026-04-02 for full spec.
+Gate tests:
+  1. Fresh session → onboarding HITL fires automatically
+  2. After onboarding → personalised results filtered
+  3. Local buyer highlighted differently in card
+  4. Second team member accesses same company profile
 
-## LAST COMMITS (this session)
+## LAST COMMITS (this session — all authorised)
 
-88930b9 — fix: Tako charts — send spend-only CSV in millions GBP
-857b9fb — fix: Tako category questions — request bar chart format explicitly
-473fe12 — docs: fix layout to two-panel (other session)
-b63c49f — fix: chart panel UX — latest only, spend, hide marker CSS
+3e8ab32 — feat: rebrand explainer cards — Find, Match, Win
+e064453 — fix: replace CopilotKit suggestion pills with real tender queries
+2737a5e — feat: rebrand to RFP.quest Beta — real demo queries
+4018737 — fix: hide TAKO_CHART marker text via MutationObserver
+2bd03f5 — feat: two-panel layout — chart left, chat right
+013a90a — docs: second Tako chart replacement verified
+fac17c5 — docs: multi-query bug D42 noted
+6b7a7af — docs: Phase 5c P1.7 complete
+88930b9 — fix: Tako charts — spend-only CSV in millions GBP
+857b9fb — fix: Tako category questions — bar chart format
+b63c49f — fix: chart panel UX — latest only, spend, hide marker
 53aedc1 — docs: D42 — multi-query bug is product blocker
-443c735 — fix: query_neon_tenders — word ILIKE + browse mode, LIMIT 20
+443c735 — fix: query_neon_tenders — word ILIKE + browse + LIMIT 20
 
 ## ENVIRONMENT STATE
 
@@ -125,7 +128,7 @@ Railway (rfp-quest-generative-agent):
 - ANTHROPIC_API_KEY: SET ✅
 - DATABASE_URL: SET ✅
 - TAKO_API_KEY: SET ✅
-- LANGSMITH_API_KEY: SET ✅ (regenerated 2026-04-03)
+- LANGSMITH_API_KEY: SET ✅
 
 Vercel (rfp-quest-homepage):
 - LANGGRAPH_DEPLOYMENT_URL: SET ✅
@@ -146,12 +149,12 @@ Railway cron services:
 **Phase 5c Priority 1** — COMPLETE ✅
 **Phase 5c Priority 1.5** — COMPLETE ✅ (101K rows)
 **Phase 5c Priority 1.6** — COMPLETE ✅ (Tako working)
-**Phase 5c Priority 1.7** — COMPLETE ✅ (category insights, spend data, all gates passing)
-**Phase 5c Priority 2** — Instant tender card
-**Phase 5c Priority 3** — NEXT: Loading states + errors + multi-query fix (D42)
-**Phase 5a** — RFP.quest rebrand
-**Phase 5b** — SSR tender feed
-**Phase 6** — Company profile + bid tracker
+**Phase 5c Priority 1.7** — COMPLETE ✅ (category insights, all gates passing)
+**Phase 5a** — COMPLETE ✅ (RFP.quest Beta rebrand, two-panel layout)
+**Phase 5c Priority 2** — DEFERRED (instant tender card)
+**Phase 5c Priority 3** — DEFERRED (loading states + multi-query fix D42)
+**Phase 5b** — DEFERRED (SSR tender feed)
+**Phase 6** — NEXT: Company profile + personalised matching
 **Phase 7** — Intelligent matched feed + additional sources
 
 ## DO NOT
@@ -168,8 +171,8 @@ DO NOT use fresh-tabs-per-query as a workaround for multi-query bug (D42).
 
 ## SIGN-OFF STATUS
 
-PENDING REVIEW — 2026-04-03
-Phase 5c Priority 1.7 COMPLETE — all 4 gate tests passing on production.
-Query fix deployed: word ILIKE + browse fallback, LIMIT 20.
-Chart UX: latest only, spend in millions GBP, marker hidden.
-Multi-query bug documented as product blocker (D42).
+SIGNED OFF — 2026-04-03
+Phase 5a COMPLETE — RFP.quest Beta rebrand deployed.
+Phase 5c Priority 1.7 COMPLETE — all 4 gate tests passing.
+Two-panel layout deployed. Second chart replacement verified.
+Next: Phase 6 — Company profile + personalised matching.

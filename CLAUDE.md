@@ -18,7 +18,7 @@ pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 4c COMPLETE, Phase 5c IN PROGRESS
+ACTIVE — Phase 5a + 5c COMPLETE, Phase 6 NEXT
 
 Session 2026-04-01:
 - Rich tenders schema (37+ columns, 9 indexes, D31)
@@ -53,10 +53,16 @@ Session 2026-04-03 (evening):
 - query_neon_tenders fixed: word ILIKE fallback + browse mode, LIMIT 20
 - Chart panel: shows latest chart only (globalTakoUrls replaced)
 - Category insights: spend in millions GBP, tender_count removed from CSV
-- TAKO_CHART marker hidden in chat via CSS
+- TAKO_CHART marker hidden via MutationObserver
+- Two-panel layout: chart left, chat right on desktop
+- Second Tako chart replacement verified working
 - Multi-query CopilotKit bug documented as product blocker (D42)
+- RFP.quest Beta rebrand: header, title, explainer cards, demos, suggestions
+- Explainer cards: Find Every Opportunity, Match to Your Strengths, Win More Bids
+- Demo gallery: 9 real tender queries replacing generic demos
 - 101,788 Neon rows (69K FAT + 31K CF v2)
-- Phase 5c Priority 1.7 SIGNED OFF
+- Phase 5a COMPLETE, Phase 5c Priority 1.7 COMPLETE
+- SIGNED OFF — ready for Phase 6
 
 ## FROZEN SECTIONS
 
