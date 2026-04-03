@@ -2,48 +2,56 @@ Based on OpenGenerativeUI by CopilotKit (MIT License)
 
 # RFP.quest Homepage - Generative UI with UK Tender Intelligence
 
-A powerful OpenGenerativeUI application that visualizes UK government procurement opportunities using AI-powered generative interfaces. Built with CopilotKit, LangGraph, and Claude Opus 4.6.
+A powerful OpenGenerativeUI application that visualizes UK government procurement opportunities using AI-powered generative interfaces. Built with CopilotKit v2, LangGraph, and Claude Opus 4.6.
 
-## 🚀 Live Demo
+## Live Demo
 
 - **Production Frontend**: https://rfp-quest-homepage.vercel.app
 - **Production Agent**: https://rfp-quest-generative-agent-production.up.railway.app
 - **Local Frontend**: http://localhost:3002
 - **Local Agent Backend**: http://localhost:8123
 
-## 🎯 Features
+## Features
 
-- **UK Government Tender Intelligence**: Real-time fetching and visualization of UK procurement opportunities from Contracts Finder OCDS API
-- **Generative UI**: AI-powered dynamic visualizations using widgetRenderer
-- **Interactive Visualizations**: 3D graphics, charts, and data dashboards
+- **UK Government Tender Intelligence**: 47K+ tenders from Contracts Finder and Find a Tender, stored in Neon for instant querying
+- **Generative UI**: AI-powered dynamic visualizations using CopilotKit v2 widgetRenderer
+- **Interactive Analytics**: Tako-powered charts with pre-computed category insights (NHS, Construction, IT, Education, Defence, Facilities, Transport, Social Care, Police)
+- **Bid Decision Analysis**: Human-in-the-loop tender evaluation with match scoring
 - **Claude Opus 4.6**: Powered by Anthropic's flagship model for superior visualization generation
-- **Real-time Data**: Live integration with UK government procurement data
+- **3D & Chart Visualizations**: Three.js, Chart.js, D3.js, GSAP via ES module import maps
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 apps/
-├── app/                    # Next.js 16 frontend with CopilotKit
+├── app/                    # Next.js 16 frontend with CopilotKit v2
 │   ├── src/
 │   │   ├── app/           # App router pages
-│   │   ├── components/    # React components
-│   │   └── hooks/         # Custom hooks
+│   │   ├── components/    # React components (WidgetRenderer, StableIframe)
+│   │   └── hooks/         # Custom hooks (useAgent)
 ├── agent/                  # LangGraph Python agent
-│   ├── skills/            # Agent skills
+│   ├── skills/            # Agent skills (SKILL.md files)
 │   │   └── uk-tenders/    # UK tender visualization skill
 │   ├── src/               # Agent tools and state
+│   │   ├── query_tenders.py          # Neon full-text + ILIKE search
+│   │   ├── tako_analytics.py         # Tako charts with category cache
+│   │   ├── cron_category_insights.py # Nightly Tako chart pre-computation
+│   │   ├── cron_ingest_tenders.py    # Daily OCDS tender ingest
+│   │   ├── find_a_tender_ingest.py   # Find a Tender bulk loader
+│   │   └── contracts_finder_v2_ingest.py  # CF REST v2 bulk loader
 │   └── main.py            # Agent entry point
 └── mcp/                    # MCP server integration
 ```
 
-## 📋 Prerequisites
+## Prerequisites
 
-- Node.js 18+ and pnpm
-- Python 3.12+
-- OpenAI API key (for fallback)
+- Node.js 18+ and pnpm 9
+- Python 3.12+ with uv
 - Anthropic API key (for Claude Opus 4.6)
+- Neon database (DATABASE_URL)
+- Tako API key (for analytics charts)
 
-## 🛠️ Installation
+## Installation
 
 1. **Clone this repository**:
 ```bash
@@ -60,12 +68,14 @@ make setup
 
 Create/update `apps/agent/.env`:
 ```env
-OPENAI_API_KEY=your-openai-key-here
-LLM_MODEL=claude-opus-4-6
 ANTHROPIC_API_KEY=your-anthropic-key-here
+LLM_MODEL=claude-opus-4-6
+DATABASE_URL=your-neon-connection-string
+TAKO_API_KEY=your-tako-key-here
+LANGSMITH_API_KEY=your-langsmith-key-here  # optional, enables tracing
 ```
 
-## 🚀 Running Locally
+## Running Locally
 
 Start all services:
 ```bash
@@ -77,7 +87,7 @@ This starts:
 - Agent backend on http://localhost:8123
 - MCP server on port 3100
 
-## 💡 Usage Examples
+## Usage Examples
 
 ### Basic Visualization Test
 ```
@@ -89,194 +99,164 @@ Draw a red circle
 Show me recent UK government tenders
 ```
 
+### Tender Analytics (pre-computed, <3s)
+```
+Show me NHS contract spend by year
+Show me construction contract spend by year
+```
+
+### Bid Decision Analysis
+```
+Analyse tender: Service Wing Demolition (RAAC)
+```
+
 ### Advanced Queries
 ```
 Find NHS contracts over £1M
 What construction contracts close this month?
-Analyse tender opportunities in digital transformation
+Which buyers publish the most tenders?
 ```
 
-## 🎨 UK Tender Skill
+## Data Sources
 
-The UK Tender Intelligence skill (`apps/agent/skills/uk-tenders/`) enables:
+All tender data is stored in Neon and queried locally. No live API calls at query time.
 
-- **Live Data Fetching**: Real-time data from Contracts Finder OCDS API
-- **Smart Visualization**: Automatic card layouts for tender opportunities
-- **Analysis Dashboards**: Value breakdowns, buyer analysis, timeline views
-- **Interactive Elements**: Deep links to Contracts Finder, analysis buttons
-- **Dark Mode Support**: Automatic theming with CSS variables
+**Contracts Finder REST v2** (primary for CF data):
+- Endpoint: `POST /api/rest/2/search_notices/json`
+- No auth required. Coverage: 2024-now (expanding).
+- Script: `apps/agent/src/contracts_finder_v2_ingest.py`
 
-### OCDS API Integration
+**Find a Tender OCDS** (primary for FaT data):
+- Endpoint: `find-tender.service.gov.uk/api/1.0/ocdsReleasePackages`
+- No auth required. Coverage: 2021-now (expanding).
+- Script: `apps/agent/src/find_a_tender_ingest.py`
 
-Data source: `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search`
+**Neon Database**:
+- ~47K+ tenders, rich schema (37+ columns, 9 indexes)
+- pgvector enabled for future similarity search
+- `category_insights` table: 9 pre-computed Tako charts refreshed nightly
 
-Key fields mapped:
-- `release.tender.title` → Contract title
-- `release.buyer.name` → Contracting authority
-- `release.tender.value.amount` → Contract value
-- `release.tender.tenderPeriod.endDate` → Deadline
-- `release.tag` → Status (tender/award)
-
-## 🔧 Technical Stack
+## Technical Stack
 
 ### Frontend
-- **Next.js 16.1.6** with Turbopack
-- **React 19.2.4**
+- **Next.js 16** with Turbopack
+- **React 19**
 - **TailwindCSS 4**
-- **CopilotKit v1.50** for AI integration
-- **TypeScript** for type safety
+- **CopilotKit v2** — useAgent() hook, widgetRenderer, HITL components
+- **TypeScript**
 
 ### Backend
 - **LangGraph** for agent workflows
 - **FastAPI** for API endpoints
 - **Claude Opus 4.6** (Anthropic) for AI generation
 - **Python 3.12** with uv package manager
+- **deepagents** — create_deep_agent with skills
 
-### Visualization Libraries
+### Data
+- **Neon** (PostgreSQL) — tenders table, category_insights, pgvector
+- **Tako Visualize API** — analytics chart generation
+- **LangSmith** — observability and tracing
+
+### Visualization Libraries (ES modules via import map)
 - **Three.js** for 3D graphics
 - **Chart.js** for data visualization
 - **D3.js** for advanced visualizations
 - **GSAP** for animations
 
-## 📁 Project Structure
+## Deployment
 
-```
-.
-├── apps/
-│   ├── app/                    # Next.js frontend
-│   ├── agent/                  # Python agent backend
-│   └── mcp/                    # MCP server
-├── docs/                       # Documentation
-├── Makefile                    # Build commands
-├── pnpm-workspace.yaml        # Monorepo config
-└── turbo.json                 # Turborepo config
-```
+### Vercel (Frontend)
 
-## 🚢 Deployment
-
-### Vercel Deployment
-
-1. **Prerequisites**:
-   - GitHub repository: https://github.com/Londondannyboy/rfp-quest-homepage
-   - Vercel account with team: team_nBAZLJTbCMBi2wrIMVlsmGjZ
-
-2. **Deploy Frontend**:
-```bash
-vercel --cwd apps/app
-```
-
-3. **Environment Variables** (in Vercel):
+Environment variables required:
 ```
 LANGGRAPH_DEPLOYMENT_URL=https://rfp-quest-generative-agent-production.up.railway.app
+TAKO_API_KEY=your-tako-key
 ```
 
-### Railway Deployment (Agent)
+### Railway (Agent)
 
-The agent backend is already deployed on Railway at:
-**https://rfp-quest-generative-agent-production.up.railway.app**
+The agent backend auto-deploys from `main` branch.
+URL: https://rfp-quest-generative-agent-production.up.railway.app
 
-To update the Railway deployment:
-1. Push changes to the connected GitHub repo
-2. Railway will auto-deploy from the main branch
+Environment variables:
+- `ANTHROPIC_API_KEY`
+- `LLM_MODEL=claude-opus-4-6`
+- `DATABASE_URL` (Neon)
+- `TAKO_API_KEY`
+- `LANGSMITH_API_KEY`
 
-Environment variables configured in Railway:
-- `ANTHROPIC_API_KEY` - Claude API key
-- `LLM_MODEL` - claude-opus-4-6
+### Railway Cron
+
+Single cron service at `0 6 * * *` (6am UTC daily):
+```
+uv run python src/cron_category_insights.py && uv run python src/cron_ingest_tenders.py
+```
+Refreshes 9 category Tako charts, then ingests new OCDS tenders.
 
 ## Known Production Behaviours
 
 ### Anthropic Opus overload
 Claude Opus occasionally returns overloaded_error under high API load.
 The with_retry wrapper (3 attempts, exponential backoff) handles
-transient overload transparently. If all retries exhaust, the user
-sees no response. Graceful error UI is planned for Phase 5c.
+transient overload transparently. Graceful error UI planned for Phase 5c Priority 3.
 
-Do not confuse overload failures with code bugs. Always wait 30+
-minutes after heavy API usage before running gate tests.
-
-### Tender analysis — provide full details
-"Analyse tender: X" requires full tender details in the prompt:
-"Analyse tender: [title] by [buyer], value [£X], deadline [date]"
-
-Asking the agent to find the tender first causes two sequential Opus
-calls that together exceed 60 seconds and silently fail. Neon
-persistence (Phase 5c) will fix this permanently by storing tenders
-and enabling instant lookup without a second Opus call.
+Do not run gate tests during or immediately after heavy API usage.
+Wait 30+ minutes.
 
 ### Railway health check
-GET /health returns {"status":"ok"} even when the agent is overloaded.
-Only a successful end-to-end render (red circle appears) confirms
-the agent is ready.
+GET /health returns `{"status":"ok"}` even when the agent is overloaded.
+Only a successful end-to-end render (red circle appears) confirms readiness.
 
 ### Vercel function timeout
-All API routes must include export const maxDuration = 60 to prevent
+All API routes include `export const maxDuration = 60` to prevent
 Vercel's default 10-second timeout from cutting off Opus generation.
-This line is already present in /api/copilotkit/route.ts.
 
-### Related tender discovery (coming Phase 5c)
-pgvector similarity search on the Neon tenders table will surface
-related opportunities automatically. NHS cleaning contract →
-Yorkshire Council cleaning → ESPO framework cleaning lot.
-Embeddings generated on insert using langchain embeddings.
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
 1. **Visualization not rendering**:
-   - Ensure claude-opus-4-6 is configured
+   - Ensure `claude-opus-4-6` is configured (not gpt-4o, not claude-3-opus)
    - Check API keys are valid
    - Refresh page to clear request queue
 
-2. **Hydration mismatch error**:
-   - Normal SSR warning, doesn't affect functionality
-   - Can be ignored or suppressed in production
-
-3. **Agent not responding**:
+2. **Agent not responding**:
    - Check agent is running: `curl http://localhost:8123/health`
    - Verify .env configuration
-   - Check logs for errors
+   - Check Railway logs for errors
+
+3. **Tako chart not loading**:
+   - Check TAKO_API_KEY is set
+   - Verify category_insights table has rows: `SELECT * FROM category_insights`
 
 ### Model Configuration
 
-**Critical**: Must use `claude-opus-4-6` for proper visualization generation.
+**Critical**: Must use `claude-opus-4-6`.
 
-Incorrect models will produce broken or incomplete visualizations:
-- ❌ gpt-4o (too weak)
-- ❌ claude-3-opus-20240229 (outdated)
+- ❌ gpt-4o (too weak for generative UI)
+- ❌ claude-3-opus-20240229 (outdated, Feb 2024)
 - ✅ claude-opus-4-6 (current flagship)
 
-## 📚 Documentation
+## Documentation
 
 - [CopilotKit Docs](https://docs.copilotkit.ai)
 - [LangGraph Docs](https://python.langchain.com/docs/langgraph)
 - [Contracts Finder API](https://www.contractsfinder.service.gov.uk/apidocumentation)
+- [Find a Tender API](https://www.find-tender.service.gov.uk/apidocumentation)
 - [OpenGenerativeUI](https://github.com/CopilotKit/OpenGenerativeUI)
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push to branch
-5. Open a Pull Request
-
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - CopilotKit team for OpenGenerativeUI template
 - Anthropic for Claude Opus 4.6
-- UK Government Digital Service for OCDS API
-- Open Contracting Partnership for OCDS standard
+- UK Government Digital Service for Contracts Finder and Find a Tender APIs
+- Tako for analytics visualization API
 
-## 📧 Contact
+## Contact
 
 - GitHub: [@Londondannyboy](https://github.com/Londondannyboy)
 - Project: [rfp-quest-homepage](https://github.com/Londondannyboy/rfp-quest-homepage)
-
----
-
-Built with ❤️ for the UK public procurement ecosystem
