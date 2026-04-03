@@ -1410,3 +1410,89 @@ unpublished opportunity windows.
 a G-Cloud call-off. Apply to Lot 3 before the
 window closes — deadline is [date]."
 REVERSIBLE: Yes.
+
+## D53 — DATE: 2026-04-03
+DECISION: Four-stage data pipeline before model
+training — deduplication, classification, embedding,
+fine-tuning.
+CONTEXT: 101K+ rows across two sources with overlap,
+missing CPV codes, buyer name variants, and multiple
+notices per procurement event. Raw data is rich but
+unstructured for ML purposes.
+
+STAGE 1 — DEDUPLICATION AND LIFECYCLE LINKING:
+Group notices by OCID. Each OCID = one procurement
+event. Link planning → tender → award → contract
+notices as lifecycle stages of the same entity.
+Framework contracts: identify call-offs as children
+of parent framework. 200 call-offs = 1 framework
+entity + 200 execution records, not 200 contracts.
+Output: procurement_entities table with lifecycle
+stages as jsonb array. Reduces effective record
+count but massively increases analytical value.
+
+STAGE 2 — CLASSIFICATION AND TAGGING:
+For each procurement entity, classify:
+- Sector: NHS | MOD | Local Authority | Central Gov
+  | Education | Police | Transport | Other
+- Contract type: Framework | Call-off | Direct Award
+  | Open Tender | Restricted | Negotiated
+- CPV correction: where CPV is missing or generic,
+  infer from title + description using Claude
+- Buyer type normalisation: resolve variant names
+  to canonical buyer entity (feeds Zep entity graph)
+- TUPE flag: infer likelihood from CPV + description
+- SME suitability: infer from value + procedure type
+Output: classification_tags table, one row per
+procurement_entity_id with all classification fields.
+
+STAGE 3 — EMBEDDINGS:
+Generate vector embedding for each procurement entity
+from: title + description + CPV + sector + buyer_type
++ contract_type + value_band (concatenated as text).
+Store in existing pgvector column in Neon.
+Model: text-embedding-3-small (OpenAI) or
+nomic-embed-text (open source, hostable).
+Enables: semantic tender matching, similar contract
+discovery, team CPV profile matching.
+
+STAGE 4 — FINE-TUNING WITH UNSLOTH:
+Training corpus: classified procurement entities
+with outcomes (award winner, value, CPV, sector).
+Training objective: given tender input, predict
+correct classification, likely evaluation criteria
+type, incumbent probability, recommended CPV codes.
+Tool: Unsloth (memory-efficient fine-tuning,
+feasible on single GPU, 4-bit quantisation).
+Base model: Llama 3.1 8B or Mistral 7B
+(open weights, commercially licensable).
+Hosting: Modal.com or RunPod (GPU inference,
+pay-per-request, no standing cost).
+API shape: identical to Anthropic API format.
+Integration: LangGraph tool call_rfp_llm(query).
+Claude Opus = orchestrator + generative UI.
+RFP LLM = domain classification + pattern matching.
+The two models are complementary, not competing.
+
+COMPANIES HOUSE ACCOUNTS (future data source):
+Annual accounts, SIC codes, employee counts,
+filing history for every awarded supplier.
+Enriches competitor graph with financial health,
+growth trajectory, and sector focus signals.
+Pipeline: awarded_supplier name → Companies House
+API → accounts data → Clay enrichment → Zep entity.
+Start this pipeline after Stage 2 classification
+completes — supplier names need normalisation first.
+
+ANSWER TO "HOW DID YOU MAKE THESE LINKS":
+A model trained on 100K+ UK procurement outcomes
+learned patterns at scale that humans cannot see:
+which buyer types favour which supplier profiles,
+which CPV categories correlate with TUPE obligations,
+which evaluation weightings appear in which sectors,
+which incumbent advantages are beatable and how.
+This is the defensible moat. The data + the model
+trained on it = proprietary intelligence.
+
+REVERSIBLE: Yes — pipeline stages are independent.
+Each stage can be rerun as data grows.
