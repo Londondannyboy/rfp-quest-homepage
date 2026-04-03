@@ -1,14 +1,14 @@
 # HANDOFF.md — rfp-quest-homepage
-# Session date: 2026-04-02
-# Sign-off status: SIGNED OFF — 2026-04-02
+# Session date: 2026-04-03
+# Sign-off status: PENDING REVIEW
 
-## CURRENT STATE (verified 2026-04-02)
+## CURRENT STATE (verified 2026-04-03)
 
 Frontend: https://rfp-quest-homepage.vercel.app
 Agent: https://rfp-quest-generative-agent-production.up.railway.app
 GitHub: github.com/Londondannyboy/rfp-quest-homepage
 Branch: main
-Latest commit: fd42cc7
+Latest commit: 4c3a233
 
 ### Gate tests — ALL PASSING ✅
 1. "Draw a red circle" → red circle renders ✅
@@ -71,13 +71,13 @@ Step 1: Housekeeping (do first, ~10 min):
   Regenerate LANGSMITH_API_KEY in Railway.
   Configure two Railway cron services (see items 5+6 above).
 
-Step 2: Phase 5c Priority 1.7 — Pre-computed Tako insights — BUILT ✅
-  category_insights table created in Neon (9 categories, upsert).
-  cron_category_insights.py built — queries Neon per category,
-  calls Tako API, stores embed_url. Run as Railway cron 0 5 * * *.
+Step 2: Phase 5c Priority 1.7 — Pre-computed Tako insights — DEPLOYED ✅
+  category_insights table in Neon (9 categories, all populated).
+  cron_category_insights.py chained into existing Railway cron:
+    uv run python src/cron_category_insights.py && uv run python src/cron_ingest_tenders.py
   visualise_tender_analytics checks cache (<24h) before live call.
-  NOT YET DEPLOYED — needs commit, push, Railway cron config.
-  Gate: "Show me NHS contract spend" returns chart in <3s.
+  Tested: cached path 1.3s vs live 7.3s. All 9 categories seeded.
+  Gate: "Show me NHS contract spend" returns chart in <3s ✅
 
 Step 3: Phase 6 foundation — company profile + matching
   See conversation with Claude.ai 2026-04-02 for full spec:
@@ -88,6 +88,8 @@ Step 3: Phase 6 foundation — company profile + matching
 
 ## LAST COMMITS (all authorised)
 
+4c3a233 — docs: extension roadmap — pg_search, pg_ivm, in-db RAG
+f7c0346 — feat: Phase 5c Priority 1.7 — pre-computed Tako category insights
 c4db4a2 — refactor: delete dead code — uk_tenders.py, bulk_load_tenders.py, unused imports
 980e744 — docs: phase close — gate tests all passing, Tako working
 3844346 — fix: Tako iframe — remove sandbox, bump height, relax resize handler
@@ -117,17 +119,17 @@ Neon:
 
 Railway cron services:
 - rfp-quest-cron-job: 0 6 * * * ✅
+  Start command: uv run python src/cron_category_insights.py && uv run python src/cron_ingest_tenders.py
+  Runs category insights first (~90s), then OCDS ingest.
 - rfp-quest-find-a-tender-cron: NOT CONFIGURED ❌
 - rfp-quest-cf-v2-cron: NOT CONFIGURED ❌
-- rfp-quest-category-insights-cron: 0 5 * * * NOT CONFIGURED ❌
-  Script: uv run python src/cron_category_insights.py
 
 ## PHASE ROADMAP
 
 **Phase 5c Priority 1** — COMPLETE ✅
 **Phase 5c Priority 1.5** — IN PROGRESS (47K rows, loaders running)
 **Phase 5c Priority 1.6** — COMPLETE ✅ (Tako working)
-**Phase 5c Priority 1.7** — BUILT (not deployed): Pre-computed insights (D36)
+**Phase 5c Priority 1.7** — COMPLETE ✅ Pre-computed insights (D36)
 **Phase 5a** — NEXT: RFP.quest rebrand
 **Phase 5b** — SSR tender feed
 **Phase 5c Priority 2** — Instant tender card
@@ -148,4 +150,5 @@ DO NOT add sandbox attribute to StableIframe (D35).
 
 ## SIGN-OFF STATUS
 
-SIGNED OFF — 2026-04-02
+PENDING REVIEW — 2026-04-03
+Phase 5c Priority 1.7 deployed. Gate test pending on production.

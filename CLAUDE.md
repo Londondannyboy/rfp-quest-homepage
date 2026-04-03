@@ -40,6 +40,14 @@ Session 2026-04-02:
   with scale-to-zero (D38)
 - Data quality audit: gaps identified, backfill planned
 
+Session 2026-04-03:
+- Phase 5c Priority 1.7 COMPLETE — pre-computed Tako insights
+- category_insights table: 9 categories, all populated
+- cron_category_insights.py chained into existing Railway cron
+- visualise_tender_analytics: cache-first (<24h), live fallback
+- Cached path 1.3s vs live 7.3s (gate: <3s ✅)
+- Extension roadmap added to DECISIONS.md (pg_trgm, pg_search, pg_ivm)
+
 ## FROZEN SECTIONS
 
 None — this project is actively developed.
@@ -317,12 +325,11 @@ visualise_tender_analytics + StableIframe deployed.
 Tako chart confirmed rendering in production 2026-04-02.
 Gate test: "Show me NHS contract spend by year" PASSING.
 
-**Phase 5c Priority 1.7** — BUILT (not yet deployed)
-category_insights table in Neon (9 categories, upsert on conflict).
-cron_category_insights.py generates Tako charts nightly.
-visualise_tender_analytics checks cache before live Tako call.
-Railway cron not yet configured — needs 0 5 * * * service.
-Gate: "Show me NHS contract spend" returns chart in <3s.
+**Phase 5c Priority 1.7** — COMPLETE ✅
+category_insights table in Neon (9 categories, all populated).
+cron_category_insights.py chained into rfp-quest-cron-job (0 6 * * *).
+visualise_tender_analytics checks cache (<24h) before live Tako call.
+Tested: cached 1.3s vs live 7.3s. Gate: NHS spend chart <3s ✅
 
 **Phase 5c Priority 2** — Instant tender card while AI analyses
 Emit tender data immediately on identify via CopilotKit state.
