@@ -1,23 +1,42 @@
 """
 Tako analytics tool — queries Neon tenders, converts to CSV,
 calls Tako Visualize API, returns embed_url for chart rendering.
+
+Checks category_insights table for pre-computed charts first.
+If a fresh chart exists (< 24h old), returns it immediately.
+Otherwise falls through to live Tako API call.
 """
 
 import os
 import io
 import csv
 import logging
+from datetime import datetime, timedelta, timezone
+
 import httpx
 import psycopg2
 import psycopg2.extras
 from langchain.tools import tool
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
 TAKO_VISUALIZE_URL = "https://tako.com/api/v1/beta/visualize"
+
+# Category keywords for matching user questions to pre-computed insights
+CATEGORY_KEYWORDS = {
+    "NHS": ["nhs", "health", "hospital", "clinical"],
+    "Construction": ["construction", "building", "demolition"],
+    "IT": ["it ", "digital", "software", "technology", "cyber"],
+    "Education": ["education", "school", "university", "college"],
+    "Defence": ["defence", "defense", "military", "mod "],
+    "Facilities": ["facilities", "cleaning", "maintenance", "catering"],
+    "Transport": ["transport", "highway", "road", "rail"],
+    "Social Care": ["social care", "care home", "domiciliary"],
+    "Police": ["police", "policing"],
+}
 
 
 def _get_db_connection():
@@ -26,6 +45,41 @@ def _get_db_connection():
     if not database_url:
         return None
     return psycopg2.connect(database_url)
+
+
+def _match_category(question: str) -> Optional[str]:
+    """Match a user question to a pre-computed category, or None."""
+    q = question.lower()
+    for category, keywords in CATEGORY_KEYWORDS.items():
+        if any(kw in q for kw in keywords):
+            return category
+    return None
+
+
+def _check_cached_insight(category: str) -> Optional[str]:
+    """Check category_insights for a fresh (< 24h) cached embed_url."""
+    conn = _get_db_connection()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(
+            """
+            SELECT embed_url, created_at FROM category_insights
+            WHERE category = %s AND created_at > NOW() - INTERVAL '24 hours'
+            """,
+            (category,),
+        )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            return row["embed_url"]
+        return None
+    except Exception:
+        if conn:
+            conn.close()
+        return None
 
 
 def _query_to_csv(query: str, params: tuple = ()) -> str:
@@ -172,6 +226,19 @@ def visualise_tender_analytics(question: str) -> Dict[str, Any]:
         Dictionary with embed_url (string) and title (string) for the chart.
     """
     try:
+        # Check for pre-computed category insight first
+        category = _match_category(question)
+        if category:
+            cached_url = _check_cached_insight(category)
+            if cached_url:
+                logger.info(f"Tako analytics: cache HIT for category '{category}'")
+                return {
+                    "embed_url": cached_url,
+                    "title": question,
+                    "cached": True,
+                }
+            logger.info(f"Tako analytics: cache MISS for category '{category}'")
+
         sql = _pick_sql(question)
         logger.info(f"Tako analytics: question='{question}', sql template selected")
         csv_string = _query_to_csv(sql)

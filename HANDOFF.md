@@ -71,13 +71,12 @@ Step 1: Housekeeping (do first, ~10 min):
   Regenerate LANGSMITH_API_KEY in Railway.
   Configure two Railway cron services (see items 5+6 above).
 
-Step 2: Phase 5c Priority 1.7 — Pre-computed Tako insights
-  Create category_insights table in Neon.
-  Build nightly cron generating Tako charts per category:
-  NHS, Construction, IT, Education, Defence, Facilities,
-  Transport, Social Care, Police.
-  Store embed_url in category_insights.
-  Agent checks category_insights before calling Tako live.
+Step 2: Phase 5c Priority 1.7 — Pre-computed Tako insights — BUILT ✅
+  category_insights table created in Neon (9 categories, upsert).
+  cron_category_insights.py built — queries Neon per category,
+  calls Tako API, stores embed_url. Run as Railway cron 0 5 * * *.
+  visualise_tender_analytics checks cache (<24h) before live call.
+  NOT YET DEPLOYED — needs commit, push, Railway cron config.
   Gate: "Show me NHS contract spend" returns chart in <3s.
 
 Step 3: Phase 6 foundation — company profile + matching
@@ -120,13 +119,15 @@ Railway cron services:
 - rfp-quest-cron-job: 0 6 * * * ✅
 - rfp-quest-find-a-tender-cron: NOT CONFIGURED ❌
 - rfp-quest-cf-v2-cron: NOT CONFIGURED ❌
+- rfp-quest-category-insights-cron: 0 5 * * * NOT CONFIGURED ❌
+  Script: uv run python src/cron_category_insights.py
 
 ## PHASE ROADMAP
 
 **Phase 5c Priority 1** — COMPLETE ✅
 **Phase 5c Priority 1.5** — IN PROGRESS (47K rows, loaders running)
 **Phase 5c Priority 1.6** — COMPLETE ✅ (Tako working)
-**Phase 5c Priority 1.7** — PLANNED: Pre-computed insights (D36)
+**Phase 5c Priority 1.7** — BUILT (not deployed): Pre-computed insights (D36)
 **Phase 5a** — NEXT: RFP.quest rebrand
 **Phase 5b** — SSR tender feed
 **Phase 5c Priority 2** — Instant tender card

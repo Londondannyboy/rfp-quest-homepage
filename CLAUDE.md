@@ -317,6 +317,13 @@ visualise_tender_analytics + StableIframe deployed.
 Tako chart confirmed rendering in production 2026-04-02.
 Gate test: "Show me NHS contract spend by year" PASSING.
 
+**Phase 5c Priority 1.7** — BUILT (not yet deployed)
+category_insights table in Neon (9 categories, upsert on conflict).
+cron_category_insights.py generates Tako charts nightly.
+visualise_tender_analytics checks cache before live Tako call.
+Railway cron not yet configured — needs 0 5 * * * service.
+Gate: "Show me NHS contract spend" returns chart in <3s.
+
 **Phase 5c Priority 2** — Instant tender card while AI analyses
 Emit tender data immediately on identify via CopilotKit state.
 Frontend renders static card while Opus streams analysis.

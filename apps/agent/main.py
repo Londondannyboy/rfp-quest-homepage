@@ -102,9 +102,13 @@ agent = create_deep_agent(
 
         When users ask analytical questions about tenders (trends, spending,
         breakdowns by buyer/sector/year), call visualise_tender_analytics
-        with the user's question. It queries Neon, converts to CSV, and
-        returns a Tako chart embed_url. Pass that URL to the takoVisualize
-        component for rendering.
+        with the user's question. It checks for pre-computed category charts
+        first (NHS, Construction, IT, Education, Defence, Facilities,
+        Transport, Social Care, Police) and returns a cached Tako chart
+        in under 3 seconds if available. Otherwise it queries Neon live,
+        converts to CSV, and calls the Tako API.
+
+        Pass the returned embed_url to the takoVisualize component for rendering.
 
         Example queries:
         - "Show me NHS contract spend by year"
