@@ -323,7 +323,7 @@ Old DB (decommission when ready):
 Neon:
 - Project: rfp-quest-production (US East 1)
 - Project ID: calm-dust-71989092
-- Table: tenders (~58,030 rows as of 2026-04-02, growing)
+- Table: tenders (~101,788 rows as of 2026-04-03, growing)
 - Rich schema: 37+ columns, 9 indexes, tender_sync_log table
 - pgvector: enabled
 - Neon Pro plan — 10 GB storage, 0.25 CU, scale-to-zero
@@ -383,44 +383,40 @@ replaced with real tender queries.
 Server-side render tender titles into page HTML.
 Required before rfp.quest domain switch.
 
-**Phase 6** — Company profile + personalised matching
-The session that turns RFP.quest from generic search into
-a product worth paying £300/month for.
+**Phase 6** — Bid intelligence workspace (NEXT)
+Built on Atomic CRM v1.5 + Neon Auth. See D44-D48.
 
-Part 1 — Schema:
-  company_profiles: name, Companies House number, region,
-    sectors, min/max contract value, is_sme, certifications.
-  company_users: email, company_id FK, role. Multi-user
-    from day one — profile belongs to company, not individual.
-  buyer_taxonomy: maps raw buyer_name → parent_org, org_type,
-    region, normalised_name. Top 200 buyers classified.
+Phase 6a — Auth + company profile + personalised matching:
+  Fork marmelab/atomic-crm, swap Supabase for Neon.
+  Neon Auth JWT. Company claimed by domain (unique).
+  Companies House API + Tavily auto-populate profile.
+  HITL onboarding: certifications, frameworks, sectors,
+  contract value range, SME status, USPs, past wins.
+  query_neon_tenders personalised by company profile.
 
-Part 2 — Conversational onboarding (CopilotKit HITL):
-  NOT a form. Agent asks 6 questions conversationally:
-  company name, sector, region, contract size range,
-  SME status, certifications. HITL confirmation card.
-  First thing a new user sees — "Welcome to RFP.quest.
-  Let me set up your company profile."
+Phase 6b — Bid pipeline (three opportunity types, D46):
+  Live tender, known target, relationship deal.
+  All as deal objects with tender_id FK (nullable).
+  Atomic CRM Kanban: Identified→Qualifying→Bidding→
+  Submitted→Won/Lost. Win probability AI-scored.
 
-Part 3 — Personalised query:
-  query_neon_tenders accepts optional company_id.
-  Filters by sector, value range, SME suitability.
-  Sorts local buyers first (buyer_taxonomy.region match).
-  Highlights LOCAL matches differently in tender cards.
-  NHS procurement regionalism surfaced automatically:
-  "3 of last 5 cleaning contracts at Yorkshire NHS trusts
-  went to Leeds-based companies."
+Phase 6c — Decision maker intelligence (D47):
+  Buyer contact discovery via Tavily + Trigify MCP.
+  LinkedIn outreach drafted per deal.
+  Relationship stage tracked per contact.
 
-Part 4 — Neon Auth:
-  JWT-based, native Neon Auth, Next.js SDK.
-  Company profile tied to org ID, team invites via email.
-  No Auth0, no Supabase — all within Neon.
+Phase 6d — Bid workspace (D48):
+  USP library at company + bid level.
+  Document vault. PQQ pre-population.
+  Saved searches + daily alert cron.
 
-Gate:
-  1. Fresh session → onboarding HITL fires automatically
-  2. After onboarding → personalised results filtered
-  3. Local buyer highlighted differently in card
-  4. Second team member accesses same company profile
+Gate tests for Phase 6a:
+  1. New user → onboarding HITL fires automatically
+  2. Enter domain → Companies House + Tavily populate
+  3. HITL confirmation → saved to Neon
+  4. Tender results filtered and tagged by match strength
+  5. Team member invited → joins same company profile
+  6. Duplicate domain rejected
 
 **Phase 7** — Intelligent matched feed + additional sources
 Redis cache if Neon latency becomes noticeable at scale.
