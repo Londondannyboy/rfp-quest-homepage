@@ -1,8 +1,8 @@
 Based on OpenGenerativeUI by CopilotKit (MIT License)
 
-# RFP.quest Homepage - Generative UI with UK Tender Intelligence
+# RFP.quest Beta - UK Government Procurement Intelligence
 
-A powerful OpenGenerativeUI application that visualizes UK government procurement opportunities using AI-powered generative interfaces. Built with CopilotKit v2, LangGraph, and Claude Opus 4.6.
+RFP.quest Beta is an AI-powered UK government procurement intelligence platform. Ask natural language questions about 101K+ tenders from Contracts Finder and Find a Tender, get instant analytics charts, and use AI bid/no-bid analysis with human-in-the-loop confirmation. Built on CopilotKit v2, LangGraph, and Claude Opus 4.6.
 
 ## Live Demo
 
@@ -13,7 +13,7 @@ A powerful OpenGenerativeUI application that visualizes UK government procuremen
 
 ## Features
 
-- **UK Government Tender Intelligence**: 47K+ tenders from Contracts Finder and Find a Tender, stored in Neon for instant querying
+- **UK Government Tender Intelligence**: 101K+ tenders from Contracts Finder and Find a Tender, stored in Neon for instant querying
 - **Generative UI**: AI-powered dynamic visualizations using CopilotKit v2 widgetRenderer
 - **Interactive Analytics**: Tako-powered charts with pre-computed category insights (NHS, Construction, IT, Education, Defence, Facilities, Transport, Social Care, Police)
 - **Bid Decision Analysis**: Human-in-the-loop tender evaluation with match scoring
@@ -132,7 +132,7 @@ All tender data is stored in Neon and queried locally. No live API calls at quer
 - Script: `apps/agent/src/find_a_tender_ingest.py`
 
 **Neon Database**:
-- ~47K+ tenders, rich schema (37+ columns, 9 indexes)
+- ~101K+ tenders, rich schema (37+ columns, 9 indexes)
 - pgvector enabled for future similarity search
 - `category_insights` table: 9 pre-computed Tako charts refreshed nightly
 
@@ -244,6 +244,10 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 - [Contracts Finder API](https://www.contractsfinder.service.gov.uk/apidocumentation)
 - [Find a Tender API](https://www.find-tender.service.gov.uk/apidocumentation)
 - [OpenGenerativeUI](https://github.com/CopilotKit/OpenGenerativeUI)
+
+## Roadmap
+
+Phase 6 (in development): Company profiles, Neon Auth, and personalised tender matching. Built on Atomic CRM v1.5 data model with Neon backend.
 
 ## License
 
