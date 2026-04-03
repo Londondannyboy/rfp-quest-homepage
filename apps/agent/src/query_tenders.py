@@ -41,29 +41,51 @@ def query_neon_tenders(query: str) -> List[Dict[str, Any]]:
         # Step 1: Full-text search on title
         cur.execute(
             """
-            SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
-            FROM tenders
-            WHERE to_tsvector('english', title) @@ plainto_tsquery('english', %s)
-            ORDER BY (value_amount IS NOT NULL AND value_amount > 0) DESC,
-                     published_date DESC NULLS LAST, fetched_at DESC
-            LIMIT 5
+            SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage,
+                   ts_rank(to_tsvector('english', title), query) AS rank
+            FROM tenders, plainto_tsquery('english', %s) query
+            WHERE to_tsvector('english', title) @@ query
+            ORDER BY rank DESC,
+                     (value_amount IS NOT NULL AND value_amount > 0) DESC,
+                     published_date DESC NULLS LAST
+            LIMIT 20
             """,
             (query,)
         )
         results = cur.fetchall()
 
-        # Step 2: If no full-text matches, try ILIKE fuzzy match
+        # Step 2: If no full-text matches, try ILIKE on individual words
+        if not results:
+            words = [w for w in query.split() if len(w) > 2]
+            if words:
+                ilike_conditions = " OR ".join(
+                    ["title ILIKE %s OR buyer_name ILIKE %s"] * len(words)
+                )
+                ilike_params = []
+                for w in words:
+                    ilike_params.extend([f"%{w}%", f"%{w}%"])
+                cur.execute(
+                    f"""
+                    SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
+                    FROM tenders
+                    WHERE {ilike_conditions}
+                    ORDER BY (value_amount IS NOT NULL AND value_amount > 0) DESC,
+                             published_date DESC NULLS LAST
+                    LIMIT 20
+                    """,
+                    ilike_params,
+                )
+                results = cur.fetchall()
+
+        # Step 3: If still no matches, return most recent tenders (browse mode)
         if not results:
             cur.execute(
                 """
                 SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
                 FROM tenders
-                WHERE title ILIKE %s OR buyer_name ILIKE %s
-                ORDER BY (value_amount IS NOT NULL AND value_amount > 0) DESC,
-                         published_date DESC NULLS LAST, fetched_at DESC
-                LIMIT 5
-                """,
-                (f"%{query}%", f"%{query}%")
+                ORDER BY published_date DESC NULLS LAST
+                LIMIT 20
+                """
             )
             results = cur.fetchall()
 
