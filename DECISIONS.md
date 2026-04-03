@@ -1586,3 +1586,96 @@ call-off terminology. The product should use
 UK-native language throughout. "Tender" not
 "RFP" in all user-facing copy. RFP.quest is
 the brand; the language inside is British.
+
+## D55 — DATE: 2026-04-03
+DECISION: Digital Outcomes framework capability taxonomy
+used as the canonical skills taxonomy for person and
+team skills graphs.
+CONTEXT: GOV.UK publishes the full capability taxonomy
+for the Digital Outcomes framework at:
+https://www.gov.uk/guidance/digital-outcomes-team-capabilities
+This covers 8 categories and 50+ specific capabilities
+that UK government buyers procure. Rather than inventing
+a skills taxonomy, adopt this one. It is what buyers
+look for. It is what tenders are evaluated against.
+CATEGORIES:
+1. Performance analysis and data
+   (A/B testing, data analysis, data visualisation,
+   statistical modelling, web analytics, etc)
+2. Security
+   (NCSC certification, penetration testing, risk
+   management, threat modelling, etc)
+3. Service delivery
+   (Agile coaching, business analysis, product
+   management, project management, etc)
+4. Software development
+   (API development, cloud development, machine
+   learning, mobile development, etc)
+5. Support and operations
+   (Customer support, hosting, incident management,
+   monitoring, etc)
+6. Testing and auditing
+   (Accessibility testing, load testing, security
+   auditing, etc)
+7. User experience and design
+   (Accessibility, content design, interaction
+   design, service design, etc)
+8. User research
+   (Creating personas, usability testing, user
+   journey mapping, etc)
+OUTCOME: Person skills graph nodes map to DOS
+capability categories and sub-capabilities.
+Team graph shows coverage across all 8 categories.
+Tender requirements map to the same taxonomy.
+Gap analysis is: which DOS capabilities does this
+tender require that our team does not cover.
+Framework membership intelligence: which suppliers
+are on which DOS lots = competitor qualification.
+SOURCE URL: Store as reference in Zep — taxonomy
+will be extended as DOS framework evolves.
+REVERSIBLE: Yes — taxonomy can be extended beyond
+DOS categories for non-digital procurement sectors.
+
+## D56 — DATE: 2026-04-03
+DECISION: Ingestion approach per devolved portal.
+
+SELL2WALES — immediate priority:
+Format: OCDS. Open Government Licence.
+Same format as find_a_tender_ingest.py.
+Minimal new code — new source URL and tag.
+Action: add sell2wales endpoint to ingestion pipeline.
+source tag: "sell2wales"
+
+PUBLIC CONTRACTS SCOTLAND — immediate priority:
+API: api.publiccontractsscotland.gov.uk/v1
+Format: REST API (SSL cert issue — check in session)
+Action: Claude Code to fetch API docs, build ingestor
+similar to contracts_finder_v2_ingest.py
+source tag: "public-contracts-scotland"
+
+eTENDERS NI — medium priority:
+Portal: etendersni.gov.uk
+Format: Java-based portal, no clean API
+Approach: Tavily scheduled crawl of notice listings
+source tag: "etenders-ni"
+
+eSOURCING NI — medium priority:
+Portal: esourcingni.co.uk
+Scope: NI Housing Executive only
+Approach: Tavily scheduled crawl
+source tag: "esourcing-ni"
+
+PROACTIS REGIONAL — lower priority:
+YORtender, NEPO, London Tenders, etc.
+Approach: Proactis supplier API or Tavily crawl
+source tag: "proactis-[region]"
+
+IMPLEMENTATION ORDER:
+1. Sell2Wales — one session, near-zero new code
+2. Public Contracts Scotland — one session
+3. eTendersNI / eSourcingNI — Tavily crawl
+4. Proactis — investigate API access
+
+DO NOT start devolved portal ingestion until
+Phase 6a gate tests pass. Data pipeline is Phase 7
+infrastructure but can be prototyped earlier.
