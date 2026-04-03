@@ -10,10 +10,6 @@ import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 
-const TAKO_REGEX = /TAKO_CHART:\s*(https:\/\/tako\.com\/embed\/[^\s]+)/g;
-
-// Global registry — survives component remounts and hot reloads
-const globalTakoUrls = new Set<string>();
 
 export default function HomePage() {
   useGenerativeUIExamples();
@@ -23,13 +19,13 @@ export default function HomePage() {
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
 
-  // Detect Tako chart URLs in agent messages — global registry, survives remounts
-  const [takoUrls, setTakoUrls] = useState<string[]>(() => [...globalTakoUrls]);
+  // Detect Tako chart URLs in agent messages — show latest chart only
+  const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);
   useEffect(() => {
     const messages = agent.state?.messages;
     if (!messages) return;
     const msgArray = Array.isArray(messages) ? messages : (messages as any)?.value || [];
-    let added = false;
+    let newest: string | null = null;
     for (const msg of msgArray) {
       let text = "";
       if (typeof msg?.content === "string") {
@@ -43,13 +39,10 @@ export default function HomePage() {
       const regex = /TAKO_CHART:\s*(https:\/\/tako\.com\/embed\/[^\s]+)/g;
       let match;
       while ((match = regex.exec(text)) !== null) {
-        if (!globalTakoUrls.has(match[1])) {
-          globalTakoUrls.add(match[1]);
-          added = true;
-        }
+        newest = match[1];
       }
     }
-    if (added) setTakoUrls([...globalTakoUrls]);
+    if (newest && newest !== latestTakoUrl) setLatestTakoUrl(newest);
   }, [agent.state?.messages]);
 
   const handleTryDemo = (demo: DemoItem) => {
@@ -140,17 +133,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Tako analytics chart panel — always mounted to prevent CopilotChat remount */}
+          {/* Tako analytics chart panel — shows latest chart only */}
           <div className="mx-4 mt-3 mb-2 rounded-xl border overflow-hidden"
             style={{
               borderColor: "var(--color-border-tertiary, #e5e7eb)",
               background: "var(--color-background-primary, #fff)",
               maxHeight: "40vh",
-              display: takoUrls.length > 0 ? "block" : "none",
+              display: latestTakoUrl ? "block" : "none",
             }}>
-            {takoUrls.map((url) => (
-              <StableIframe key={url} embed_url={url} title="" />
-            ))}
+            {latestTakoUrl && (
+              <StableIframe key={latestTakoUrl} embed_url={latestTakoUrl} title="" />
+            )}
           </div>
 
           <ExampleLayout chatContent={

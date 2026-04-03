@@ -90,10 +90,11 @@ def get_db():
 
 
 def query_category_csv(conn, category):
-    """Query Neon for a category's tender count by year, return CSV string."""
+    """Query Neon for a category's tender count and spend by year, return CSV string."""
     sql = f"""
         SELECT EXTRACT(YEAR FROM COALESCE(published_date, fetched_at))::int AS year,
-               COUNT(*) AS tender_count
+               COUNT(*) AS tender_count,
+               COALESCE(SUM(value_amount), 0)::bigint AS total_spend_gbp
         FROM tenders
         WHERE {category['where']}
         GROUP BY year

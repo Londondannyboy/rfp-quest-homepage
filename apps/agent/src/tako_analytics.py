@@ -191,7 +191,8 @@ SQL_TEMPLATES = {
     """,
     "spend_by_month": """
         SELECT TO_CHAR(COALESCE(published_date, fetched_at), 'YYYY-MM') as month,
-               COUNT(*) as tender_count
+               COUNT(*) as tender_count,
+               COALESCE(SUM(value_amount), 0) as total_value
         FROM tenders
         WHERE value_amount > 0
         GROUP BY month
