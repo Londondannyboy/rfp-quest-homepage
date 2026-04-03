@@ -133,27 +133,40 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Tako analytics chart panel — shows latest chart only */}
-          <div className="mx-4 mt-3 mb-2 rounded-xl border overflow-hidden"
-            style={{
-              borderColor: "var(--color-border-tertiary, #e5e7eb)",
-              background: "var(--color-background-primary, #fff)",
-              maxHeight: "40vh",
-              display: latestTakoUrl ? "block" : "none",
-            }}>
-            {latestTakoUrl && (
-              <StableIframe key={latestTakoUrl} embed_url={latestTakoUrl} title="" />
-            )}
-          </div>
-
-          <ExampleLayout chatContent={
-            <CopilotChat
-              labels={{
-                welcomeMessageText: "What do you want to visualize today?",
-                chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
+          {/* Two-panel layout: chart left, chat right (stacks on mobile) */}
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+            {/* Left panel — Tako chart + content */}
+            <div
+              className="lg:flex-1 min-h-0 overflow-auto border-b lg:border-b-0 lg:border-r"
+              style={{
+                borderColor: "var(--color-border-tertiary, #e5e7eb)",
+                display: latestTakoUrl ? "flex" : "none",
+                flexDirection: "column",
               }}
-            />
-          } />
+            >
+              <div className="m-3 rounded-xl border overflow-hidden flex-1 min-h-0"
+                style={{
+                  borderColor: "var(--color-border-tertiary, #e5e7eb)",
+                  background: "var(--color-background-primary, #fff)",
+                }}>
+                {latestTakoUrl && (
+                  <StableIframe key={latestTakoUrl} embed_url={latestTakoUrl} title="" />
+                )}
+              </div>
+            </div>
+
+            {/* Right panel — Chat */}
+            <div className={latestTakoUrl ? "lg:w-[480px] lg:shrink-0" : "flex-1"}>
+              <ExampleLayout chatContent={
+                <CopilotChat
+                  labels={{
+                    welcomeMessageText: "What do you want to visualize today?",
+                    chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
+                  }}
+                />
+              } />
+            </div>
+          </div>
           <ExplainerCardsPortal />
         </div>
       </div>
