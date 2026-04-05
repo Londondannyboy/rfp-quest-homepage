@@ -8,7 +8,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["NEXT_PUBLIC_NEON_AUTH_URL", "NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET"]
+      "env": ["NEXT_PUBLIC_NEON_AUTH_URL", "NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET", "DATABASE_URL"]
     },
     "lint": {},
     "clean": {
