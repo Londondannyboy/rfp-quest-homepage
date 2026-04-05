@@ -21,7 +21,7 @@ from src.form import generate_form
 from src.plan import plan_visualization
 from src.query_tenders import query_neon_tenders
 from src.tako_analytics import visualise_tender_analytics
-from src.onboard_company import onboard_company, save_company_profile, get_user_company
+from src.onboard_company import onboard_company, save_company_profile, get_user_company, link_user_to_company
 from src.team_invite import invite_team_member
 
 load_dotenv()
@@ -52,7 +52,7 @@ model_with_retry = base_model.with_retry(
 
 agent = create_deep_agent(
     model=base_model,
-    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile, get_user_company, invite_team_member],
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile, get_user_company, link_user_to_company, invite_team_member],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
@@ -224,8 +224,15 @@ agent = create_deep_agent(
         Call confirmCompanyProfile with ALL collected fields.
         This shows a summary card with Save / Edit buttons.
         Only after the user clicks Save, call
-        save_company_profile with the full profile JSON
-        and the user_id.
+        save_company_profile with the full profile JSON.
+
+        STEP 8 — Link user to company:
+        After save_company_profile succeeds, ask:
+        "Just to link your account, can you confirm
+        your email address?"
+        Then call link_user_to_company(email, company_id)
+        which looks up their Neon Auth account by email
+        and creates the person_profiles link as admin.
 
         REMINDER: Calling onboard_company before the
         user confirms their URL is a critical error.

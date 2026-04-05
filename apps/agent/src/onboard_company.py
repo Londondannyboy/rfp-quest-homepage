@@ -261,3 +261,65 @@ def save_company_profile(profile_data: str, user_id: str = "") -> str:
         if conn:
             conn.close()
         return f"Error saving profile: {str(e)}"
+
+
+@tool
+def link_user_to_company(email: str, company_id: str) -> str:
+    """
+    Link a user to a company profile by their email address.
+    Looks up the user in neon_auth.user table by email,
+    then creates/updates their person_profiles row.
+
+    Call this after save_company_profile succeeds and the
+    user confirms their email address.
+
+    Args:
+        email: The user's email address.
+        company_id: The company profile UUID to link to.
+
+    Returns:
+        Success message or error.
+    """
+    conn = _get_db_connection()
+    if not conn:
+        return "Error: database connection failed"
+
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Look up user_id from neon_auth.user by email
+        cur.execute(
+            'SELECT id, name, email FROM neon_auth."user" WHERE email = %s',
+            (email,)
+        )
+        auth_user = cur.fetchone()
+        if not auth_user:
+            cur.close()
+            conn.close()
+            return f"Error: no account found for {email}. Are they signed up?"
+
+        user_id = str(auth_user["id"])
+        display_name = auth_user["name"] or email
+
+        # Upsert person_profiles
+        cur.execute(
+            """
+            INSERT INTO person_profiles
+            (user_id, company_id, role, display_name, email)
+            VALUES (%s, %s, 'admin', %s, %s)
+            ON CONFLICT (user_id) DO UPDATE SET
+                company_id = EXCLUDED.company_id,
+                role = 'admin',
+                display_name = EXCLUDED.display_name,
+                email = EXCLUDED.email
+            """,
+            (user_id, company_id, display_name, email),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return f"Linked {display_name} ({email}) to company {company_id} as admin."
+    except Exception as e:
+        if conn:
+            conn.close()
+        return f"Error linking user: {str(e)}"
