@@ -209,12 +209,23 @@ agent = create_deep_agent(
         - Contract size range
         - SME status
         - Certifications and frameworks
-        - Core capabilities
-        - Free-text expertise
         Never show a table. Never show "not found".
 
-        STEP 5 — Final HITL confirmation card before
-        calling save_company_profile.
+        STEP 5 — Capability selection (HITL checklist):
+        Call selectCapabilities with prompt "Select your
+        core capabilities". This shows an interactive
+        checklist card with the 8 DOS categories.
+        The user taps to select, then confirms.
+
+        STEP 6 — Free-text expertise:
+        Ask: "Anything else about your expertise?"
+
+        STEP 7 — Final confirmation (HITL card):
+        Call confirmCompanyProfile with ALL collected fields.
+        This shows a summary card with Save / Edit buttons.
+        Only after the user clicks Save, call
+        save_company_profile with the full profile JSON
+        and the user_id.
 
         REMINDER: Calling onboard_company before the
         user confirms their URL is a critical error.

@@ -17,6 +17,8 @@ import { WidgetRenderer, WidgetRendererProps } from "@/components/generative-ui/
 
 import { MeetingTimePicker } from "@/components/generative-ui/meeting-time-picker";
 import { BidDecision } from "@/components/generative-ui/bid-decision";
+import { CompanyProfileConfirm } from "@/components/generative-ui/company-profile-confirm";
+import { CapabilitySelector } from "@/components/generative-ui/capability-selector";
 import { ToolReasoning } from "@/components/tool-rendering";
 import { PlanCard } from "@/components/generative-ui/plan-card";
 
@@ -137,6 +139,62 @@ export const useGenerativeUIExamples = () => {
           strengths={args.strengths || []}
           risks={args.risks || []}
           recommendation={args.recommendation || "review"}
+        />
+      );
+    },
+  });
+
+  // --------------------------
+  // 🪁 Company Profile Confirmation HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "confirmCompanyProfile",
+    description: "Show company profile summary card for user to confirm or edit before saving.",
+    parameters: z.object({
+      companyName: z.string().describe("Company name"),
+      domain: z.string().describe("Company domain/website"),
+      description: z.string().describe("Company description"),
+      sectors: z.string().describe("Comma-separated sectors"),
+      contractRange: z.string().describe("Contract value range e.g. Under £100K"),
+      isSme: z.boolean().describe("Whether the company is an SME"),
+      certifications: z.string().describe("Certifications and frameworks"),
+      capabilities: z.string().describe("Core capabilities from DOS categories"),
+      expertise: z.string().describe("Free-text expertise description"),
+    }),
+    render: ({ respond, status, args }) => {
+      return (
+        <CompanyProfileConfirm
+          status={status}
+          respond={respond}
+          companyName={args.companyName || ""}
+          domain={args.domain || ""}
+          description={args.description || ""}
+          sectors={args.sectors || ""}
+          contractRange={args.contractRange || ""}
+          isSme={args.isSme ?? false}
+          certifications={args.certifications || ""}
+          capabilities={args.capabilities || ""}
+          expertise={args.expertise || ""}
+        />
+      );
+    },
+  });
+
+  // --------------------------
+  // 🪁 DOS Capability Selector HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "selectCapabilities",
+    description: "Show a checklist of Digital Outcomes capability categories for user to select from.",
+    parameters: z.object({
+      prompt: z.string().describe("Brief prompt to show above the checklist"),
+    }),
+    render: ({ respond, status, args }) => {
+      return (
+        <CapabilitySelector
+          status={status}
+          respond={respond}
+          prompt={args.prompt || "Select your capabilities"}
         />
       );
     },
