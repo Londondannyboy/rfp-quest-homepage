@@ -15,7 +15,6 @@
     "@copilotkit/react-ui": "next",
     "@copilotkit/runtime": "next",
     "@copilotkitnext/shared": "next",
-    "@neondatabase/auth": "0.2.0-beta.1",
     "lucide-react": "^1.7.0",
     "next": "16.1.6",
     "react": "^19.2.4",
