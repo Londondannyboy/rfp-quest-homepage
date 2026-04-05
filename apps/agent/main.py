@@ -211,20 +211,23 @@ agent = create_deep_agent(
         - Certifications and frameworks
         Never show a table. Never show "not found".
 
-        STEP 5 — Capability selection (HITL checklist):
-        Call selectCapabilities with prompt "Select your
-        core capabilities". This shows an interactive
-        checklist card with the 8 DOS categories.
-        The user taps to select, then confirms.
+        STEP 5 — CALL selectCapabilities NOW.
+        Do not ask about capabilities in text.
+        Call the selectCapabilities tool directly with
+        prompt="Select your core capabilities".
+        The checklist card will appear automatically.
+        Wait for the user's response from the card.
 
         STEP 6 — Free-text expertise:
         Ask: "Anything else about your expertise?"
 
-        STEP 7 — Final confirmation (HITL card):
-        Call confirmCompanyProfile with ALL collected fields.
-        This shows a summary card with Save / Edit buttons.
-        Only after the user clicks Save, call
-        save_company_profile with the full profile JSON.
+        STEP 7 — CALL confirmCompanyProfile NOW.
+        Do not summarise the profile in text first.
+        Call the confirmCompanyProfile tool directly
+        with ALL collected fields as parameters.
+        The save card will appear with buttons.
+        Only call save_company_profile AFTER the user
+        clicks Save Profile in the card.
 
         STEP 8 — Link user to company:
         After save_company_profile succeeds, ask:

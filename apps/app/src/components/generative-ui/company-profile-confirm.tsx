@@ -102,8 +102,8 @@ export function CompanyProfileConfirm({
           <p className="text-indigo-100">Review and confirm your details</p>
         </div>
 
-        <div className="p-8">
-          <div className="space-y-3 mb-6">
+        <div className="p-8 pb-20 relative">
+          <div className="space-y-3">
             {fields.map((field) => (
               <div key={field.label} className="flex border-b border-gray-100 dark:border-gray-700 pb-2">
                 <span className="w-36 text-sm font-medium text-gray-500 dark:text-gray-400 shrink-0">
@@ -116,7 +116,7 @@ export function CompanyProfileConfirm({
             ))}
           </div>
 
-          <div className="flex gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="sticky bottom-0 left-0 right-0 flex gap-4 pt-4 pb-2 mt-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-900 dark:via-gray-900">
             <button
               onClick={() => handleAction("save")}
               className="flex-1 py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"

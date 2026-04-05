@@ -73,8 +73,8 @@ export function CapabilitySelector({
           <p className="text-violet-100">Select the Digital Outcomes categories your company covers</p>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="p-6 pb-20 relative">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {DOS_CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
@@ -102,13 +102,15 @@ export function CapabilitySelector({
             ))}
           </div>
 
-          <button
-            onClick={handleSubmit}
-            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-          >
-            <CheckCircleIcon className="w-5 h-5" />
-            Confirm Capabilities ({selected.size} selected)
-          </button>
+          <div className="sticky bottom-0 left-0 right-0 pt-4 pb-2 mt-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent dark:from-gray-900 dark:via-gray-900">
+            <button
+              onClick={handleSubmit}
+              className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              <CheckCircleIcon className="w-5 h-5" />
+              Confirm Capabilities ({selected.size} selected)
+            </button>
+          </div>
         </div>
       </div>
     </div>
