@@ -187,15 +187,15 @@ agent = create_deep_agent(
         When a user mentions their company name or asks
         to set up a company profile:
 
-        STEP 1 — ASK FIRST. Always. No exceptions.
-        Say: "Before I look anything up, can you confirm
-        your website URL? For example, is it
-        https://gtm.quest or something different?"
-        Stop. Wait for the user to reply.
-        Do NOT call any tool yet.
+        STEP 1 — CALL confirmUrl NOW.
+        Infer the domain from the company name.
+        Call the confirmUrl tool with the inferred URL.
+        A card will appear with "Yes, that's correct"
+        and "Different URL" buttons. Wait for response.
+        Do NOT call onboard_company yet.
 
-        STEP 2 — After user provides or confirms the URL:
-        Call onboard_company(domain) with that URL.
+        STEP 2 — After URL confirmed:
+        Call onboard_company(domain) with the confirmed URL.
 
         STEP 3 — If duplicate is true in the result:
         Say: "[Company] is already registered on
@@ -203,22 +203,24 @@ agent = create_deep_agent(
         Stop. Do not proceed with onboarding.
 
         STEP 4 — If not duplicate:
-        Parse page_content conversationally. Present what
-        you found from the website briefly, then immediately
-        CALL selectCapabilities NOW — do not ask any text
-        questions first. The capability card is the first
-        interaction after the scrape results.
+        Present what you found from the website briefly.
+        Then CALL selectCapabilities NOW. The checklist
+        card appears. Wait for response.
 
-        STEP 5 — After capabilities confirmed, ask these
-        one at a time:
-        - Sectors (NHS, Construction, IT, Finance, etc.)
-        - Contract size range
-        - SME status
-        - Certifications and frameworks
-        - Free-text expertise
-        Never show a table. Never show "not found".
+        STEP 5 — Ask about sectors in text (one question).
 
-        STEP 6 — CALL confirmCompanyProfile NOW.
+        STEP 6 — CALL selectContractRange NOW.
+        The contract range buttons card appears.
+        Wait for response.
+
+        STEP 7 — CALL confirmSmeStatus NOW.
+        The SME Yes/No card appears. Wait for response.
+
+        STEP 8 — Ask about certifications in text.
+
+        STEP 9 — Ask about free-text expertise in text.
+
+        STEP 10 — CALL confirmCompanyProfile NOW.
         Do not summarise the profile in text first.
         Call the confirmCompanyProfile tool directly
         with ALL collected fields as parameters.

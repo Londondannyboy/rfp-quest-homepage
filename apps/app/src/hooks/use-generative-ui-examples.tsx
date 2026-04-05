@@ -19,6 +19,9 @@ import { MeetingTimePicker } from "@/components/generative-ui/meeting-time-picke
 import { BidDecision } from "@/components/generative-ui/bid-decision";
 import { CompanyProfileConfirm } from "@/components/generative-ui/company-profile-confirm";
 import { CapabilitySelector } from "@/components/generative-ui/capability-selector";
+import { UrlConfirm } from "@/components/generative-ui/url-confirm";
+import { ContractRangeSelector } from "@/components/generative-ui/contract-range-selector";
+import { SmeConfirm } from "@/components/generative-ui/sme-confirm";
 import { ToolReasoning } from "@/components/tool-rendering";
 import { PlanCard } from "@/components/generative-ui/plan-card";
 
@@ -141,6 +144,45 @@ export const useGenerativeUIExamples = () => {
           recommendation={args.recommendation || "review"}
         />
       );
+    },
+  });
+
+  // --------------------------
+  // 🪁 URL Confirmation HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "confirmUrl",
+    description: "Show URL confirmation card with Yes/Different URL buttons.",
+    parameters: z.object({
+      url: z.string().describe("The inferred website URL to confirm"),
+      companyName: z.string().describe("The company name"),
+    }),
+    render: ({ respond, status, args }) => {
+      return <UrlConfirm status={status} respond={respond} url={args.url || ""} companyName={args.companyName || ""} />;
+    },
+  });
+
+  // --------------------------
+  // 🪁 Contract Range Selector HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "selectContractRange",
+    description: "Show contract value range buttons for user to select.",
+    parameters: z.object({}),
+    render: ({ respond, status }) => {
+      return <ContractRangeSelector status={status} respond={respond} />;
+    },
+  });
+
+  // --------------------------
+  // 🪁 SME Status HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "confirmSmeStatus",
+    description: "Show Yes/No buttons for SME status confirmation.",
+    parameters: z.object({}),
+    render: ({ respond, status }) => {
+      return <SmeConfirm status={status} respond={respond} />;
     },
   });
 
