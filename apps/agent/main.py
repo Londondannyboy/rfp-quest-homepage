@@ -203,25 +203,22 @@ agent = create_deep_agent(
         Stop. Do not proceed with onboarding.
 
         STEP 4 — If not duplicate:
-        Parse page_content conversationally.
-        Ask one question at a time for missing fields:
-        - Sectors (NHS, Construction, IT, etc.)
+        Parse page_content conversationally. Present what
+        you found from the website briefly, then immediately
+        CALL selectCapabilities NOW — do not ask any text
+        questions first. The capability card is the first
+        interaction after the scrape results.
+
+        STEP 5 — After capabilities confirmed, ask these
+        one at a time:
+        - Sectors (NHS, Construction, IT, Finance, etc.)
         - Contract size range
         - SME status
         - Certifications and frameworks
+        - Free-text expertise
         Never show a table. Never show "not found".
 
-        STEP 5 — CALL selectCapabilities NOW.
-        Do not ask about capabilities in text.
-        Call the selectCapabilities tool directly with
-        prompt="Select your core capabilities".
-        The checklist card will appear automatically.
-        Wait for the user's response from the card.
-
-        STEP 6 — Free-text expertise:
-        Ask: "Anything else about your expertise?"
-
-        STEP 7 — CALL confirmCompanyProfile NOW.
+        STEP 6 — CALL confirmCompanyProfile NOW.
         Do not summarise the profile in text first.
         Call the confirmCompanyProfile tool directly
         with ALL collected fields as parameters.

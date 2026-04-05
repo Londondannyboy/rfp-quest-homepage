@@ -70,7 +70,7 @@ export function CapabilitySelector({
             <LayoutGridIcon className="w-6 h-6" />
             <h2 className="text-2xl font-bold">Core Capabilities</h2>
           </div>
-          <p className="text-violet-100">Select the Digital Outcomes categories your company covers</p>
+          <p className="text-violet-100">Tap each category that applies to your company</p>
         </div>
 
         <div className="p-6 pb-20 relative">
@@ -81,23 +81,25 @@ export function CapabilitySelector({
                 onClick={() => toggle(cat.id)}
                 className={`text-left p-4 rounded-lg border-2 transition-all duration-150 cursor-pointer ${
                   selected.has(cat.id)
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
+                    : "border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:bg-blue-50/50"
                 }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                    selected.has(cat.id) ? "border-blue-500 bg-blue-500" : "border-gray-300"
+                <div className="flex items-center gap-3 mb-1">
+                  <div className={`w-6 h-6 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    selected.has(cat.id) ? "border-blue-500 bg-blue-500" : "border-gray-300 bg-white dark:bg-gray-800"
                   }`}>
-                    {selected.has(cat.id) && (
-                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    {selected.has(cat.id) ? (
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
+                    ) : (
+                      <span className="w-4 h-4" />
                     )}
                   </div>
                   <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{cat.label}</span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 ml-7">{cat.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 ml-9">{cat.description}</p>
               </button>
             ))}
           </div>
