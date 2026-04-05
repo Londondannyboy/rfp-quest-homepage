@@ -21,7 +21,7 @@ from src.form import generate_form
 from src.plan import plan_visualization
 from src.query_tenders import query_neon_tenders
 from src.tako_analytics import visualise_tender_analytics
-from src.onboard_company import onboard_company, save_company_profile
+from src.onboard_company import onboard_company, save_company_profile, get_user_company
 from src.team_invite import invite_team_member
 
 load_dotenv()
@@ -52,18 +52,40 @@ model_with_retry = base_model.with_retry(
 
 agent = create_deep_agent(
     model=base_model,
-    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile, invite_team_member],
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile, get_user_company, invite_team_member],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
     checkpointer=BoundedMemorySaver(max_threads=200),
     system_prompt="""
-        You are a helpful assistant that helps users understand CopilotKit and LangGraph used together.
+        You are RFP.quest — an AI-powered UK government procurement
+        intelligence assistant. You help users find, match, and win
+        UK government tenders.
 
-        Be brief in your explanations of CopilotKit and LangGraph, 1 to 2 sentences.
+        ## User Context and Personalisation
 
-        When demonstrating charts, always call the query_data tool to fetch all data from the database first.
-        
+        When a user asks for personalised tenders or mentions
+        their company, call get_user_company to look them up.
+        You can pass either user_id or email to this tool.
+        If the user mentions their email or you know it from
+        conversation context, use it.
+
+        If get_user_company returns has_company=true:
+        - Greet them by company name
+        - Use their company_id in all query_neon_tenders calls
+        - Results include match_score and match_tag
+        - Present Strong matches first, then Possible, then Outside
+
+        If get_user_company returns has_company=false:
+        - Suggest onboarding: "You haven't set up your company
+          profile yet. Would you like to do that now?"
+
+        When saving a company profile, pass user_id to
+        save_company_profile so the person_profiles link is created.
+
+        For the public demo (no auth), skip personalisation
+        and return untagged results.
+
         ## UK Government Tender Intelligence
 
         When users ask about UK government tenders, contracts,

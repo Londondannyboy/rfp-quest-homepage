@@ -59,6 +59,68 @@ def _scrape_with_tavily(url: str) -> dict:
 
 
 @tool
+def get_user_company(user_id: str = "", email: str = "") -> Dict[str, Any]:
+    """
+    Look up the company profile linked to a user.
+    Can search by user_id or email address.
+    Returns company details if found, or empty dict if user
+    has no company profile (needs onboarding).
+
+    Args:
+        user_id: The authenticated user's ID from Neon Auth.
+        email: The user's email address (alternative lookup).
+
+    Returns:
+        Company profile dict, or {"has_company": false}.
+    """
+    if not user_id and not email:
+        return {"has_company": False, "error": "need user_id or email"}
+
+    conn = _get_db_connection()
+    if not conn:
+        return {"has_company": False, "error": "db connection failed"}
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        if user_id:
+            cur.execute(
+                """
+                SELECT cp.id as company_id, cp.domain, cp.name, cp.sectors,
+                       cp.region, cp.is_sme, cp.description,
+                       pp.role, pp.display_name, pp.user_id
+                FROM person_profiles pp
+                JOIN company_profiles cp ON pp.company_id = cp.id
+                WHERE pp.user_id = %s
+                """,
+                (user_id,)
+            )
+        else:
+            cur.execute(
+                """
+                SELECT cp.id as company_id, cp.domain, cp.name, cp.sectors,
+                       cp.region, cp.is_sme, cp.description,
+                       pp.role, pp.display_name, pp.user_id
+                FROM person_profiles pp
+                JOIN company_profiles cp ON pp.company_id = cp.id
+                WHERE pp.email = %s
+                """,
+                (email,)
+            )
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            result = dict(row)
+            result["has_company"] = True
+            result["company_id"] = str(result["company_id"])
+            return result
+        return {"has_company": False}
+    except Exception:
+        if conn:
+            conn.close()
+        return {"has_company": False}
+
+
+@tool
 def onboard_company(domain: str) -> Dict[str, Any]:
     """
     Auto-populate a company profile from a confirmed domain.
@@ -124,13 +186,16 @@ def onboard_company(domain: str) -> Dict[str, Any]:
 
 
 @tool
-def save_company_profile(profile_data: str) -> str:
+def save_company_profile(profile_data: str, user_id: str = "") -> str:
     """
-    Save a confirmed company profile to Neon database.
-    Called after HITL confirmation of the onboarding profile.
+    Save a confirmed company profile to Neon database and link
+    the current user as admin. Called after HITL confirmation.
 
     Args:
         profile_data: JSON string of the company profile fields.
+        user_id: The authenticated user's ID from Neon Auth.
+            If provided, creates a person_profiles row linking
+            this user to the company as admin.
 
     Returns:
         Success message with company ID, or error message.
@@ -173,10 +238,25 @@ def save_company_profile(profile_data: str) -> str:
             ),
         )
         company_id = cur.fetchone()[0]
+
+        # Link user to company as admin
+        if user_id:
+            cur.execute(
+                """
+                INSERT INTO person_profiles
+                (user_id, company_id, role, display_name, email)
+                VALUES (%s, %s, 'admin', %s, %s)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    company_id = EXCLUDED.company_id,
+                    role = 'admin'
+                """,
+                (user_id, str(company_id), data.get("name", ""), data.get("email", "")),
+            )
+
         conn.commit()
         cur.close()
         conn.close()
-        return f"Company profile saved. ID: {company_id}"
+        return f"Company profile saved. ID: {company_id}. User linked as admin."
     except Exception as e:
         if conn:
             conn.close()
