@@ -64,6 +64,18 @@ Session 2026-04-03 (evening):
 - Phase 5a COMPLETE, Phase 5c Priority 1.7 COMPLETE
 - SIGNED OFF — ready for Phase 6
 
+Session 2026-04-03 (strategy):
+- D44-D58 documented — full product vision
+- Two-tier LLM strategy: Opus + Haiku (D58)
+- Three opportunity types in bid pipeline (D46)
+- Decision maker intelligence via Trigify (D47)
+- Two-layer skills taxonomy (D57)
+- Career win/loss graph specified (D50)
+- Team skills graph as core product (D49)
+- Devolved portal expansion planned (D54 D56)
+- RFP LLM fine-tuning pipeline planned (D53)
+- Phase 6 restructured: graph-first, no Kanban
+
 ## FROZEN SECTIONS
 
 None — this project is actively developed.
@@ -190,6 +202,13 @@ DO NOT render Tako chart iframes inside ReactMarkdown.
   Use StableIframe pattern (stable ID registry, React.memo,
   rendered as siblings outside ReactMarkdown tree).
   Reference: takodata/tako-copilotkit MarkdownRenderer.tsx
+
+DO NOT build Kanban pipeline — dropped (D49).
+DO NOT use Haiku for HITL or bid analysis.
+DO NOT use Opus for background classification.
+DO NOT fork Atomic CRM as application (D45).
+DO NOT scrape LinkedIn without user-provided
+URL and explicit consent (D44).
 
 ## WHEN YOU HIT A WALL
 
@@ -385,24 +404,29 @@ Required before rfp.quest domain switch.
 
 **Phase 6** — Team skills graph + bid intelligence (NEXT)
 Built on Neon Auth + Zep graph DB + React Force Graph 3D.
-See D44-D49. Kanban pipeline dropped (D49).
+See D44-D58. Kanban pipeline dropped (D49).
+Two-tier LLM: Opus for reasoning, Haiku for matching (D58).
 
-Phase 6a — Foundation:
+Phase 6a — Foundation (FULL SPEC IN HANDOFF.md):
   Neon Auth JWT. Company claimed by domain (unique).
   Companies House API + Tavily auto-populate profile.
   HITL onboarding: certifications, frameworks, sectors,
-  contract value range, SME status, USPs, past wins.
+  contract value range, SME status, DOS Layer 1
+  capabilities, Layer 2 free-text expertise (D57).
   query_neon_tenders personalised by company profile.
-  Atomic CRM data model (contacts, companies) copied
-  into Neon directly — no fork, no separate deployment.
+  Team invitations with token-based join flow.
+  Schema: company_profiles, person_profiles,
+  team_invitations tables in Neon.
 
-Phase 6b — Individual skills graph:
+Phase 6b — Individual skills + career graph:
   Each person gets a 3D force graph of themselves.
-  Nodes: person, skills, certs, past wins, CPV, sectors.
-  Data from: LinkedIn (user-provided URL), Companies House,
-  user-entered wins, certifications with expiry dates.
+  Career win/loss trajectory (D50): intertwined
+  threads, role evolution as third dimension.
+  Two-layer skills: formal taxonomy (DOS/CPV) +
+  real-world expertise (D57).
   Technology: React Force Graph 3D (Three.js/WebGL).
-  Zep graph DB for entity relationships and queries.
+  Zep graph DB for entity relationships.
+  Haiku background matching pipeline (D58).
 
 Phase 6c — Team graph:
   Graphs merge when people join a company or bid team.
@@ -412,20 +436,23 @@ Phase 6c — Team graph:
 
 Phase 6d — Bid intelligence overlay:
   Tender requirements overlaid onto team graph.
-  Which nodes satisfy which requirements. Gaps shown.
-  LinkedIn outreach drafted via Trigify MCP.
-  "Teams that win contracts like this have X."
+  Competitor intelligence from awarded contracts (D51).
+  Decision maker discovery via Tavily + Trigify (D47).
+  Framework membership + timing intelligence (D52).
 
 Gate tests for Phase 6a:
-  1. New user → onboarding HITL fires automatically
-  2. Enter domain → Companies House + Tavily populate
-  3. HITL confirmation → saved to Neon
-  4. Tender results filtered and tagged by match strength
-  5. Team member invited → joins same company profile
-  6. Duplicate domain rejected
+  1. Public demo visible without auth
+  2. Sign up → onboarding → CH + Tavily → HITL → Neon
+  3. Dashboard shows filtered tagged tender results
+  4. Team invitation → second user joins company
+  5. Duplicate domain rejected
+  6. Personalised match-tagged tender results
 
-**Phase 7** — Additional sources + scale
-Add Proactis, Delta eSourcing as additional sources.
-source column in tenders table tracks provenance.
+**Phase 7** — Additional sources + scale + RFP LLM
+Devolved portals: Scotland, Wales, NI (D54 D56).
+Four-stage data pipeline: dedup, classify, embed,
+fine-tune (D53). Unsloth fine-tuned domain model.
+Competitor graph + Clay enrichment (D51).
+Framework timing intelligence (D52).
 Redis cache if Neon latency becomes noticeable.
 Messaging between connections.

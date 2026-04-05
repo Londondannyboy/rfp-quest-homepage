@@ -1747,3 +1747,77 @@ the kind of inference the model learns.
 
 REVERSIBLE: Yes — layer structure can be extended
 or simplified as product evolves.
+
+## D58 — DATE: 2026-04-03
+DECISION: Two-tier LLM strategy — Opus for reasoning,
+Haiku for matching and classification at scale.
+CONTEXT: Continuous background matching of all tenders
+against all company profiles is the core product
+value proposition. Every new tender scored against
+every registered company profile automatically.
+No user search required — relevant tenders surface
+to them. This is only economically viable with a
+cheap, fast model for the high-volume work.
+Haiku is ~25x cheaper than Opus per token and
+performs comparably on pattern-matching tasks.
+
+OPUS 4.6 — USER-FACING HIGH-VALUE TASKS:
+- Conversational onboarding (HITL)
+- Bid analysis and recommendation
+- Generative UI and visualisations
+- Complex reasoning about specific tenders
+- Career graph generation from natural language
+- LinkedIn outreach drafting
+- Gap analysis narrative generation
+Cost justified: low volume, high value per query.
+
+HAIKU — BACKGROUND HIGH-VOLUME TASKS:
+- Tender-to-company profile matching (continuous)
+- CPV code classification on ingest
+- Buyer entity resolution and normalisation
+- Relevance scoring across full database
+- Saved search evaluation on new tenders
+- Alert generation and filtering
+- Sector and contract type classification
+Cost: pennies per day per company at scale.
+Runs on every new ingest automatically.
+
+PRODUCT IMPLICATION:
+Shift from search tool to intelligence service.
+Company registers → profile stored → Haiku
+matches every new tender against their profile
+automatically → relevant tenders surface in
+dashboard without user initiating search.
+Saved searches evaluated on every ingest.
+Alerts generated and queued for delivery.
+This is continuous background intelligence,
+not on-demand search.
+
+COMPETITIVE IMPLICATION:
+Tussell model: aggregate data, user searches.
+RFP.quest model: aggregate data, match to user,
+surface answers before user asks.
+Economically viable because Haiku makes
+continuous matching affordable at scale.
+
+FUTURE TIER — FINE-TUNED DOMAIN MODEL:
+Unsloth fine-tuned 7-8B model (Phase 7+):
+- Award outcome prediction
+- Buyer behaviour inference
+- Early signal extraction from unstructured text
+- Offline capability, no API dependency
+Not needed until daily ingest volume makes
+Haiku API costs material, or offline inference
+becomes a product requirement.
+
+IMPLEMENTATION:
+Phase 6a: Opus only (low user volume, right choice)
+Phase 6b: Add Haiku background matching pipeline
+  - Run on every tender ingest event
+  - Score against all active company profiles
+  - Queue high-match alerts for delivery
+Phase 7: Evaluate fine-tuned model ROI
+
+DO NOT use Opus for classification or matching.
+DO NOT use Haiku for bid analysis or generative UI.
+The right model for the right task.

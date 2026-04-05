@@ -2,7 +2,7 @@ Based on OpenGenerativeUI by CopilotKit (MIT License)
 
 # RFP.quest Beta - UK Government Procurement Intelligence
 
-RFP.quest Beta is an AI-powered UK government procurement intelligence platform. Ask natural language questions about 101K+ tenders from Contracts Finder and Find a Tender, get instant analytics charts, and use AI bid/no-bid analysis with human-in-the-loop confirmation. Built on CopilotKit v2, LangGraph, and Claude Opus 4.6.
+RFP.quest Beta is an AI-powered UK government procurement intelligence platform. Ask natural language questions about 160K+ tenders from Contracts Finder and Find a Tender, get instant analytics charts, and use AI bid/no-bid analysis with human-in-the-loop confirmation. Built on CopilotKit v2, LangGraph, and Claude Opus 4.6.
 
 ## Live Demo
 
@@ -13,7 +13,7 @@ RFP.quest Beta is an AI-powered UK government procurement intelligence platform.
 
 ## Features
 
-- **UK Government Tender Intelligence**: 101K+ tenders from Contracts Finder and Find a Tender, stored in Neon for instant querying
+- **UK Government Tender Intelligence**: 160K+ tenders from Contracts Finder and Find a Tender, stored in Neon for instant querying
 - **Generative UI**: AI-powered dynamic visualizations using CopilotKit v2 widgetRenderer
 - **Interactive Analytics**: Tako-powered charts with pre-computed category insights (NHS, Construction, IT, Education, Defence, Facilities, Transport, Social Care, Police)
 - **Bid Decision Analysis**: Human-in-the-loop tender evaluation with match scoring
@@ -132,7 +132,7 @@ All tender data is stored in Neon and queried locally. No live API calls at quer
 - Script: `apps/agent/src/find_a_tender_ingest.py`
 
 **Neon Database**:
-- ~101K+ tenders, rich schema (37+ columns, 9 indexes)
+- ~160K+ tenders, rich schema (37+ columns, 9 indexes)
 - pgvector enabled for future similarity search
 - `category_insights` table: 9 pre-computed Tako charts refreshed nightly
 
@@ -247,7 +247,7 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 
 ## Roadmap
 
-Phase 6 (in development): 3D team skills graph and bid intelligence network. Each person sees their skills, certifications and past wins as an interactive force graph. Teams form by combining graphs — gaps surface automatically. Built on Neon Auth, Zep graph DB, and React Force Graph 3D.
+Phase 6 (next): Auth, company profiles, and personalised tender matching. Then 3D team skills graph — each person sees their skills, certifications and past wins as an interactive force graph. Teams form by combining graphs — gaps surface automatically. Built on Neon Auth, Zep graph DB, and React Force Graph 3D. Two-tier LLM: Opus for reasoning, Haiku for background matching at scale. RFP LLM fine-tuning planned via Unsloth on 160K+ classified procurement outcomes.
 
 ## License
 
