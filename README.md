@@ -247,7 +247,7 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 
 ## Roadmap
 
-Phase 6 (next): Auth, company profiles, and personalised tender matching. Then 3D team skills graph — each person sees their skills, certifications and past wins as an interactive force graph. Teams form by combining graphs — gaps surface automatically. Built on Neon Auth, Zep graph DB, and React Force Graph 3D. Two-tier LLM: Opus for reasoning, Haiku for background matching at scale. RFP LLM fine-tuning planned via Unsloth on 160K+ classified procurement outcomes.
+Phase 6a (complete): Neon Auth (Google OAuth), company onboarding with HITL cards (7 interactive cards including capabilities, sectors, contract range, SME status), Tavily website scraping, personalised tender matching with match scoring. Phase 6b (next): 3D team skills graph — each person sees their skills, certifications and past wins as an interactive force graph. Teams form by combining graphs — gaps surface automatically. Built on Zep graph DB and React Force Graph 3D.
 
 ## License
 

@@ -67,14 +67,26 @@ Session 2026-04-03 (evening):
 Session 2026-04-03 (strategy):
 - D44-D58 documented — full product vision
 - Two-tier LLM strategy: Opus + Haiku (D58)
-- Three opportunity types in bid pipeline (D46)
-- Decision maker intelligence via Trigify (D47)
-- Two-layer skills taxonomy (D57)
-- Career win/loss graph specified (D50)
 - Team skills graph as core product (D49)
-- Devolved portal expansion planned (D54 D56)
-- RFP LLM fine-tuning pipeline planned (D53)
+- Career win/loss graph specified (D50)
 - Phase 6 restructured: graph-first, no Kanban
+
+Session 2026-04-05/06 (Phase 6a):
+- Neon Auth: sign up/in/out via Google OAuth ✅
+- @neondatabase/neon-js client + @neondatabase/auth server
+- Full HITL onboarding flow: 7 cards + 2 text questions
+  confirmUrl → selectCapabilities → selectSectors →
+  selectContractRange → confirmSmeStatus →
+  certifications (text) → expertise (text) →
+  confirmCompanyProfile
+- company_profiles saving to Neon ✅
+- Tavily Extract for company website scraping ✅
+- Duplicate domain detection ✅
+- Personalised tender matching coded (match_score/tag)
+- get_user_company + link_user_to_company tools
+- invite_team_member tool + /join/[token] flow
+- D59-D60 documented
+- Phase 6a SIGNED OFF
 
 ## FROZEN SECTIONS
 
@@ -121,6 +133,19 @@ Tako chart rendering pattern (WORKING 2026-04-03):
   DO NOT use widgetRenderer for Tako.
   DO NOT use takoVisualize useComponent.
   Reference: TAKO_CHART marker pattern (D41)
+
+Onboarding HITL tools (WORKING 2026-04-06):
+  confirmUrl — URL confirmation with buttons
+  selectCapabilities — DOS categories checklist
+  selectSectors — UK procurement sectors checklist
+  selectContractRange — contract value range buttons
+  confirmSmeStatus — SME Yes/No buttons
+  confirmCompanyProfile — full profile Save/Edit card
+  All registered via useHumanInTheLoop in
+  apps/app/src/hooks/use-generative-ui-examples.tsx
+  Agent MUST call these tools directly (CALL NOW).
+  DO NOT ask onboarding questions in text when
+  a HITL card exists for that question.
 
 ## EXPLICIT DO NOT LIST
 
@@ -209,6 +234,8 @@ DO NOT use Opus for background classification.
 DO NOT fork Atomic CRM as application (D45).
 DO NOT scrape LinkedIn without user-provided
 URL and explicit consent (D44).
+DO NOT ask onboarding questions in text when a
+HITL card exists for that question. CALL the tool.
 
 ## WHEN YOU HIT A WALL
 

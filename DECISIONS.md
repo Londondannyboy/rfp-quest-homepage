@@ -1842,3 +1842,15 @@ reliable instruction-following threshold, or
 HITL flow reliability remains a persistent issue
 after prompt tuning.
 REVERSIBLE: Yes — subagents can be merged back.
+
+## D59 — DATE: 2026-04-05
+DECISION: Neon Auth Organizations deferred.
+CONTEXT: Neon Auth supports org-level auth with
+team membership. However, implementing org-level
+auth adds complexity to the onboarding flow before
+the core product (skills graph) is validated.
+OUTCOME: Phase 6a uses person-level auth only.
+Company membership via person_profiles.company_id FK.
+Neon Auth Organizations evaluated for Phase 6c when
+team graph requires multi-user company context.
+REVERSIBLE: Yes.
