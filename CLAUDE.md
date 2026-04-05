@@ -369,7 +369,7 @@ Old DB (decommission when ready):
 Neon:
 - Project: rfp-quest-production (US East 1)
 - Project ID: calm-dust-71989092
-- Table: tenders (~101,788 rows as of 2026-04-03, growing)
+- Table: tenders (~160K+ rows as of 2026-04-06, growing)
 - Rich schema: 37+ columns, 9 indexes, tender_sync_log table
 - pgvector: enabled
 - Neon Pro plan — 10 GB storage, 0.25 CU, scale-to-zero
