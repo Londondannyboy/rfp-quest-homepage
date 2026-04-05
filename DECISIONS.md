@@ -1821,3 +1821,24 @@ Phase 7: Evaluate fine-tuned model ROI
 DO NOT use Opus for classification or matching.
 DO NOT use Haiku for bid analysis or generative UI.
 The right model for the right task.
+
+## D60 — DATE: 2026-04-05
+DECISION: Single general agent in Phase 6a.
+Supervisor/subagent architecture deferred.
+CONTEXT: Current architecture uses one
+create_deep_agent with a long system prompt
+covering onboarding, tender search, bid analysis,
+and profile management. This is appropriate for
+Phase 6a where simplicity and speed matter.
+OUTCOME: Phase 6b will evaluate splitting into
+specialist subagents via LangGraph supervisor
+pattern:
+- Onboarding agent (company profile creation)
+- Tender intelligence agent (search, analytics)
+- Profile management agent (team, settings)
+Router agent classifies intent and delegates.
+Trigger for refactor: system prompt exceeds
+reliable instruction-following threshold, or
+HITL flow reliability remains a persistent issue
+after prompt tuning.
+REVERSIBLE: Yes — subagents can be merged back.
