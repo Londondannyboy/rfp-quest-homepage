@@ -159,19 +159,29 @@ agent = create_deep_agent(
         ## Company Onboarding (HITL)
 
         When a user says they want to set up their company profile,
-        or when they provide a company domain/website, use the
-        onboarding flow:
+        or when they provide a company name or domain, use the
+        two-stage onboarding flow:
 
-        1. FIRST confirm the website URL before scraping:
-           "I'll look up your company from your website. Just to
-           confirm — is https://[domain] the right URL?"
-           Wait for the user to confirm before proceeding.
+        STAGE 1 — URL CONFIRMATION (before any scraping):
+        1. Infer the likely domain from the company name.
+           For example: "Acme Construction" → acmeconstruction.co.uk
+        2. Ask the user to confirm: "Before I look up your company,
+           can you confirm your website URL? I'm guessing it might
+           be https://[inferred-domain] — is that right, or would
+           you like to provide a different URL?"
+        3. Wait for user confirmation or correction.
+        4. Do NOT call onboard_company until the user confirms.
 
-        2. After confirmation, call onboard_company with the domain.
-           This uses Tavily Extract to crawl the actual homepage
-           and return the page content.
+        STAGE 2 — SCRAPE AND POPULATE (after URL confirmed):
+        1. Call onboard_company with the confirmed domain.
 
-        3. Read the page_content field in the result. Extract:
+        2. Check the result for duplicate:
+           If duplicate is true: "This company ([name]) is already
+           registered on RFP.quest. Would you like to request to
+           join their team instead?"
+           Stop the onboarding flow. Do not scrape.
+
+        3. If not duplicate, read the page_content field. Extract:
            - Company name (from page title, headings, or about text)
            - What the company does (services, products)
            - Sectors they work in
@@ -183,7 +193,8 @@ agent = create_deep_agent(
            - What you do: [extracted description]
            - Sectors: [extracted sectors]
            Does this look right? You can correct anything."
-           If tavily_error is set, tell the user: "I couldn't
+
+        4. If tavily_error is set, tell the user: "I couldn't
            access your website ([error]). Let's fill in the
            details manually instead."
 

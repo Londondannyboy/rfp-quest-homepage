@@ -61,22 +61,47 @@ def _scrape_with_tavily(url: str) -> dict:
 @tool
 def onboard_company(domain: str) -> Dict[str, Any]:
     """
-    Auto-populate a company profile from a domain name.
-    Scrapes the company website via Tavily to build a
-    pre-populated profile for HITL confirmation.
+    Auto-populate a company profile from a confirmed domain.
+    Only call this AFTER the user has confirmed their website URL.
+    Checks for duplicate domains first, then scrapes via Tavily Extract.
 
     Args:
-        domain: Company website domain (e.g. acmeconstruction.co.uk)
+        domain: User-confirmed website domain (e.g. acmeconstruction.co.uk)
 
     Returns:
         Dictionary with pre-populated company profile fields.
+        If domain already exists, returns {"duplicate": true, "name": "..."}.
     """
     clean_domain = domain.lower().strip().replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
     search_term = clean_domain.split(".")[0]
 
+    # Check for duplicate domain in Neon
+    conn = _get_db_connection()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute(
+                "SELECT id, name, domain FROM company_profiles WHERE domain = %s",
+                (clean_domain,)
+            )
+            existing = cur.fetchone()
+            cur.close()
+            conn.close()
+            if existing:
+                return {
+                    "duplicate": True,
+                    "existing_company_id": str(existing["id"]),
+                    "existing_name": existing["name"],
+                    "domain": clean_domain,
+                }
+        except Exception:
+            if conn:
+                conn.close()
+
     website = f"https://{clean_domain}"
 
     profile: Dict[str, Any] = {
+        "duplicate": False,
         "domain": clean_domain,
         "name": search_term.replace("-", " ").title(),
         "description": "",
@@ -94,7 +119,6 @@ def onboard_company(domain: str) -> Dict[str, Any]:
         profile["tavily_error"] = tavily_data["error"]
     elif tavily_data.get("content"):
         profile["page_content"] = tavily_data["content"]
-        # The agent will parse the content to extract name, description, sectors
 
     return profile
 
