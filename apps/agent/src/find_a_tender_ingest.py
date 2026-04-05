@@ -37,7 +37,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "").replace(
 )
 
 FAT_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages"
-REQUEST_DELAY = 0.5  # 500ms between requests, matching old TS implementation
+REQUEST_DELAY = 2.0  # 2s between requests — gentler on API, avoids rate limits overnight
 
 
 def sanitize_for_json(obj):
@@ -72,25 +72,35 @@ def get_db(retries=3, delay=5):
                 raise
 
 
-def fetch_page(url: str) -> tuple[list, str | None]:
-    """Fetch a page of releases, return (releases, next_url)."""
-    with httpx.Client(timeout=60) as client:
-        resp = client.get(url, headers={"Accept": "application/json"})
+def fetch_page(url: str, retries: int = 3) -> tuple[list, str | None]:
+    """Fetch a page of releases, return (releases, next_url). Retries on timeout."""
+    for attempt in range(retries):
+        try:
+            with httpx.Client(timeout=120) as client:
+                resp = client.get(url, headers={"Accept": "application/json"})
 
-        if resp.status_code in (429, 503):
-            retry_after = int(resp.headers.get("Retry-After", "60"))
-            print(f"  Rate limited. Waiting {retry_after}s...")
-            time.sleep(retry_after)
-            return fetch_page(url)  # Retry
+                if resp.status_code in (429, 503):
+                    retry_after = int(resp.headers.get("Retry-After", "60"))
+                    print(f"  Rate limited. Waiting {retry_after}s...", flush=True)
+                    time.sleep(retry_after)
+                    return fetch_page(url, retries=retries)  # Retry
 
-        if resp.status_code != 200:
-            print(f"  API error: {resp.status_code} {resp.text[:200]}")
-            return [], None
+                if resp.status_code != 200:
+                    print(f"  API error: {resp.status_code} {resp.text[:200]}", flush=True)
+                    return [], None
 
-        data = resp.json()
-        releases = data.get("releases", [])
-        next_url = data.get("links", {}).get("next")
-        return releases, next_url
+                data = resp.json()
+                releases = data.get("releases", [])
+                next_url = data.get("links", {}).get("next")
+                return releases, next_url
+        except httpx.ReadTimeout:
+            if attempt < retries - 1:
+                wait = 30 * (attempt + 1)
+                print(f"  Timeout, retry {attempt+1} in {wait}s...", flush=True)
+                time.sleep(wait)
+            else:
+                print(f"  Timeout after {retries} attempts, skipping page", flush=True)
+                return [], None
 
 
 def get_stage(tags: list[str]) -> str:
