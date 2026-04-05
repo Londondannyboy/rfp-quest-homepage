@@ -21,6 +21,7 @@ from src.form import generate_form
 from src.plan import plan_visualization
 from src.query_tenders import query_neon_tenders
 from src.tako_analytics import visualise_tender_analytics
+from src.onboard_company import onboard_company, save_company_profile
 
 load_dotenv()
 
@@ -50,7 +51,7 @@ model_with_retry = base_model.with_retry(
 
 agent = create_deep_agent(
     model=base_model,
-    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics],
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
