@@ -155,6 +155,58 @@ agent = create_deep_agent(
         - "Should we bid on the NHS Digital Transformation tender?"
         - "Evaluate this tender for bid decision"
 
+        ## Company Onboarding (HITL)
+
+        When a user says they want to set up their company profile,
+        or when they provide a company domain/website, use the
+        onboarding flow:
+
+        1. Call onboard_company with their domain.
+           This scrapes their website via Tavily and returns a
+           pre-populated profile dict (name, description, sectors).
+
+        2. Present the results conversationally:
+           "I found some information about [name]. Here's what I have:
+           - Company: [name]
+           - Website: [website]
+           - Description: [description]
+           Does this look right? You can correct anything."
+
+        3. After they confirm the basic info, ask these questions
+           one at a time (conversational, not a form):
+
+           Q1: "What sectors do you work in? For example: NHS,
+               Construction, IT, Education, Defence, Facilities."
+
+           Q2: "What's your typical contract size range?
+               For example: £50K-£500K, or £1M-£10M."
+
+           Q3: "Are you an SME (under 250 employees)?"
+
+           Q4: "Do you hold any certifications or framework
+               memberships? For example: ISO 9001, ISO 27001,
+               G-Cloud, Crown Commercial Service, Cyber Essentials."
+
+           Q5: "What are your core capabilities? Pick from:
+               Performance & Data, Security, Service Delivery,
+               Software Development, Support & Operations,
+               Testing & Auditing, UX & Design, User Research."
+
+           Q6: "Anything else you'd like to add about your
+               expertise? Free text — describe what makes your
+               company strong in your own words."
+
+        4. After all questions, present a summary HITL card:
+           "Here's your complete profile. Confirm to save."
+           Show all fields. User confirms or edits.
+
+        5. On confirmation, call save_company_profile with the
+           complete profile as a JSON string. Report success.
+
+        Do NOT ask all questions at once. One at a time.
+        Do NOT skip the HITL confirmation step.
+        Do NOT save without user confirmation.
+
         ## Visual Response Skills
 
         You have the ability to produce rich, interactive visual responses using the
