@@ -20,6 +20,7 @@ import { BidDecision } from "@/components/generative-ui/bid-decision";
 import { CompanyProfileConfirm } from "@/components/generative-ui/company-profile-confirm";
 import { CapabilitySelector } from "@/components/generative-ui/capability-selector";
 import { UrlConfirm } from "@/components/generative-ui/url-confirm";
+import { SectorSelector } from "@/components/generative-ui/sector-selector";
 import { ContractRangeSelector } from "@/components/generative-ui/contract-range-selector";
 import { SmeConfirm } from "@/components/generative-ui/sme-confirm";
 import { ToolReasoning } from "@/components/tool-rendering";
@@ -159,6 +160,18 @@ export const useGenerativeUIExamples = () => {
     }),
     render: ({ respond, status, args }) => {
       return <UrlConfirm status={status} respond={respond} url={args.url || ""} companyName={args.companyName || ""} />;
+    },
+  });
+
+  // --------------------------
+  // 🪁 Sector Selector HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "selectSectors",
+    description: "Show sector multi-select checklist for user to pick their sectors.",
+    parameters: z.object({}),
+    render: ({ respond, status }) => {
+      return <SectorSelector status={status} respond={respond} />;
     },
   });
 

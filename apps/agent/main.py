@@ -204,21 +204,17 @@ agent = create_deep_agent(
 
         STEP 4 — If not duplicate:
         Present what you found from the website briefly.
-        Then CALL selectCapabilities NOW. The checklist
-        card appears. Wait for response.
+        Then CALL selectCapabilities NOW. Wait for response.
 
-        STEP 5 — Ask about sectors in text (one question).
+        STEP 5 — CALL selectSectors NOW. Wait for response.
 
-        STEP 6 — CALL selectContractRange NOW.
-        The contract range buttons card appears.
-        Wait for response.
+        STEP 6 — CALL selectContractRange NOW. Wait for response.
 
-        STEP 7 — CALL confirmSmeStatus NOW.
-        The SME Yes/No card appears. Wait for response.
+        STEP 7 — CALL confirmSmeStatus NOW. Wait for response.
 
-        STEP 8 — Ask about certifications in text.
+        STEP 8 — Ask about certifications in text (one question).
 
-        STEP 9 — Ask about free-text expertise in text.
+        STEP 9 — Ask about free-text expertise in text (one question).
 
         STEP 10 — CALL confirmCompanyProfile NOW.
         Do not summarise the profile in text first.
