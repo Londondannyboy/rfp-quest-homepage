@@ -2,11 +2,18 @@
 
 import "./globals.css";
 import "@copilotkit/react-core/v2/styles.css";
+import "@neondatabase/neon-js/ui/css";
 
 import { CopilotKit } from "@copilotkit/react-core";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { NeonAuthUIProvider } from "@neondatabase/neon-js/auth/react";
+import { authClient } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function RootLayout({children}: Readonly<{ children: React.ReactNode }>) {
+  const router = useRouter();
+
   return (
     <html lang="en">
       <head>
@@ -22,9 +29,17 @@ export default function RootLayout({children}: Readonly<{ children: React.ReactN
       </head>
       <body className="antialiased">
         <ThemeProvider>
-          <CopilotKit runtimeUrl="/api/copilotkit">
-            {children}
-          </CopilotKit>
+          <NeonAuthUIProvider
+            authClient={authClient}
+            navigate={router.push}
+            replace={router.replace}
+            onSessionChange={router.refresh}
+            Link={Link}
+          >
+            <CopilotKit runtimeUrl="/api/copilotkit">
+              {children}
+            </CopilotKit>
+          </NeonAuthUIProvider>
         </ThemeProvider>
       </body>
     </html>

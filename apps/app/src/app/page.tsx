@@ -9,6 +9,8 @@ import { GridIcon } from "@/components/demo-gallery/grid-icon";
 import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
+import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
+import Link from "next/link";
 
 
 export default function HomePage() {
@@ -129,6 +131,20 @@ export default function HomePage() {
                   <GridIcon size={15} />
                   <span className="hidden sm:inline">Demos</span>
                 </button>
+                <SignedOut>
+                  <Link href="/auth"
+                    className="inline-flex items-center px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-white no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
+                    style={{ background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))", boxShadow: "0 1px 4px rgba(149,153,204,0.3)" }}>
+                    Sign in
+                  </Link>
+                </SignedOut>
+                <SignedIn>
+                  <Link href="/account"
+                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
+                    style={{ color: "var(--text-secondary)", border: "1px solid var(--color-border-glass, rgba(0,0,0,0.1))", background: "var(--surface-primary, rgba(255,255,255,0.6))" }}>
+                    Account
+                  </Link>
+                </SignedIn>
               </div>
             </div>
           </div>
