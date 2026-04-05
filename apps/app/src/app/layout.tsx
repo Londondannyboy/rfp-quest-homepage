@@ -35,6 +35,7 @@ export default function RootLayout({children}: Readonly<{ children: React.ReactN
             replace={router.replace}
             onSessionChange={router.refresh}
             Link={Link}
+            social={{ providers: ["google"] }}
           >
             <CopilotKit runtimeUrl="/api/copilotkit">
               {children}
