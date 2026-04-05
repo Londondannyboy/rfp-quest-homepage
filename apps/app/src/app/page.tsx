@@ -18,13 +18,14 @@ export default function HomePage() {
   useExampleSuggestions();
 
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
-  const [session, setSession] = useState<{ user?: { name?: string } } | null>(null);
+  const [user, setUser] = useState<{ name?: string } | null>(null);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
 
-  // Check auth session
   useEffect(() => {
-    authClient.getSession().then(({ data }) => setSession(data));
+    authClient.getSession().then(({ data }) => {
+      if (data?.user) setUser(data.user);
+    }).catch(() => {});
   }, []);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
@@ -137,29 +138,16 @@ export default function HomePage() {
                   <GridIcon size={15} />
                   <span className="hidden sm:inline">Demos</span>
                 </button>
-                {session?.user ? (
-                  <Link
-                    href="/auth/sign-out"
+                {user ? (
+                  <Link href="/auth/sign-in"
                     className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
-                    style={{
-                      color: "var(--text-secondary)",
-                      border: "1px solid var(--color-border-glass, rgba(0,0,0,0.1))",
-                      background: "var(--surface-primary, rgba(255,255,255,0.6))",
-                      fontFamily: "var(--font-family)",
-                    }}
-                  >
-                    {session.user.name || "Account"}
+                    style={{ color: "var(--text-secondary)", border: "1px solid var(--color-border-glass, rgba(0,0,0,0.1))", background: "var(--surface-primary, rgba(255,255,255,0.6))" }}>
+                    {user.name || "Account"}
                   </Link>
                 ) : (
-                  <Link
-                    href="/auth/sign-in"
+                  <Link href="/auth/sign-in"
                     className="inline-flex items-center px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-white no-underline whitespace-nowrap transition-all duration-150 hover:-translate-y-px"
-                    style={{
-                      background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))",
-                      boxShadow: "0 1px 4px rgba(149,153,204,0.3)",
-                      fontFamily: "var(--font-family)",
-                    }}
-                  >
+                    style={{ background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))", boxShadow: "0 1px 4px rgba(149,153,204,0.3)" }}>
                     Sign in
                   </Link>
                 )}
