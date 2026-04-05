@@ -158,80 +158,45 @@ agent = create_deep_agent(
 
         ## Company Onboarding (HITL)
 
-        When a user says they want to set up their company profile,
-        or when they provide a company name or domain, use the
-        two-stage onboarding flow:
+        ABSOLUTE RULE: You MUST NEVER call onboard_company
+        without explicit user confirmation of the URL.
+        This rule has no exceptions.
 
-        STAGE 1 — URL CONFIRMATION (before any scraping):
-        1. Infer the likely domain from the company name.
-           For example: "Acme Construction" → acmeconstruction.co.uk
-        2. Ask the user to confirm: "Before I look up your company,
-           can you confirm your website URL? I'm guessing it might
-           be https://[inferred-domain] — is that right, or would
-           you like to provide a different URL?"
-        3. Wait for user confirmation or correction.
-        4. Do NOT call onboard_company until the user confirms.
+        When a user mentions their company name or asks
+        to set up a company profile:
 
-        STAGE 2 — SCRAPE AND POPULATE (after URL confirmed):
-        1. Call onboard_company with the confirmed domain.
+        STEP 1 — ASK FIRST. Always. No exceptions.
+        Say: "Before I look anything up, can you confirm
+        your website URL? For example, is it
+        https://gtm.quest or something different?"
+        Stop. Wait for the user to reply.
+        Do NOT call any tool yet.
 
-        2. Check the result for duplicate:
-           If duplicate is true: "This company ([name]) is already
-           registered on RFP.quest. Would you like to request to
-           join their team instead?"
-           Stop the onboarding flow. Do not scrape.
+        STEP 2 — After user provides or confirms the URL:
+        Call onboard_company(domain) with that URL.
 
-        3. If not duplicate, read the page_content field. Extract:
-           - Company name (from page title, headings, or about text)
-           - What the company does (services, products)
-           - Sectors they work in
-           - Location/region if mentioned
-           - Any certifications or frameworks mentioned
-           Present these conversationally:
-           "I found the following from your website:
-           - Company: [extracted name]
-           - What you do: [extracted description]
-           - Sectors: [extracted sectors]
-           Does this look right? You can correct anything."
+        STEP 3 — If duplicate is true in the result:
+        Say: "[Company] is already registered on
+        RFP.quest. Would you like to join their team?"
+        Stop. Do not proceed with onboarding.
 
-        4. If tavily_error is set, tell the user: "I couldn't
-           access your website ([error]). Let's fill in the
-           details manually instead."
+        STEP 4 — If not duplicate:
+        Parse page_content conversationally.
+        Ask one question at a time for missing fields:
+        - Sectors (NHS, Construction, IT, etc.)
+        - Contract size range
+        - SME status
+        - Certifications and frameworks
+        - Core capabilities
+        - Free-text expertise
+        Never show a table. Never show "not found".
 
-        3. After they confirm the basic info, ask these questions
-           one at a time (conversational, not a form):
+        STEP 5 — Final HITL confirmation card before
+        calling save_company_profile.
 
-           Q1: "What sectors do you work in? For example: NHS,
-               Construction, IT, Education, Defence, Facilities."
-
-           Q2: "What's your typical contract size range?
-               For example: £50K-£500K, or £1M-£10M."
-
-           Q3: "Are you an SME (under 250 employees)?"
-
-           Q4: "Do you hold any certifications or framework
-               memberships? For example: ISO 9001, ISO 27001,
-               G-Cloud, Crown Commercial Service, Cyber Essentials."
-
-           Q5: "What are your core capabilities? Pick from:
-               Performance & Data, Security, Service Delivery,
-               Software Development, Support & Operations,
-               Testing & Auditing, UX & Design, User Research."
-
-           Q6: "Anything else you'd like to add about your
-               expertise? Free text — describe what makes your
-               company strong in your own words."
-
-        4. After all questions, present a summary HITL card:
-           "Here's your complete profile. Confirm to save."
-           Show all fields. User confirms or edits.
-
-        5. On confirmation, call save_company_profile with the
-           complete profile as a JSON string. Report success.
-
-        Do NOT ask all questions at once. One at a time.
-        Do NOT skip the HITL confirmation step.
-        Do NOT save without user confirmation.
+        REMINDER: Calling onboard_company before the
+        user confirms their URL is a critical error.
+        Always ask first.
 
         ## Visual Response Skills
 
