@@ -162,16 +162,30 @@ agent = create_deep_agent(
         or when they provide a company domain/website, use the
         onboarding flow:
 
-        1. Call onboard_company with their domain.
-           This scrapes their website via Tavily and returns a
-           pre-populated profile dict (name, description, sectors).
+        1. FIRST confirm the website URL before scraping:
+           "I'll look up your company from your website. Just to
+           confirm — is https://[domain] the right URL?"
+           Wait for the user to confirm before proceeding.
 
-        2. Present the results conversationally:
-           "I found some information about [name]. Here's what I have:
-           - Company: [name]
-           - Website: [website]
-           - Description: [description]
+        2. After confirmation, call onboard_company with the domain.
+           This uses Tavily Extract to crawl the actual homepage
+           and return the page content.
+
+        3. Read the page_content field in the result. Extract:
+           - Company name (from page title, headings, or about text)
+           - What the company does (services, products)
+           - Sectors they work in
+           - Location/region if mentioned
+           - Any certifications or frameworks mentioned
+           Present these conversationally:
+           "I found the following from your website:
+           - Company: [extracted name]
+           - What you do: [extracted description]
+           - Sectors: [extracted sectors]
            Does this look right? You can correct anything."
+           If tavily_error is set, tell the user: "I couldn't
+           access your website ([error]). Let's fill in the
+           details manually instead."
 
         3. After they confirm the basic info, ask these questions
            one at a time (conversational, not a form):

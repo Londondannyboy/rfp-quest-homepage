@@ -23,34 +23,39 @@ def _get_db_connection():
     return psycopg2.connect(clean_url)
 
 
-def _scrape_with_tavily(domain: str) -> dict:
-    """Use Tavily to scrape company website for name, description, services, sectors."""
+def _scrape_with_tavily(url: str) -> dict:
+    """Use Tavily Extract API to crawl a specific URL and return page content."""
     api_key = os.getenv("TAVILY_API_KEY")
     if not api_key:
-        return {}
+        return {"error": "TAVILY_API_KEY not set"}
     try:
-        with httpx.Client(timeout=15) as client:
+        with httpx.Client(timeout=20) as client:
             resp = client.post(
-                "https://api.tavily.com/search",
+                "https://api.tavily.com/extract",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
                 json={
-                    "api_key": api_key,
-                    "query": f"What does {domain} do? Company name, description, services, sectors, size",
-                    "search_depth": "advanced",
-                    "include_domains": [domain],
-                    "max_results": 3,
+                    "urls": url,
+                    "extract_depth": "basic",
+                    "format": "markdown",
+                    "include_images": False,
                 },
             )
             if resp.status_code != 200:
-                return {}
+                return {"error": f"Tavily returned {resp.status_code}"}
             data = resp.json()
             results = data.get("results", [])
-            description = " ".join(r.get("content", "") for r in results[:2])
+            if not results:
+                return {"error": "Tavily returned no results"}
+            content = results[0].get("raw_content", "") or results[0].get("content", "")
             return {
-                "description": description[:1000] if description else "",
-                "source_url": results[0].get("url", "") if results else "",
+                "content": content[:2000] if content else "",
+                "url": results[0].get("url", url),
             }
-    except Exception:
-        return {}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @tool
@@ -69,21 +74,27 @@ def onboard_company(domain: str) -> Dict[str, Any]:
     clean_domain = domain.lower().strip().replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
     search_term = clean_domain.split(".")[0]
 
+    website = f"https://{clean_domain}"
+
     profile: Dict[str, Any] = {
         "domain": clean_domain,
         "name": search_term.replace("-", " ").title(),
         "description": "",
-        "website": f"https://{clean_domain}",
+        "website": website,
         "sectors": [],
         "region": "",
         "is_sme": False,
         "source": "tavily",
+        "tavily_error": "",
     }
 
-    # Tavily scrape for description and services
-    tavily_data = _scrape_with_tavily(clean_domain)
-    if tavily_data.get("description"):
-        profile["description"] = tavily_data["description"]
+    # Tavily Extract — crawl the actual homepage
+    tavily_data = _scrape_with_tavily(website)
+    if tavily_data.get("error"):
+        profile["tavily_error"] = tavily_data["error"]
+    elif tavily_data.get("content"):
+        profile["page_content"] = tavily_data["content"]
+        # The agent will parse the content to extract name, description, sectors
 
     return profile
 
