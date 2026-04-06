@@ -1915,3 +1915,47 @@ IMPLEMENTATION:
 - getUserContext tool returns full combined context
 - Company header renders before any agent interaction
 REVERSIBLE: Yes — could revert to server-side session.
+
+## D60 FINAL — DATE: 2026-04-06
+DECISION: getUserContext frontend tool replaces [SYSTEM CONTEXT] injection.
+CONTEXT: Message-based user identity injection was unreliable.
+Agent sometimes ignored [SYSTEM CONTEXT] messages, causing
+it to ask authenticated users for their email. UX failure.
+OUTCOME: Frontend tool approach. Client calls authClient.getSession()
+then /api/company-context?email= for full profile. Data stored
+in React state, returned via useFrontendTool handler. Agent
+never parses messages for identity information.
+IMPLEMENTATION:
+- page.tsx fetches user context on mount
+- useGenerativeUIExamples receives userContext parameter
+- getUserContext tool returns cached context
+- Agent system prompt: call getUserContext() for personalization
+REVERSIBLE: Yes — could revert to server-side session handling.
+
+## D64 — DATE: 2026-04-06
+DECISION: React Force Graph 3D for skills graph visualization.
+CONTEXT: Cards view shows relationships but lacks visual impact.
+D3.js force layouts are slow and complex to implement properly.
+React Force Graph (vasturiano/react-force-graph) provides
+production-ready 3D force-directed visualization.
+OUTCOME: Installed react-force-graph-3d, three, three-spritetext
+in apps/app via pnpm. Created /graph/[user_id] page with full
+3D interactive visualization. Dark theme, colored node types,
+click to focus, drag to rotate, scroll to zoom. Reads from
+Zep via /api/graph/[user_id] route.
+IMPLEMENTATION:
+- Dynamic import with ssr: false
+- Node colors: blue (person), teal (company), green (wins), purple (sector)
+- SpriteText labels below nodes
+- Camera controls and node details on click
+REVERSIBLE: Yes — could fall back to cards or 2D graph.
+
+## D65 — DATE: 2026-04-06
+DECISION: pnpm-only rule violated — delete package-lock.json.
+CONTEXT: Used npm install to add react-force-graph-3d packages
+which created apps/app/package-lock.json. This breaks Vercel
+builds because monorepo uses pnpm-lock.yaml (D18).
+OUTCOME: Deleted apps/app/package-lock.json. Updated pnpm-lock.yaml
+to include new packages. Documentation updated to never use
+npm install in apps/app — always use pnpm add.
+REVERSIBLE: No — must maintain consistent package manager.

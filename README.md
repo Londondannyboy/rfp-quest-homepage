@@ -18,6 +18,9 @@ RFP.quest Beta is an AI-powered UK government procurement intelligence platform.
 - **Interactive Analytics**: Tako-powered charts with pre-computed category insights (NHS, Construction, IT, Education, Defence, Facilities, Transport, Social Care, Police)
 - **Bid Decision Analysis**: Human-in-the-loop tender evaluation with match scoring
 - **Claude Opus 4.6**: Powered by Anthropic's flagship model for superior visualization generation
+- **3D Skills Graph**: Interactive React Force Graph 3D showing professional networks with real Zep data
+- **Bid Outcome Tracking**: Win/loss HITL cards with confirmation flows
+- **Authenticated Dashboard**: Company context header renders immediately on page load  
 - **3D & Chart Visualizations**: Three.js, Chart.js, D3.js, GSAP via ES module import maps
 
 ## Architecture
@@ -247,7 +250,11 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 
 ## Roadmap
 
-Phase 6a (complete): Neon Auth (Google OAuth), company onboarding with HITL cards (7 interactive cards including capabilities, sectors, contract range, SME status), Tavily website scraping, personalised tender matching with match scoring. Phase 6b (next): 3D team skills graph — each person sees their skills, certifications and past wins as an interactive force graph. Teams form by combining graphs — gaps surface automatically. Built on Zep graph DB and React Force Graph 3D.
+**Phase 6a (complete)**: Neon Auth (Google OAuth), company onboarding with HITL cards (7 interactive cards including capabilities, sectors, contract range, SME status), Tavily website scraping, personalised tender matching with match scoring.
+
+**Phase 6b (complete)**: 3D skills graph visualization — React Force Graph 3D at `/graph/[user_id]` shows individual professional networks. Interactive 3D force-directed graph with real-time Zep data (company, sector, won contracts). Dark theme, click to focus, drag to rotate. Built on Zep graph DB and React Force Graph 3D.
+
+**Phase 6c (next)**: Team graph merging — when multiple users join same company via invite flow, their graph nodes combine. Coverage gaps and shared skills automatically surface.
 
 ## License
 

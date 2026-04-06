@@ -18,7 +18,7 @@ pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 5a + 5c COMPLETE, Phase 6 NEXT
+ACTIVE — Phase 6b COMPLETE, Phase 6c NEXT
 
 Session 2026-04-01:
 - Rich tenders schema (37+ columns, 9 indexes, D31)
@@ -118,6 +118,12 @@ The frontend receives them via useComponent hook.
 WidgetRenderer.tsx streams them into a sandboxed iframe 
 via postMessage. Idiomorph diffs the DOM as tokens arrive.
 This is the only correct pattern for this project.
+
+User identity: getUserContext frontend tool
+Never use [SYSTEM CONTEXT] message injection.
+Call getUserContext() frontend tool for user authentication.
+Returns { authenticated, email, user_id, company_id, company_name, sectors, is_sme }.
+Required for query_neon_tenders match scoring and personalization.
 
 Agent architecture: create_deep_agent with skills
 Skills are SKILL.md files in apps/agent/skills/[name]/
@@ -236,6 +242,8 @@ DO NOT scrape LinkedIn without user-provided
 URL and explicit consent (D44).
 DO NOT ask onboarding questions in text when a
 HITL card exists for that question. CALL the tool.
+DO NOT use npm install in apps/app — use pnpm add (D18, D65).
+DO NOT use [SYSTEM CONTEXT] message injection — use getUserContext frontend tool.
 
 ## WHEN YOU HIT A WALL
 
