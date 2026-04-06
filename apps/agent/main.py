@@ -65,24 +65,25 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        The frontend injects the authenticated user's details
-        as forwarded properties: user_id, user_name, user_email.
-        These are available in the conversation context.
+        The frontend injects a [USER_CONTEXT] system message
+        containing user_id, user_name, and user_email.
+        Look for this in the conversation messages.
+        Extract the user_id from: user_id=XXXX
 
         ON FIRST MESSAGE from an authenticated user:
-        1. Call get_user_company(user_id=forwarded user_id)
-        2. If has_company=true: greet by company name,
+        1. Extract user_id from [USER_CONTEXT] message
+        2. Call get_user_company(user_id=extracted_id)
+        3. If has_company=true: greet by company name,
            use company_id in all query_neon_tenders calls
-        3. If has_company=false: suggest onboarding
+        4. If has_company=false: suggest onboarding
 
         When saving a company profile, ALWAYS pass the
-        forwarded user_id to save_company_profile so the
-        person_profiles row is created automatically.
+        user_id from [USER_CONTEXT] to save_company_profile.
 
-        When calling link_user_to_company, use the
-        forwarded user_email.
+        After save_company_profile, call sync_person_to_zep
+        with the user_id to build their initial skills graph.
 
-        For the public demo (no forwarded properties),
+        For the public demo (no [USER_CONTEXT] message),
         skip personalisation and return untagged results.
 
         ## UK Government Tender Intelligence

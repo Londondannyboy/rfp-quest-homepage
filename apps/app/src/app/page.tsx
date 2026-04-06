@@ -10,6 +10,7 @@ import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
+import { authClient } from "@/lib/auth";
 import Link from "next/link";
 
 
@@ -18,8 +19,24 @@ export default function HomePage() {
   useExampleSuggestions();
 
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
+  const [userContextInjected, setUserContextInjected] = useState(false);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
+
+  // Inject user context as a hidden system message on first interaction
+  useEffect(() => {
+    if (userContextInjected) return;
+    authClient.getSession().then(({ data }) => {
+      if (data?.user?.id) {
+        agent.addMessage({
+          id: "user-context",
+          role: "system" as any,
+          content: `[USER_CONTEXT] user_id=${data.user.id} user_name=${data.user.name || ""} user_email=${data.user.email || ""}`,
+        });
+        setUserContextInjected(true);
+      }
+    }).catch(() => {});
+  }, [agent, userContextInjected]);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
   const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);
