@@ -37,7 +37,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "").replace(
 )
 
 FAT_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages"
-REQUEST_DELAY = 2.0  # 2s between requests — gentler on API, avoids rate limits overnight
+REQUEST_DELAY = 1.0  # 1s between requests — balance speed vs rate limits
 
 
 def sanitize_for_json(obj):
