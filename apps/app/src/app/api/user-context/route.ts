@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { auth } from '../../../lib/auth/server';
 import { neon } from '@neondatabase/serverless';
 
@@ -6,7 +7,13 @@ export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   try {
-    // Get session using server-side auth
+    // Get session using server-side auth with cookies
+    const cookieStore = await cookies();
+    
+    // Debug: log all available cookies
+    const allCookies = cookieStore.getAll();
+    console.log('Available cookies:', allCookies.map(c => c.name));
+    
     const session = await auth.getSession();
     console.log('Session data:', JSON.stringify(session, null, 2));
     
