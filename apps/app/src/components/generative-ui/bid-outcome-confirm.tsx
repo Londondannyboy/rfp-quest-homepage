@@ -5,7 +5,7 @@ import { CheckCircleIcon, ChevronRightIcon, TrophyIcon, BarChart3Icon } from "lu
 
 interface BidOutcomeConfirmProps {
   status: "inProgress" | "pending" | "executing" | "complete";
-  respond: (data: any) => void;
+  respond?: (data: any) => void;
   contractName: string;
   buyer: string;
   outcome: "win" | "loss";
@@ -27,19 +27,23 @@ export function BidOutcomeConfirm({
   const isWin = outcome === "win";
 
   const handleConfirm = () => {
-    respond({
-      confirmed: true,
-      contractName,
-      buyer,
-      outcome,
-      value,
-      year,
-      role,
-    });
+    if (respond) {
+      respond({
+        confirmed: true,
+        contractName,
+        buyer,
+        outcome,
+        value,
+        year,
+        role,
+      });
+    }
   };
 
   const handleCancel = () => {
-    respond({ confirmed: false });
+    if (respond) {
+      respond({ confirmed: false });
+    }
   };
 
   if (status === "complete") {
@@ -134,7 +138,7 @@ export function BidOutcomeConfirm({
       </div>
 
       {/* Actions */}
-      {status === "pending" && (
+      {status === "pending" && respond && (
         <div className="px-5 py-4 border-t flex gap-3"
           style={{ borderColor: "var(--color-border-tertiary)" }}>
           <button
