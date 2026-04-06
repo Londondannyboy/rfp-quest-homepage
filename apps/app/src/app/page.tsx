@@ -19,29 +19,55 @@ export default function HomePage() {
   const [authReady, setAuthReady] = useState(false);
   const [userContext, setUserContext] = useState<any>(null);
   
-  console.log('HomePage render, userContext:', userContext, 'authReady:', authReady);
   useGenerativeUIExamples(userContext);
   useExampleSuggestions();
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
 
-  // Get user context directly from client-side auth
+  // Get user context directly from client-side auth and fetch company profile
   useEffect(() => {
     const getUserContext = async () => {
       try {
         const { data: session } = await authClient.getSession();
-        console.log('Client-side session:', session);
         
         if (session?.user?.email) {
-          setUserContext({
+          // First set basic auth context
+          const basicContext = {
             authenticated: true,
             email: session.user.email,
             user_id: session.user.id,
-            // Note: company_id and company_name would need DB lookup
-            // For now, just provide email which is what the agent needs
             company_id: null,
-            company_name: null
-          });
+            company_name: null,
+            sectors: null,
+            is_sme: null,
+            description: null
+          };
+          
+          // Fetch company context
+          try {
+            const companyResponse = await fetch(`/api/company-context?email=${encodeURIComponent(session.user.email)}`);
+            const companyData = await companyResponse.json();
+            
+            if (companyData.found) {
+              setUserContext({
+                authenticated: true,
+                email: companyData.email,
+                user_id: companyData.user_id,
+                company_id: companyData.company_id,
+                company_name: companyData.company_name,
+                sectors: companyData.sectors,
+                is_sme: companyData.is_sme,
+                description: companyData.description,
+                domain: companyData.domain,
+                role: companyData.role
+              });
+            } else {
+              setUserContext(basicContext);
+            }
+          } catch (err) {
+            console.error('Error fetching company context:', err);
+            setUserContext(basicContext);
+          }
         } else {
           setUserContext({ authenticated: false });
         }
@@ -184,6 +210,49 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+
+          {/* Company Dashboard Header - shows when user has a company profile */}
+          {userContext?.company_id && (
+            <div
+              className="shrink-0 border-b border-white/30 dark:border-white/8 px-3 sm:px-5 py-3"
+              style={{
+                background: "var(--surface-primary, rgba(255,255,255,0.6))",
+              }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <h2 className="text-lg font-semibold m-0" style={{ color: "var(--text-primary)" }}>
+                      {userContext.company_name}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      {userContext.is_sme && (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(133,224,206,0.2), rgba(133,224,206,0.1))",
+                            color: "var(--color-mint-dark, #28a59a)",
+                            border: "1px solid rgba(133,224,206,0.3)"
+                          }}>
+                          SME
+                        </span>
+                      )}
+                      {userContext.sectors && typeof userContext.sectors === 'string' && (
+                        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                          {userContext.sectors.split(',').slice(0, 2).join(', ')}
+                          {userContext.sectors.split(',').length > 2 && ` +${userContext.sectors.split(',').length - 2} more`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    {userContext.email}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Two-panel layout: chart left, chat right (stacks on mobile) */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row">

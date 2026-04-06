@@ -66,28 +66,34 @@ agent = create_deep_agent(
         ## User Context and Personalisation
 
         For any personalised request, call getUserContext() frontend tool first. 
-        It returns the authenticated user's email, user_id, and company_id instantly. 
-        Never ask the user for their email.
+        It returns the full authenticated user context including email, user_id, 
+        company_id, company_name, sectors, is_sme, and more. Never ask the user 
+        for their email.
+
+        When getUserContext() returns company_id and company_name, do not call 
+        get_user_company again — all data is already present in the getUserContext 
+        response.
 
         When a user asks for personalised features (tenders
         matched to their profile, sync their graph, view
         their profile, invite team members):
         
         1. Call getUserContext() frontend tool first
-        2. If authenticated=true and email is present, use the email for:
-           - get_user_company(email=user_email)
-           - add_bid_outcome(email=user_email, ...)
-           - sync_person_to_zep(email=user_email, ...)
+        2. If authenticated=true and company_id is present:
+           - You already have all company data (name, sectors, is_sme)
+           - Use company_id in all query_neon_tenders calls
+           - Use email for add_bid_outcome(email=user_email, ...)
+           - Use email for sync_person_to_zep(email=user_email, ...)
+           - Results include match_score and match_tag
         3. If authenticated=false, ask: "To access personalised features, 
            please sign in with Google at the top of the page."
 
-        If has_company=true:
-        - Greet by company name
+        If company_id is present:
+        - Greet by company name from getUserContext response
         - Use company_id in all query_neon_tenders calls
-        - Use user_id from the result for sync_person_to_zep
         - Results include match_score and match_tag
 
-        If has_company=false:
+        If company_id is null but authenticated=true:
         - Suggest onboarding: "You haven't set up your
           company profile yet. Would you like to do that?"
 

@@ -49,21 +49,21 @@ Latest commit: 96a1541
 ### Gate tests
 1. Public demo without auth ✅
 2. Onboarding → Tavily → HITL cards → save to Neon ✅
-3. Personalised results ⚠️ blocked by user_id gap
-4. Team invitation ⚠️ blocked by user_id gap
-5. Duplicate domain rejection ✅ coded
-6. Match-tagged results ⚠️ blocked by user_id gap
+3. Company header renders within 2 seconds on page load ✅
+4. Personalised results with match_score/tag ✅
+5. Team invitation flow ✅
+6. Duplicate domain rejection ✅
+7. getUserContext returns full company context ✅
 
 ## WHAT IS BROKEN / INCOMPLETE
 
-1. PERSON_PROFILES USER_ID GAP
-   save_company_profile creates company but cannot
-   reliably create person_profiles row because
-   user_id not passed from frontend to agent.
-   Workaround: agent asks for email, calls
-   link_user_to_company. Works but has UX friction.
-   Fix: inject user_id server-side via /api/copilotkit
-   route before conversation starts (Option B).
+1. PERSON_PROFILES USER_ID GAP - RESOLVED 2026-04-06
+   Fixed via getUserContext frontend tool that returns
+   full user and company context from client-side auth.
+   No more unreliable [SYSTEM CONTEXT] message parsing.
+   getUserContext returns email, user_id, company_id,
+   company_name, sectors, is_sme directly to agent.
+   get_user_company no longer needed for session init.
 
 2. HITL CARD BUTTON VISIBILITY
    Buttons at bottom of cards can be hidden below

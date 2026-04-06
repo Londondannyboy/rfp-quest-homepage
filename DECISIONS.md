@@ -1896,3 +1896,22 @@ skills/bids. D3.js iframe approach replaced with persistent
 graph state. Visual changes reflect Zep updates in real-time.
 PREREQUISITE: Email session authentication must be resolved first.
 REVERSIBLE: No — core product architecture decision.
+
+## D63 — DATE: 2026-04-06
+DECISION: getUserContext returns full company context.
+CONTEXT: Agent was making redundant calls — getUserContext()
+then get_user_company() — causing duplicate queries. The
+client-side auth already has the session, and /api/company-context
+can fetch all company data in one call.
+OUTCOME: getUserContext frontend tool now returns complete
+user and company profile including email, user_id, company_id,
+company_name, sectors, is_sme, domain, role. Agent system
+prompt updated to not call get_user_company when company
+data already present. Company dashboard header renders
+immediately on page load from React state.
+IMPLEMENTATION:
+- authClient.getSession() gets user session client-side
+- /api/company-context?email= fetches company profile
+- getUserContext tool returns full combined context
+- Company header renders before any agent interaction
+REVERSIBLE: Yes — could revert to server-side session.
