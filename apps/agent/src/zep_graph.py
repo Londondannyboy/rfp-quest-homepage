@@ -317,3 +317,169 @@ def add_bid_outcome(
     )
 
     return f"Added {outcome_label.lower()}: {contract_name} ({value}, {buyer}, {year}) as {role}."
+
+
+def get_person_subgraph(user_id: str) -> Dict[str, Any]:
+    """
+    Get a person's subgraph from Zep as nodes and links for 3D visualization.
+    
+    Args:
+        user_id: The person's Neon Auth user ID.
+        
+    Returns:
+        Dict with nodes, links, and user info for React Force Graph 3D.
+    """
+    zep = _get_zep_client()
+    if not zep:
+        return {"error": "ZEP_API_KEY not set"}
+
+    conn = _get_db_connection()
+    if not conn:
+        return {"error": "Database connection failed"}
+
+    try:
+        # Get person details from Neon
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(
+            """
+            SELECT pp.display_name, pp.email, pp.company_id,
+                   cp.name as company_name
+            FROM person_profiles pp
+            LEFT JOIN company_profiles cp ON pp.company_id = cp.id
+            WHERE pp.user_id = %s
+            """,
+            (user_id,)
+        )
+        user_row = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not user_row:
+            return {"error": f"No person_profiles row for user_id {user_id}"}
+            
+        person_name = user_row["display_name"] or "Unknown"
+        
+        # Search Zep for this person's subgraph
+        result = zep.graph.search(graph_id=GRAPH_ID, query=person_name, limit=50)
+        
+        # Parse edges into nodes and links
+        nodes = {}
+        links = []
+        
+        # Define node colors by type
+        colors = {
+            "person": "#4A90E2",
+            "company": "#50E3C2", 
+            "sector": "#9013FE",
+            "win": "#7ED321",
+            "loss": "#EF4444",
+            "buyer": "#4A90E2",
+            "contract": "#7ED321",  # Default to win color
+            "skill": "#9013FE",
+            "certification": "#F5A623",
+            "framework": "#BD10E0"
+        }
+        
+        for edge in result.edges:
+            source_uuid = edge.source_node_uuid
+            target_uuid = edge.target_node_uuid
+            fact = edge.fact
+            edge_type = edge.attributes.get('edge_type', edge.name)
+            
+            # Extract node names from the fact text
+            # Parse patterns like "Dan Keegan works at GTM Quest"
+            parts = fact.split()
+            
+            # Determine node types and names from the fact
+            source_name = person_name  # Usually the person
+            target_name = "Unknown"
+            source_type = "person"
+            target_type = "unknown"
+            
+            if "works at" in fact:
+                target_name = fact.split("works at")[-1].strip()
+                target_type = "company"
+            elif "works in" in fact and "sector" in fact:
+                target_name = fact.split("works in the")[-1].split("sector")[0].strip()
+                target_type = "sector"
+            elif "win" in fact.lower() or "won" in fact.lower():
+                # Extract contract name - look for contract names in quotes or after specific patterns
+                contract_parts = fact.split()
+                if "contract" in fact:
+                    # Try to extract contract name before "contract"
+                    contract_idx = None
+                    for i, part in enumerate(contract_parts):
+                        if "contract" in part.lower():
+                            contract_idx = i
+                            break
+                    if contract_idx and contract_idx > 2:
+                        target_name = " ".join(contract_parts[2:contract_idx]).strip("the ")
+                    else:
+                        target_name = "Contract"
+                target_type = "win"
+            elif "loss" in fact.lower() or "lost" in fact.lower():
+                target_name = fact.split(" for ")[0].split()[-1] if " for " in fact else "Bid"
+                target_type = "loss"
+            elif "procured by" in fact or "awarded by" in fact:
+                source_name = fact.split(" was ")[0] if " was " in fact else "Contract"
+                source_type = "contract"
+                target_name = fact.split("by ")[-1].strip()
+                target_type = "buyer"
+            
+            # Add nodes if not already present
+            if source_uuid not in nodes:
+                nodes[source_uuid] = {
+                    "id": source_uuid,
+                    "name": source_name,
+                    "type": source_type,
+                    "color": colors.get(source_type, "#888888"),
+                    "val": 20 if source_type == "person" else 15
+                }
+                
+            if target_uuid not in nodes:
+                nodes[target_uuid] = {
+                    "id": target_uuid,
+                    "name": target_name, 
+                    "type": target_type,
+                    "color": colors.get(target_type, "#888888"),
+                    "val": 15 if target_type == "company" else 10
+                }
+            
+            # Add link
+            link_data = {
+                "source": source_uuid,
+                "target": target_uuid,
+                "type": edge_type,
+                "label": fact
+            }
+            
+            # Extract value for contracts
+            if "£" in fact:
+                import re
+                value_match = re.search(r'£(\d+(?:,\d+)*(?:\.\d+)?)', fact)
+                if value_match:
+                    value_str = value_match.group(1).replace(',', '')
+                    try:
+                        if 'K' in fact.upper():
+                            link_data["value"] = float(value_str) * 1000
+                        else:
+                            link_data["value"] = float(value_str)
+                    except:
+                        pass
+                        
+            links.append(link_data)
+        
+        return {
+            "nodes": list(nodes.values()),
+            "links": links,
+            "user": {
+                "name": person_name,
+                "email": user_row["email"],
+                "company_id": user_row["company_id"]
+            }
+        }
+        
+    except Exception as e:
+        if conn:
+            conn.close()
+        return {"error": f"Error querying Zep: {str(e)}"}

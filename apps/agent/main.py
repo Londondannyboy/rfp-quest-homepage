@@ -23,7 +23,7 @@ from src.query_tenders import query_neon_tenders
 from src.tako_analytics import visualise_tender_analytics
 from src.onboard_company import onboard_company, save_company_profile, get_user_company, link_user_to_company
 from src.team_invite import invite_team_member
-from src.zep_graph import sync_person_to_zep, add_bid_outcome
+from src.zep_graph import sync_person_to_zep, add_bid_outcome, get_person_subgraph
 
 load_dotenv()
 
@@ -356,6 +356,21 @@ app = FastAPI()
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/graph/{user_id}")
+async def get_person_graph(user_id: str):
+    """
+    Get a person's skills graph from Zep as nodes and links.
+    Used by the frontend 3D graph visualization.
+    """
+    try:
+        result = get_person_subgraph(user_id)
+        if "error" in result:
+            return {"error": result["error"]}, 500
+        return result
+    except Exception as e:
+        return {"error": f"Failed to get graph: {str(e)}"}, 500
 
 
 add_langgraph_fastapi_endpoint(

@@ -32,35 +32,18 @@ export async function GET(
     
     const user = userResult[0];
     
-    // For Dan Keegan, return the actual Zep data structure we discovered
-    // This would normally come from Zep API
-    if (user.email === 'keegan.dan@gmail.com') {
-      const nodes = [
-        { id: 'dan-keegan', name: 'Dan Keegan', type: 'person', color: '#4A90E2', val: 20 },
-        { id: 'gtm-quest', name: 'GTM Quest', type: 'company', color: '#50E3C2', val: 15 },
-        { id: 'saas-sector', name: 'SaaS', type: 'sector', color: '#9013FE', val: 10 },
-        { id: 'nhs-digital', name: 'NHS Digital', type: 'contract_won', color: '#7ED321', val: 12 },
-        { id: 'climatize', name: 'Climatize', type: 'contract_won', color: '#7ED321', val: 8 },
-        { id: 'nhs', name: 'NHS', type: 'buyer', color: '#4A90E2', val: 10 },
-      ];
-      
-      const links = [
-        { source: 'dan-keegan', target: 'gtm-quest', type: 'WORKS_AT' },
-        { source: 'dan-keegan', target: 'saas-sector', type: 'WORKS_IN_SECTOR' },
-        { source: 'dan-keegan', target: 'nhs-digital', type: 'WON_CONTRACT', value: 50000 },
-        { source: 'dan-keegan', target: 'climatize', type: 'WON_CONTRACT', value: 10000 },
-        { source: 'nhs-digital', target: 'nhs', type: 'PROCURED_BY' },
-      ];
-      
-      return NextResponse.json({
-        nodes,
-        links,
-        user: {
-          name: user.display_name || user.email,
-          email: user.email,
-          company_id: user.company_id
+    // Try to get real Zep data from the agent
+    const deploymentUrl = process.env.LANGGRAPH_DEPLOYMENT_URL || 'http://localhost:8123';
+    try {
+      const agentResponse = await fetch(`${deploymentUrl}/graph/${user_id}`);
+      if (agentResponse.ok) {
+        const agentData = await agentResponse.json();
+        if (!agentData.error) {
+          return NextResponse.json(agentData);
         }
-      });
+      }
+    } catch (agentError) {
+      console.error('Agent graph call failed:', agentError);
     }
     
     // For other users, return a basic graph
