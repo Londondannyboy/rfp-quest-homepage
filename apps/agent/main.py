@@ -23,6 +23,7 @@ from src.query_tenders import query_neon_tenders
 from src.tako_analytics import visualise_tender_analytics
 from src.onboard_company import onboard_company, save_company_profile, get_user_company, link_user_to_company
 from src.team_invite import invite_team_member
+from src.zep_graph import sync_person_to_zep, add_bid_outcome
 
 load_dotenv()
 
@@ -52,7 +53,7 @@ model_with_retry = base_model.with_retry(
 
 agent = create_deep_agent(
     model=base_model,
-    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile, get_user_company, link_user_to_company, invite_team_member],
+    tools=[query_data, plan_visualization, *todo_tools, generate_form, query_neon_tenders, visualise_tender_analytics, onboard_company, save_company_profile, get_user_company, link_user_to_company, invite_team_member, sync_person_to_zep, add_bid_outcome],
     middleware=[CopilotKitMiddleware()],
     context_schema=AgentState,
     skills=[str(Path(__file__).parent / "skills")],
