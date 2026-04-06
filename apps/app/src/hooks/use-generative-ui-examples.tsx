@@ -23,6 +23,7 @@ import { UrlConfirm } from "@/components/generative-ui/url-confirm";
 import { SectorSelector } from "@/components/generative-ui/sector-selector";
 import { ContractRangeSelector } from "@/components/generative-ui/contract-range-selector";
 import { SmeConfirm } from "@/components/generative-ui/sme-confirm";
+import { BidOutcomeConfirm } from "@/components/generative-ui/bid-outcome-confirm";
 import { ToolReasoning } from "@/components/tool-rendering";
 import { PlanCard } from "@/components/generative-ui/plan-card";
 
@@ -250,6 +251,36 @@ export const useGenerativeUIExamples = () => {
           status={status}
           respond={respond}
           prompt={args.prompt || "Select your capabilities"}
+        />
+      );
+    },
+  });
+
+  // --------------------------
+  // 🪁 Bid Outcome Confirmation HITL
+  // --------------------------
+  useHumanInTheLoop({
+    name: "confirmBidOutcome",
+    description: "Show bid outcome confirmation card for adding wins/losses to skills graph.",
+    parameters: z.object({
+      contractName: z.string().describe("Name of the contract or tender"),
+      buyer: z.string().describe("Buyer/client organization name"),
+      outcome: z.enum(["win", "loss"]).describe("Bid outcome: win or loss"),
+      value: z.number().optional().describe("Contract value in GBP"),
+      year: z.number().optional().describe("Year of the bid"),
+      role: z.string().optional().describe("User's role in the bid"),
+    }),
+    render: ({ respond, status, args }) => {
+      return (
+        <BidOutcomeConfirm
+          status={status}
+          respond={respond}
+          contractName={args.contractName || ""}
+          buyer={args.buyer || ""}
+          outcome={args.outcome || "win"}
+          value={args.value}
+          year={args.year}
+          role={args.role}
         />
       );
     },

@@ -268,9 +268,13 @@ agent = create_deep_agent(
            - Year (optional)
            - Their role (optional)
 
-        3. Call add_bid_outcome with the extracted information.
-           Use the email from [SYSTEM CONTEXT] if available,
-           otherwise ask for it first.
+        3. CALL confirmBidOutcome NOW with the extracted details.
+           A confirmation card will appear with green (win) or 
+           red (loss) styling. Wait for user to confirm.
+
+        4. After confirmation, call add_bid_outcome with the
+           confirmed details. Use email from [SYSTEM CONTEXT]
+           if available, otherwise ask for it first.
 
         Example: User says "We won the NHS Digital Transformation 
         contract last year, £2M deal where I was bid lead"
