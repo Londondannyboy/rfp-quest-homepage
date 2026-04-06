@@ -29,15 +29,19 @@ export default function HomePage() {
       if (response?.data?.user?.email) {
         // Inject email as system context message
         const contextMessage = `[SYSTEM CONTEXT] User email: ${response.data.user.email}`;
+        console.log('Injecting context:', contextMessage);
         agent.addMessage({ 
           id: crypto.randomUUID(), 
           content: contextMessage, 
           role: "user" 
         });
+      } else {
+        console.log('No user email found in session:', response);
       }
       // Always set auth ready, even if user not signed in
       setAuthReady(true);
-    }).catch(() => {
+    }).catch((error) => {
+      console.log('Auth session error:', error);
       // User not signed in, but still allow interaction
       setAuthReady(true);
     });
