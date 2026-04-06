@@ -1,7 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+// Dynamic import to avoid SSR issues with Three.js
+const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+        <p className="text-sm text-gray-600">Loading 3D graph...</p>
+      </div>
+    </div>
+  )
+});
 
 interface GraphNode {
   id: string;
@@ -34,6 +48,8 @@ export default function GraphPage() {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const graphRef = useRef<any>(null);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
 
   useEffect(() => {
     const fetchGraphData = async () => {
@@ -54,6 +70,34 @@ export default function GraphPage() {
 
     fetchGraphData();
   }, [user_id]);
+
+  const handleNodeClick = useCallback((node: any) => {
+    setSelectedNode(node);
+    
+    // Focus camera on clicked node
+    const distance = 150;
+    const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+    
+    if (graphRef.current) {
+      graphRef.current.cameraPosition(
+        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+        node,
+        2000
+      );
+    }
+  }, []);
+
+  const getNodeLabel = useCallback((node: any) => {
+    const n = node as GraphNode;
+    let label = n.name;
+    if (n.type === 'contract_won') {
+      const link = graphData?.links.find(l => l.target === n.id && l.value);
+      if (link?.value) {
+        label += ` (£${(link.value / 1000).toFixed(0)}K)`;
+      }
+    }
+    return label;
+  }, [graphData]);
 
   if (loading) {
     return (
@@ -77,27 +121,22 @@ export default function GraphPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background, #F7F7F9)' }}>
+    <div className="min-h-screen" style={{ background: '#0a0a0a' }}>
       {/* Header */}
-      <div className="border-b" style={{ borderColor: 'var(--color-border-tertiary, #e5e7eb)' }}>
+      <div className="absolute top-0 left-0 right-0 z-10 backdrop-blur-md bg-black/50 border-b border-white/10">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              <h1 className="text-xl font-bold text-white">
                 Skills Graph - {graphData.user.name}
               </h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-sm mt-1 text-gray-400">
                 {graphData.nodes.length} nodes • {graphData.links.length} connections
               </p>
             </div>
             <a 
               href="/" 
-              className="px-4 py-2 text-sm rounded-lg transition-colors"
-              style={{
-                color: 'var(--text-secondary)',
-                border: '1px solid var(--color-border-glass, rgba(0,0,0,0.1))',
-                background: 'var(--surface-primary, rgba(255,255,255,0.6))',
-              }}
+              className="px-4 py-2 text-sm rounded-lg transition-all hover:bg-white/10 text-gray-300 border border-white/20"
             >
               Back to Chat
             </a>
@@ -105,81 +144,102 @@ export default function GraphPage() {
         </div>
       </div>
 
-      {/* Graph Visualization - Simple Node List for now */}
-      <div className="p-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {graphData.nodes.map((node) => {
-            const relatedLinks = graphData.links.filter(
-              l => l.source === node.id || l.target === node.id
-            );
-            
-            return (
-              <div
-                key={node.id}
-                className="p-6 rounded-xl shadow-sm"
-                style={{
-                  background: 'var(--surface-primary, white)',
-                  border: `2px solid ${node.color}`,
-                }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {node.name}
-                  </h3>
-                  <span 
-                    className="px-2 py-1 text-xs rounded-full"
-                    style={{
-                      background: `${node.color}20`,
-                      color: node.color,
-                    }}
-                  >
-                    {node.type.replace(/_/g, ' ')}
-                  </span>
-                </div>
-                
-                {relatedLinks.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Connections:
-                    </p>
-                    {relatedLinks.map((link, idx) => {
-                      const connectedNode = graphData.nodes.find(
-                        n => n.id === (link.source === node.id ? link.target : link.source)
-                      );
-                      return (
-                        <div key={idx} className="flex items-center gap-2 text-xs">
-                          <span style={{ color: 'var(--text-tertiary)' }}>
-                            {link.type.replace(/_/g, ' ')}
-                          </span>
-                          <span style={{ color: 'var(--text-primary)' }}>
-                            {connectedNode?.name}
-                          </span>
-                          {link.value && (
-                            <span style={{ color: 'var(--color-mint-dark)' }}>
-                              £{(link.value / 1000).toFixed(0)}K
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      {/* 3D Graph */}
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <ForceGraph3D
+          ref={graphRef}
+          graphData={graphData}
+          nodeId="id"
+          nodeLabel={getNodeLabel}
+          nodeColor="color"
+          nodeVal="val"
+          nodeOpacity={0.95}
+          nodeResolution={16}
+          linkDirectionalArrowLength={6}
+          linkDirectionalArrowRelPos={1}
+          linkCurvature={0.15}
+          linkWidth={2}
+          linkOpacity={0.5}
+          linkLabel="type"
+          backgroundColor="#0a0a0a"
+          showNavInfo={false}
+          onNodeClick={handleNodeClick}
+          nodeThreeObject={(node: any) => {
+            const n = node as GraphNode;
+            // Use SpriteText for labels
+            const SpriteText = require('three-spritetext').default;
+            const sprite = new SpriteText(n.name);
+            sprite.material.depthWrite = false;
+            sprite.color = n.color;
+            sprite.textHeight = 5;
+            sprite.position.y = -n.val * 0.5 - 8;
+            return sprite;
+          }}
+        />
+      </div>
 
-        {/* Note about 3D visualization */}
-        <div className="mt-12 p-4 rounded-lg text-center" 
-          style={{
-            background: 'var(--surface-secondary, rgba(255,255,255,0.5))',
-            border: '1px solid var(--color-border-glass)',
-          }}>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            3D force-directed graph visualization coming soon. 
-            Currently showing node relationships in card format.
-          </p>
+      {/* Selected Node Details */}
+      {selectedNode && (
+        <div 
+          className="absolute top-20 right-4 p-4 rounded-lg shadow-2xl max-w-xs backdrop-blur-md bg-black/80 border border-white/20"
+        >
+          <h3 className="font-semibold mb-2 text-white">
+            {selectedNode.name}
+          </h3>
+          <div className="text-sm space-y-1 text-gray-300">
+            <p>Type: <span className="text-white">{selectedNode.type.replace(/_/g, ' ')}</span></p>
+            {selectedNode.type === 'contract_won' && (
+              <p className="text-green-400">Status: Won ✅</p>
+            )}
+            {selectedNode.type === 'contract_won' && (
+              <p>
+                Value: £{
+                  graphData.links.find(l => l.target === selectedNode.id)?.value 
+                    ? (graphData.links.find(l => l.target === selectedNode.id)!.value! / 1000).toFixed(0) + 'K'
+                    : 'N/A'
+                }
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => setSelectedNode(null)}
+            className="mt-3 text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            Close
+          </button>
         </div>
+      )}
+
+      {/* Legend */}
+      <div 
+        className="absolute bottom-4 left-4 p-3 rounded-lg backdrop-blur-md bg-black/80 border border-white/20"
+      >
+        <p className="text-xs font-semibold mb-2 text-white">
+          Node Types
+        </p>
+        <div className="space-y-1 text-xs text-gray-300">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ background: '#4A90E2' }}></span>
+            <span>Person / Buyer</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ background: '#50E3C2' }}></span>
+            <span>Company</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ background: '#7ED321' }}></span>
+            <span>Won Contract</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ background: '#9013FE' }}></span>
+            <span>Sector</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls hint */}
+      <div className="absolute bottom-4 right-4 text-xs text-gray-500">
+        Click and drag to rotate • Scroll to zoom • Click nodes for details
       </div>
     </div>
   );
