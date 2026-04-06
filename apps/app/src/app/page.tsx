@@ -10,6 +10,7 @@ import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
+import { authClient } from "@/lib/auth";
 import Link from "next/link";
 
 
@@ -20,6 +21,23 @@ export default function HomePage() {
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
+
+  // Inject authenticated user context into agent conversation
+  const [contextSent, setContextSent] = useState(false);
+  useEffect(() => {
+    if (contextSent) return;
+    authClient.getSession().then(({ data }) => {
+      if (data?.user?.id) {
+        // Send user context as the first message the agent sees
+        agent.addMessage({
+          id: crypto.randomUUID(),
+          role: "user",
+          content: `[SYSTEM CONTEXT] authenticated_user_id: ${data.user.id} authenticated_user_name: ${data.user.name || ""} authenticated_user_email: ${data.user.email || ""}`,
+        });
+        setContextSent(true);
+      }
+    }).catch(() => {});
+  }, [agent, contextSent]);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
   const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);
@@ -53,12 +71,13 @@ export default function HomePage() {
     copilotkit.runAgent({ agent });
   };
 
-  // Hide TAKO_CHART: marker text from chat messages
+  // Hide TAKO_CHART markers and SYSTEM CONTEXT messages from chat
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      document.querySelectorAll('[data-testid="copilot-assistant-message"] p').forEach((p) => {
-        if (p.textContent?.includes("TAKO_CHART:")) {
-          (p as HTMLElement).style.display = "none";
+      document.querySelectorAll('[data-testid="copilot-assistant-message"] p, [data-testid="copilot-user-message"] p, [data-testid="copilot-user-message"]').forEach((el) => {
+        const text = el.textContent || "";
+        if (text.includes("TAKO_CHART:") || text.includes("[SYSTEM CONTEXT]")) {
+          (el as HTMLElement).style.display = "none";
         }
       });
     });
