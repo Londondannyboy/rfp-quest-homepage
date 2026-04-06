@@ -1874,10 +1874,25 @@ The localStorage approach was a hack. The correct
 fix uses authClient.getSession() to get the
 authenticated user's email from Neon Auth.
 OUTCOME: page.tsx injects [SYSTEM CONTEXT] message
-with user email on mount. Agent system prompt reads
-email from [SYSTEM CONTEXT] automatically on first
-message. MutationObserver hides the context message
+with user email on mount. Chat interface only renders
+after authClient.getSession() resolves to fix sequencing
+issues. Agent system prompt reads email from [SYSTEM CONTEXT]
+automatically. MutationObserver hides the context message
 from chat UI. User never needs to provide email
 manually after Google OAuth signup.
 REVERSIBLE: Yes — could switch to server-side
 injection or middleware pattern if needed.
+
+## D62 — DATE: 2026-04-06
+DECISION: Zep-visual graph linkage architecture for Part 3.
+CONTEXT: Currently D3.js visualization is regenerated
+by agent on each request. Zep Cloud stores the persistent
+skills graph data. Users expect linked but separately
+visualizable personal vs team graphs.
+OUTCOME: Phase 6b Part 3 will implement React Force Graph 3D
+reading directly from Zep Cloud API. Personal view shows
+user's nodes only, team view shows interconnected company
+skills/bids. D3.js iframe approach replaced with persistent
+graph state. Visual changes reflect Zep updates in real-time.
+PREREQUISITE: Email session authentication must be resolved first.
+REVERSIBLE: No — core product architecture decision.

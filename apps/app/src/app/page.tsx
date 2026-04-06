@@ -19,29 +19,29 @@ export default function HomePage() {
   useExampleSuggestions();
 
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
-  const [contextSent, setContextSent] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
 
-  // Inject user email from Neon Auth session on mount
+  // Check auth and inject context BEFORE allowing chat interaction
   useEffect(() => {
-    if (!contextSent) {
-      authClient.getSession().then((response) => {
-        if (response?.data?.user?.email) {
-          // Inject email as system context message
-          const contextMessage = `[SYSTEM CONTEXT] User email: ${response.data.user.email}`;
-          agent.addMessage({ 
-            id: crypto.randomUUID(), 
-            content: contextMessage, 
-            role: "user" 
-          });
-          setContextSent(true);
-        }
-      }).catch(() => {
-        // User not signed in, no context to inject
-      });
-    }
-  }, [contextSent, agent]);
+    authClient.getSession().then((response) => {
+      if (response?.data?.user?.email) {
+        // Inject email as system context message
+        const contextMessage = `[SYSTEM CONTEXT] User email: ${response.data.user.email}`;
+        agent.addMessage({ 
+          id: crypto.randomUUID(), 
+          content: contextMessage, 
+          role: "user" 
+        });
+      }
+      // Always set auth ready, even if user not signed in
+      setAuthReady(true);
+    }).catch(() => {
+      // User not signed in, but still allow interaction
+      setAuthReady(true);
+    });
+  }, [agent]);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
   const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);
@@ -202,14 +202,23 @@ export default function HomePage() {
 
             {/* Right panel — Chat */}
             <div className={latestTakoUrl ? "lg:w-[480px] lg:shrink-0" : "flex-1"}>
-              <ExampleLayout chatContent={
-                <CopilotChat
-                  labels={{
-                    welcomeMessageText: "Welcome to RFP.quest Beta. Ask me about UK government tenders, or try a demo from the gallery.",
-                    chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
-                  }}
-                />
-              } />
+              {authReady ? (
+                <ExampleLayout chatContent={
+                  <CopilotChat
+                    labels={{
+                      welcomeMessageText: "Welcome to RFP.quest Beta. Ask me about UK government tenders, or try a demo from the gallery.",
+                      chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
+                    }}
+                  />
+                } />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                    <p className="text-sm text-gray-600">Loading...</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <ExplainerCardsPortal />
