@@ -251,8 +251,8 @@ INSERT_SQL = """
 CHUNK_DAYS = 30
 
 
-def fetch_and_insert_chunk(conn, chunk_start, chunk_end, total_fetched, total_inserted):
-    """Fetch and insert all pages for one date chunk. Returns (fetched, inserted)."""
+def fetch_and_insert_chunk(conn_unused, chunk_start, chunk_end, total_fetched, total_inserted):
+    """Fetch and insert all pages for one date chunk. Fresh DB connection per page."""
     url = (
         f"{FAT_API}?limit=100"
         f"&updatedFrom={chunk_start.strftime('%Y-%m-%dT00:00:00Z')}"
@@ -268,41 +268,50 @@ def fetch_and_insert_chunk(conn, chunk_start, chunk_end, total_fetched, total_in
         if not releases:
             break
 
+        # Fresh connection per page — never hold a connection while waiting for API
         batch_inserted = 0
-        with conn.cursor() as cur:
-            for release in releases:
-                parsed = parse_release(release)
-                if not parsed["ocid"]:
-                    continue
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                for release in releases:
+                    parsed = parse_release(release)
+                    if not parsed["ocid"]:
+                        continue
 
-                try:
-                    cur.execute("SAVEPOINT insert_row")
-                    cur.execute(INSERT_SQL, (
-                        parsed["ocid"], parsed["release_id"], parsed["title"],
-                        parsed["description"], parsed["status"], parsed["stage"],
-                        parsed["buyer_name"], parsed["buyer_id"],
-                        parsed["value_amount"], parsed["value_currency"],
-                        parsed["value_min"], parsed["value_max"],
-                        parsed["published_date"], parsed["tender_start_date"],
-                        parsed["tender_end_date"], parsed["contract_start_date"],
-                        parsed["contract_end_date"],
-                        parsed["cpv_codes"], parsed["region"],
-                        parsed["raw_ocds"], parsed["source"],
-                    ))
-                    cur.execute("RELEASE SAVEPOINT insert_row")
-                    if cur.rowcount:
-                        total_inserted += 1
-                        batch_inserted += 1
-                        chunk_inserted += 1
-                except Exception as e:
                     try:
-                        cur.execute("ROLLBACK TO SAVEPOINT insert_row")
-                    except Exception:
-                        raise  # connection dead — let outer retry handle it
-                    print(f"  Skipped {parsed['ocid']}: {str(e)[:100]}", flush=True)
-                total_fetched += 1
-
-        conn.commit()
+                        cur.execute("SAVEPOINT insert_row")
+                        cur.execute(INSERT_SQL, (
+                            parsed["ocid"], parsed["release_id"], parsed["title"],
+                            parsed["description"], parsed["status"], parsed["stage"],
+                            parsed["buyer_name"], parsed["buyer_id"],
+                            parsed["value_amount"], parsed["value_currency"],
+                            parsed["value_min"], parsed["value_max"],
+                            parsed["published_date"], parsed["tender_start_date"],
+                            parsed["tender_end_date"], parsed["contract_start_date"],
+                            parsed["contract_end_date"],
+                            parsed["cpv_codes"], parsed["region"],
+                            parsed["raw_ocds"], parsed["source"],
+                        ))
+                        cur.execute("RELEASE SAVEPOINT insert_row")
+                        if cur.rowcount:
+                            total_inserted += 1
+                            batch_inserted += 1
+                            chunk_inserted += 1
+                    except Exception as e:
+                        try:
+                            cur.execute("ROLLBACK TO SAVEPOINT insert_row")
+                        except Exception:
+                            break  # connection dead — close and continue to next page
+                        print(f"  Skipped {parsed['ocid']}: {str(e)[:100]}", flush=True)
+                    total_fetched += 1
+            conn.commit()
+        except Exception:
+            pass
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
         print(f"  {chunk_start.date()} p{page_num}: +{batch_inserted} new ({total_fetched} fetched, {total_inserted} inserted)", flush=True)
 
         if len(releases) < 100:
