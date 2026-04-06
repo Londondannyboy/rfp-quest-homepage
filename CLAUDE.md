@@ -1,6 +1,6 @@
 # CLAUDE.md — rfp-quest-homepage
 # Standard: See CLAUDE-STANDARD.md
-# Sign-off status: SIGNED OFF 2026-04-03
+# Sign-off status: SIGNED OFF 2026-04-06
 
 ---
 

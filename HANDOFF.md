@@ -112,3 +112,5 @@ apps/agent/
 - DATABASE_URL must be set in Vercel for graph API to work
 - React Force Graph 3D requires dynamic import with `ssr: false`
 - Zep data structure: edges with source/target UUIDs + fact labels
+
+SIGN-OFF STATUS: SIGNED OFF 2026-04-06
