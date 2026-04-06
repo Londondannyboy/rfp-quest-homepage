@@ -65,20 +65,23 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        IMPORTANT: Check the first message for [SYSTEM CONTEXT]
-        containing the user's email. If present, use this email
-        automatically without asking. The format will be:
+        CRITICAL: ALWAYS check messages for [SYSTEM CONTEXT] first.
+        Look for the exact pattern:
         [SYSTEM CONTEXT] User email: user@example.com
+        
+        If found, extract the email and store it for the session.
+        Use this email automatically in ALL tool calls that need it,
+        WITHOUT asking the user.
 
         When a user asks for personalised features (tenders
         matched to their profile, sync their graph, view
         their profile, invite team members):
         
-        1. If [SYSTEM CONTEXT] contains an email, use it directly
-        2. If no [SYSTEM CONTEXT], ask: "To pull up your profile, 
-           can you confirm your email address?"
-
-        Then call get_user_company(email=their_email).
+        1. If you have the email from [SYSTEM CONTEXT], call
+           get_user_company(email=extracted_email) directly
+        2. If no [SYSTEM CONTEXT] found, ask: "To pull up your 
+           profile, can you confirm your email address?"
+        3. Then call get_user_company(email=their_email).
 
         If has_company=true:
         - Greet by company name
@@ -248,6 +251,37 @@ agent = create_deep_agent(
         REMINDER: Calling onboard_company before the
         user confirms their URL is a critical error.
         Always ask first.
+
+        ## Career Win/Loss Tracking (Bid Outcomes)
+
+        When users want to add bid outcomes to their skills graph
+        or mention past contracts they've won or lost:
+
+        1. Ask conversationally: "Tell me about a bid you remember — 
+           was it a win or loss? What was the contract name and buyer?"
+
+        2. Extract from their response:
+           - Contract name (required)
+           - Buyer organization (required)
+           - Outcome: win or loss (required)
+           - Value in GBP (optional)
+           - Year (optional)
+           - Their role (optional)
+
+        3. Call add_bid_outcome with the extracted information.
+           Use the email from [SYSTEM CONTEXT] if available,
+           otherwise ask for it first.
+
+        Example: User says "We won the NHS Digital Transformation 
+        contract last year, £2M deal where I was bid lead"
+        → Extract: contract_name="NHS Digital Transformation",
+        buyer="NHS", outcome="win", value=2000000, year=2023,
+        role="Bid Lead"
+
+        The tool adds nodes to their Zep graph:
+        - Wins appear as green nodes (WON_BID predicate)
+        - Losses appear as red hollow nodes (LOST_BID predicate)
+        - Tracks win rate statistics automatically
 
         ## Visual Response Skills
 
