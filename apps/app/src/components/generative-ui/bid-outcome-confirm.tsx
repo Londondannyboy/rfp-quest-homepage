@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { CheckCircleIcon, ChevronRightIcon, TrophyIcon, BarChart3Icon } from "lucide-react";
 
 interface BidOutcomeConfirmProps {
@@ -24,9 +24,11 @@ export function BidOutcomeConfirm({
   year,
   role,
 }: BidOutcomeConfirmProps) {
+  const [confirmed, setConfirmed] = useState(false);
   const isWin = outcome === "win";
 
   const handleConfirm = () => {
+    setConfirmed(true);
     if (respond) {
       respond({
         confirmed: true,
@@ -41,12 +43,13 @@ export function BidOutcomeConfirm({
   };
 
   const handleCancel = () => {
+    setConfirmed(true);
     if (respond) {
       respond({ confirmed: false });
     }
   };
 
-  if (status === "complete") {
+  if (confirmed || status === "complete") {
     return (
       <div className="p-5 rounded-xl border flex items-center justify-between"
         style={{
@@ -96,15 +99,13 @@ export function BidOutcomeConfirm({
             </p>
           </div>
         </div>
-        {status === "pending" && (
-          <span className="px-2 py-1 rounded-full text-xs font-medium"
-            style={{
-              backgroundColor: "rgba(251, 191, 36, 0.15)",
-              color: "#f59e0b",
-            }}>
-            Waiting for confirmation
-          </span>
-        )}
+        <span className="px-2 py-1 rounded-full text-xs font-medium"
+          style={{
+            backgroundColor: "rgba(251, 191, 36, 0.15)",
+            color: "#f59e0b",
+          }}>
+          Waiting for confirmation
+        </span>
       </div>
 
       {/* Content */}
@@ -138,31 +139,29 @@ export function BidOutcomeConfirm({
       </div>
 
       {/* Actions */}
-      {status === "pending" && respond && (
-        <div className="px-5 py-4 border-t flex gap-3"
-          style={{ borderColor: "var(--color-border-tertiary)" }}>
-          <button
-            onClick={handleConfirm}
-            className="flex-1 px-4 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
-            style={{
-              backgroundColor: isWin ? "#22c55e" : "#ef4444",
-              color: "white",
-            }}>
-            Add to Graph
-            <ChevronRightIcon className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2.5 rounded-lg font-medium transition-all"
-            style={{
-              backgroundColor: "transparent",
-              color: "var(--color-text-secondary)",
-              border: "1px solid var(--color-border-tertiary)",
-            }}>
-            Cancel
-          </button>
-        </div>
-      )}
+      <div className="px-5 py-4 border-t flex gap-3"
+        style={{ borderColor: "var(--color-border-tertiary)" }}>
+        <button
+          onClick={handleConfirm}
+          className="flex-1 px-4 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: isWin ? "#22c55e" : "#ef4444",
+            color: "white",
+          }}>
+          Add to Graph
+          <ChevronRightIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleCancel}
+          className="px-4 py-2.5 rounded-lg font-medium transition-all"
+          style={{
+            backgroundColor: "transparent",
+            color: "var(--color-text-secondary)",
+            border: "1px solid var(--color-border-tertiary)",
+          }}>
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
