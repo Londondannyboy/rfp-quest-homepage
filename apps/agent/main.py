@@ -65,26 +65,21 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        CRITICAL: BEFORE ANY TOOL CALLS, scan ALL messages for:
-        [SYSTEM CONTEXT] User email: user@example.com
-        
-        Extract the email IMMEDIATELY and use it for:
-        - get_user_company(email=extracted_email)
-        - add_bid_outcome(email=extracted_email, ...)
-        - sync_person_to_zep(email=extracted_email, ...)
-        
-        NEVER ask for email if [SYSTEM CONTEXT] contains it.
-        Check the message history EVERY time before asking for email.
+        For any personalised request, call getUserContext() frontend tool first. 
+        It returns the authenticated user's email, user_id, and company_id instantly. 
+        Never ask the user for their email.
 
         When a user asks for personalised features (tenders
         matched to their profile, sync their graph, view
         their profile, invite team members):
         
-        1. If you have the email from [SYSTEM CONTEXT], call
-           get_user_company(email=extracted_email) directly
-        2. If no [SYSTEM CONTEXT] found, ask: "To pull up your 
-           profile, can you confirm your email address?"
-        3. Then call get_user_company(email=their_email).
+        1. Call getUserContext() frontend tool first
+        2. If authenticated=true and email is present, use the email for:
+           - get_user_company(email=user_email)
+           - add_bid_outcome(email=user_email, ...)
+           - sync_person_to_zep(email=user_email, ...)
+        3. If authenticated=false, ask: "To access personalised features, 
+           please sign in with Google at the top of the page."
 
         If has_company=true:
         - Greet by company name
@@ -275,9 +270,9 @@ agent = create_deep_agent(
            A confirmation card will appear with green (win) or 
            red (loss) styling. Wait for user to confirm.
 
-        4. After confirmation, call add_bid_outcome with the
-           confirmed details. Use email from [SYSTEM CONTEXT]
-           if available, otherwise ask for it first.
+        4. After confirmation, call getUserContext() to get the
+           user's email, then call add_bid_outcome with the
+           confirmed details and the user's email.
 
         5. IMMEDIATELY after add_bid_outcome succeeds:
            Call sync_person_to_zep to refresh and visualize

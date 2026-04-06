@@ -11,41 +11,36 @@ import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
 import Link from "next/link";
-import { authClient } from "@/lib/auth";
 
 
 export default function HomePage() {
-  useGenerativeUIExamples();
-  useExampleSuggestions();
-
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [userContext, setUserContext] = useState<any>(null);
+  
+  useGenerativeUIExamples(userContext);
+  useExampleSuggestions();
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
 
-  // Check auth and inject context BEFORE allowing chat interaction
+  // Fetch user context on mount - replaces unreliable [SYSTEM CONTEXT] injection
   useEffect(() => {
-    authClient.getSession().then((response) => {
-      if (response?.data?.user?.email) {
-        // Inject email as system context message
-        const contextMessage = `[SYSTEM CONTEXT] User email: ${response.data.user.email}`;
-        console.log('Injecting context:', contextMessage);
-        agent.addMessage({ 
-          id: crypto.randomUUID(), 
-          content: contextMessage, 
-          role: "user" 
-        });
-      } else {
-        console.log('No user email found in session:', response);
+    const fetchUserContext = async () => {
+      try {
+        const response = await fetch('/api/user-context');
+        const context = await response.json();
+        console.log('User context fetched:', context);
+        setUserContext(context);
+      } catch (error) {
+        console.error('Error fetching user context:', error);
+        setUserContext({ authenticated: false });
+      } finally {
+        setAuthReady(true);
       }
-      // Always set auth ready, even if user not signed in
-      setAuthReady(true);
-    }).catch((error) => {
-      console.log('Auth session error:', error);
-      // User not signed in, but still allow interaction
-      setAuthReady(true);
-    });
-  }, [agent]);
+    };
+
+    fetchUserContext();
+  }, []);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
   const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);
@@ -79,19 +74,13 @@ export default function HomePage() {
     copilotkit.runAgent({ agent });
   };
 
-  // Hide TAKO_CHART: marker and [SYSTEM CONTEXT] messages from chat
+  // Hide TAKO_CHART: marker from chat
   useEffect(() => {
     const observer = new MutationObserver(() => {
       // Hide TAKO_CHART markers
       document.querySelectorAll('[data-testid="copilot-assistant-message"] p').forEach((p) => {
         if (p.textContent?.includes("TAKO_CHART:")) {
           (p as HTMLElement).style.display = "none";
-        }
-      });
-      // Hide [SYSTEM CONTEXT] messages completely
-      document.querySelectorAll('[data-testid="copilot-user-message"]').forEach((msg) => {
-        if (msg.textContent?.includes("[SYSTEM CONTEXT]")) {
-          (msg as HTMLElement).style.display = "none";
         }
       });
     });

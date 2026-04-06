@@ -27,12 +27,19 @@ import { BidOutcomeConfirm } from "@/components/generative-ui/bid-outcome-confir
 import { ToolReasoning } from "@/components/tool-rendering";
 import { PlanCard } from "@/components/generative-ui/plan-card";
 
-export const useGenerativeUIExamples = () => {
+export const useGenerativeUIExamples = (userContext?: any) => {
   const { theme, setTheme } = useTheme();
 
   // ------------------
   // 🪁 Frontend Tools: https://docs.copilotkit.ai/langgraph/frontend-actions
   // ------------------
+  useFrontendTool({
+    name: "getUserContext",
+    description: "Get the authenticated user's email, user_id, and company_id. Call this at the start of any personalised request instead of asking the user.",
+    parameters: z.object({}),
+    handler: async () => userContext ?? { authenticated: false },
+  }, [userContext]);
+
   useFrontendTool({
     name: "toggleTheme",
     description: "Frontend tool for toggling the theme of the app.",
