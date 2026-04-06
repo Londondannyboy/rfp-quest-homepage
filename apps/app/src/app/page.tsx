@@ -18,6 +18,7 @@ export default function HomePage() {
   const [authReady, setAuthReady] = useState(false);
   const [userContext, setUserContext] = useState<any>(null);
   
+  console.log('HomePage render, userContext:', userContext, 'authReady:', authReady);
   useGenerativeUIExamples(userContext);
   useExampleSuggestions();
   const { agent } = useAgent();
@@ -27,7 +28,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchUserContext = async () => {
       try {
-        const response = await fetch('/api/user-context');
+        console.log('Fetching user context from /api/user-context...');
+        const response = await fetch('/api/user-context', { credentials: 'include' });
+        console.log('Response status:', response.status, 'OK:', response.ok);
         const context = await response.json();
         console.log('User context fetched:', context);
         setUserContext(context);

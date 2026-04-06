@@ -8,23 +8,30 @@ export async function GET(req: NextRequest) {
   try {
     // Get session using server-side auth
     const session = await auth.getSession();
+    console.log('Session data:', JSON.stringify(session, null, 2));
     
     // Check if session exists and has user data
     if (!session?.data?.user?.email) {
+      console.log('No session or user email found');
       return NextResponse.json({ authenticated: false });
     }
 
     const email = session.data.user.email;
+    console.log('Found user email:', email);
+    
     const databaseUrl = process.env.DATABASE_URL;
     
     if (!databaseUrl) {
       console.error('DATABASE_URL not configured');
       return NextResponse.json({ authenticated: false });
     }
+    
+    console.log('DATABASE_URL is configured, querying user profile...');
 
     const sql = neon(databaseUrl);
 
     try {
+      console.log('Executing database query for email:', email);
       const result = await sql`
         SELECT 
           pp.user_id, 
@@ -36,7 +43,10 @@ export async function GET(req: NextRequest) {
         WHERE pp.email = ${email}
       `;
       
+      console.log('Database query result:', result);
+      
       if (result.length === 0) {
+        console.log('No profile found for user, returning authenticated with null profile data');
         // User is authenticated but has no profile yet
         return NextResponse.json({
           authenticated: true,
@@ -48,6 +58,7 @@ export async function GET(req: NextRequest) {
       }
 
       const row = result[0];
+      console.log('Profile found, returning:', row);
       return NextResponse.json({
         authenticated: true,
         email: row.email,

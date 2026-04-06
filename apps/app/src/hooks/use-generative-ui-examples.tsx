@@ -37,7 +37,27 @@ export const useGenerativeUIExamples = (userContext?: any) => {
     name: "getUserContext",
     description: "Get the authenticated user's email, user_id, and company_id. Call this at the start of any personalised request instead of asking the user.",
     parameters: z.object({}),
-    handler: async () => userContext ?? { authenticated: false },
+    handler: async () => {
+      console.log('getUserContext tool called, userContext:', userContext);
+      
+      // If we have a valid userContext, return it
+      if (userContext?.authenticated === true) {
+        console.log('getUserContext returning cached context:', userContext);
+        return userContext;
+      }
+      
+      // Otherwise, fetch fresh context from the API
+      try {
+        console.log('getUserContext: Fetching fresh context from API...');
+        const response = await fetch('/api/user-context');
+        const freshContext = await response.json();
+        console.log('getUserContext: Fresh context fetched:', freshContext);
+        return freshContext;
+      } catch (error) {
+        console.error('getUserContext: Error fetching fresh context:', error);
+        return { authenticated: false };
+      }
+    },
   }, [userContext]);
 
   useFrontendTool({
