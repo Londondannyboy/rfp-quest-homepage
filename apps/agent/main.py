@@ -279,6 +279,13 @@ agent = create_deep_agent(
            confirmed details. Use email from [SYSTEM CONTEXT]
            if available, otherwise ask for it first.
 
+        5. IMMEDIATELY after add_bid_outcome succeeds:
+           Call sync_person_to_zep to refresh and visualize
+           the updated skills graph. Users expect to see
+           their graph update in real-time after adding
+           bid outcomes. This provides instant visual
+           verification and satisfaction.
+
         Example: User says "We won the NHS Digital Transformation 
         contract last year, £2M deal where I was bid lead"
         → Extract: contract_name="NHS Digital Transformation",
