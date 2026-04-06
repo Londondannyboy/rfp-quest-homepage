@@ -1,8 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { CopySuccess } from "@copilotkit/react-core/v2";
-import { ChevronRightIcon } from "@/components/icons";
+import { CheckCircleIcon, ChevronRightIcon, TrophyIcon, BarChart3Icon } from "lucide-react";
 
 interface BidOutcomeConfirmProps {
   status: "inProgress" | "pending" | "executing" | "complete";
@@ -51,7 +50,7 @@ export function BidOutcomeConfirm({
           backgroundColor: isWin ? "rgba(34, 197, 94, 0.05)" : "rgba(239, 68, 68, 0.05)",
         }}>
         <div className="flex items-center gap-3">
-          <CopySuccess className="w-5 h-5 flex-shrink-0" style={{ color: isWin ? "#22c55e" : "#ef4444" }} />
+          <CheckCircleIcon className="w-5 h-5 flex-shrink-0" style={{ color: isWin ? "#22c55e" : "#ef4444" }} />
           <div>
             <p className="font-medium m-0" style={{ color: "var(--color-text-primary)" }}>
               {isWin ? "Win" : "Loss"} Added to Skills Graph
