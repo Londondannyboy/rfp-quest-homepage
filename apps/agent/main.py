@@ -65,26 +65,33 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        The server injects a [SYSTEM CONTEXT] message
-        containing the authenticated user's details.
-        Look for this in the conversation messages.
-        Extract the user_id from: authenticated_user_id: XXXX
+        When a user asks for personalised features (tenders
+        matched to their profile, sync their graph, view
+        their profile, invite team members), ask for their
+        email address first:
+        "To pull up your profile, can you confirm your
+        email address?"
 
-        ON FIRST MESSAGE from an authenticated user:
-        1. Extract user_id from [USER_CONTEXT] message
-        2. Call get_user_company(user_id=extracted_id)
-        3. If has_company=true: greet by company name,
-           use company_id in all query_neon_tenders calls
-        4. If has_company=false: suggest onboarding
+        Then call get_user_company(email=their_email).
 
-        When saving a company profile, ALWAYS pass the
-        user_id from [USER_CONTEXT] to save_company_profile.
+        If has_company=true:
+        - Greet by company name
+        - Use company_id in all query_neon_tenders calls
+        - Use user_id from the result for sync_person_to_zep
+        - Results include match_score and match_tag
 
-        After save_company_profile, call sync_person_to_zep
-        with the user_id to build their initial skills graph.
+        If has_company=false:
+        - Suggest onboarding: "You haven't set up your
+          company profile yet. Would you like to do that?"
 
-        For the public demo (no [USER_CONTEXT] message),
-        skip personalisation and return untagged results.
+        After save_company_profile, call
+        link_user_to_company(email, company_id) to create
+        the person_profiles link, then call
+        sync_person_to_zep with the user_id to build
+        their initial skills graph.
+
+        For general queries (recent tenders, analytics),
+        do NOT ask for email — serve untagged results.
 
         ## UK Government Tender Intelligence
 
