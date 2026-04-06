@@ -12,7 +12,7 @@ from langchain.tools import tool
 from typing import Dict, Any, List
 
 
-GRAPH_ID = "rfp-quest-skills"
+GRAPH_ID = os.getenv("ZEP_GRAPH", "rfp-quest-skills")
 
 
 def _get_zep_client() -> Zep | None:
