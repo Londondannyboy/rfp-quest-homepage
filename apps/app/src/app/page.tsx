@@ -26,10 +26,10 @@ export default function HomePage() {
   // Inject user email from Neon Auth session on mount
   useEffect(() => {
     if (!contextSent) {
-      authClient.getSession().then((data) => {
-        if (data?.user?.email) {
+      authClient.getSession().then((response) => {
+        if (response?.data?.user?.email) {
           // Inject email as system context message
-          const contextMessage = `[SYSTEM CONTEXT] User email: ${data.user.email}`;
+          const contextMessage = `[SYSTEM CONTEXT] User email: ${response.data.user.email}`;
           agent.addMessage({ 
             id: crypto.randomUUID(), 
             content: contextMessage, 
