@@ -27,7 +27,8 @@ All three parts verified in production:
 3. **Skills graph visualization** ✅
    - React Force Graph 3D at `/graph/[user_id]`
    - Live in production: `/graph/c161a50e-b713-4abc-8d43-d652e8be1b96`
-   - Pulls real Zep data (Dan Keegan, GTM Quest, NHS Digital, Climatize wins)
+   - Works for all authenticated users via Railway agent /graph/{user_id} endpoint
+   - Calls zep.graph.search() for real Zep data, no hardcoded branches
    - Dark theme, interactive 3D, click to focus
    - Node types: person (blue), company (teal), sector (purple), wins (green)
 
@@ -61,16 +62,11 @@ All three parts verified in production:
 
 ## WHAT IS BROKEN / INCOMPLETE
 
-1. **package-lock.json issue**
-   - Created in `apps/app` by npm install
-   - Should be deleted, pnpm only per D18
-   - Already removed in this session
-
-2. **Graph not embedded in main chat**
+1. **Graph not embedded in main chat**
    - Currently only accessible at `/graph/[user_id]` directly
    - Should render in left panel like Tako charts
 
-3. **Agent graph navigation**
+2. **Agent graph navigation**
    - Agent tells user to visit URL manually
    - Should auto-navigate or embed after sync
 

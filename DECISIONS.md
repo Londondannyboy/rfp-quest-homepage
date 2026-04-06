@@ -1959,3 +1959,15 @@ OUTCOME: Deleted apps/app/package-lock.json. Updated pnpm-lock.yaml
 to include new packages. Documentation updated to never use
 npm install in apps/app — always use pnpm add.
 REVERSIBLE: No — must maintain consistent package manager.
+
+## D66 — DATE: 2026-04-06
+DECISION: Graph route calls Railway agent /graph/{user_id} endpoint instead of hardcoded email branch.
+CONTEXT: graph/[user_id]/route.ts had if (user.email === 'keegan.dan@gmail.com') returning hardcoded Zep data — all other users got empty graphs.
+TRIED AND FAILED: Querying Zep directly from Next.js (Zep SDK is Python-only, API key lives on Railway).
+OUTCOME: New FastAPI endpoint on Railway calls get_person_subgraph(user_id) via zep.graph.search, returns real data for any user. Neon fallback if agent unreachable.
+IMPLEMENTATION:
+- get_person_subgraph() function in zep_graph.py
+- /graph/{user_id} endpoint in main.py
+- Frontend calls LANGGRAPH_DEPLOYMENT_URL/graph/{user_id}
+- Parses Zep edges into React Force Graph 3D format
+REVERSIBLE: Yes — could revert to hardcoded data if needed.
