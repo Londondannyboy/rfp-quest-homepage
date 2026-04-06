@@ -11,6 +11,7 @@ import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
 import Link from "next/link";
+import { authClient } from "@/lib/auth";
 
 
 export default function HomePage() {
@@ -24,25 +25,35 @@ export default function HomePage() {
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
 
-  // Fetch user context on mount - replaces unreliable [SYSTEM CONTEXT] injection
+  // Get user context directly from client-side auth
   useEffect(() => {
-    const fetchUserContext = async () => {
+    const getUserContext = async () => {
       try {
-        console.log('Fetching user context from /api/user-context...');
-        const response = await fetch('/api/user-context', { credentials: 'include' });
-        console.log('Response status:', response.status, 'OK:', response.ok);
-        const context = await response.json();
-        console.log('User context fetched:', context);
-        setUserContext(context);
+        const { data: session } = await authClient.getSession();
+        console.log('Client-side session:', session);
+        
+        if (session?.user?.email) {
+          setUserContext({
+            authenticated: true,
+            email: session.user.email,
+            user_id: session.user.id,
+            // Note: company_id and company_name would need DB lookup
+            // For now, just provide email which is what the agent needs
+            company_id: null,
+            company_name: null
+          });
+        } else {
+          setUserContext({ authenticated: false });
+        }
       } catch (error) {
-        console.error('Error fetching user context:', error);
+        console.error('Error getting user context:', error);
         setUserContext({ authenticated: false });
       } finally {
         setAuthReady(true);
       }
     };
 
-    fetchUserContext();
+    getUserContext();
   }, []);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
