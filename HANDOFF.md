@@ -77,32 +77,136 @@ Latest commit: 96a1541
    - rfp-quest-find-a-tender-cron: 0 7 * * *
    - rfp-quest-cf-v2-cron: 0 8 * * *
 
-## NEXT ACTION — PHASE 6a COMPLETION SPRINT
+## NEXT ACTION — PHASE 6b: INDIVIDUAL SKILLS GRAPH
 
-Resolve person_profiles user_id gap before Phase 6b.
+Read DECISIONS.md D49, D50, D57, D58, D60
+before writing any code.
 
-Option A: CopilotKit context injection
-  Research useAgent() forwarded props or system
-  message injection for session data.
+OBJECTIVE:
+Each person who joins RFP.quest sees their
+own 3D force graph — skills, certifications,
+past wins, and CPV categories as interactive
+nodes. This is the headline product feature.
 
-Option B: Server-side session lookup (RECOMMENDED)
-  In /api/copilotkit route.ts, read Neon Auth
-  session server-side, inject user_id into agent
-  system message before conversation starts.
+PREREQUISITES (resolve before Phase 6b starts):
+1. Resolve user_id gap (D60) via Option B:
+   In /api/copilotkit route.ts, read Neon Auth
+   session server-side and inject user_id into
+   agent context before conversation starts.
+   Verify person_profiles row is created on
+   onboarding save before proceeding.
 
-Option C: Agent asks for email (CURRENT WORKAROUND)
-  Agent calls get_user_company(email) after user
-  provides it. Already coded and working.
+STACK:
+- React Force Graph 3D (vasturiano/react-force-graph)
+  Install: pnpm add react-force-graph-3d
+  three.js already in project — compatible
+- Zep Cloud for graph entity storage
+  Install: pnpm add @getzep/zep-cloud (agent)
+  ZEP_API_KEY needed in Railway env vars
+- Neon for person_profiles source data
+  (already exists — extend, don't replace)
+- Claude Haiku for background classification (D58)
+  Add ANTHROPIC_HAIKU_MODEL=claude-haiku-4-5
+  to Railway env vars
 
-## PHASE 6b (after user_id gap resolved)
+PHASE 6b PARTS:
 
-Individual skills graph + career graph:
-- React Force Graph 3D (Three.js/WebGL)
-- Zep graph DB for entity relationships
-- Career win/loss HITL onboarding (D50)
-- Two-layer skills nodes per person (D57)
-- Team graph combining individual graphs
-- Haiku background matching pipeline (D58)
+PART 1 — Zep entity schema:
+For each person, create Zep entities:
+  Person node: user_id, name, email, company
+  Skill nodes: each DOS capability selected
+  Certification nodes: each cert entered
+  Expertise nodes: layer2 free text parsed
+  CPV nodes: inferred from sectors + expertise
+Edges: person→has→skill, person→holds→cert,
+  skill→maps_to→CPV
+Tool: sync_person_to_zep(user_id) — called
+  after save_company_profile completes.
+
+PART 2 — Career win/loss HITL onboarding (D50):
+New HITL tool: addBidOutcome
+Agent asks conversationally: "Tell me about a
+bid you remember — win or loss, big or small."
+Extracts: contract name, buyer, value, year,
+  outcome (win/loss), role, contribution.
+Maps CPV automatically from description.
+HITL card confirms details before saving.
+Each outcome becomes a node in Zep:
+  Win node (solid) or Loss node (hollow)
+  Edges: person→won/lost→contract,
+  contract→in→CPV, contract→for→buyer
+Repeat: "Tell me another?" until user stops.
+Even 2 entries create a visible graph.
+
+PART 3 — React Force Graph 3D component:
+New page: /graph/[user_id]
+Component: PersonGraph.tsx
+Data: fetch from Zep via API route
+  /api/graph/[user_id] → returns nodes + edges
+Node types with distinct colours:
+  Person (blue, large, centre)
+  Skill (purple, medium)
+  Certification (gold, medium)
+  Win (green, solid, sized by value)
+  Loss (red, hollow, sized by value)
+  CPV (grey, small)
+  Buyer (teal, small)
+Edge types with distinct styles:
+  has (thin, grey)
+  holds (thin, gold)
+  won (thick, green)
+  lost (thick, red, dashed)
+  maps_to (thin, grey, dashed)
+Interactive: click node for details panel,
+  hover for label, zoom/rotate/pan.
+Render in the left panel (same position as
+  Tako charts — reuse two-panel layout).
+
+PART 4 — Graph in chat flow:
+When user completes onboarding or adds a bid
+  outcome, show their graph automatically.
+Agent: "Here's your skills graph — it shows
+  how your capabilities connect."
+Graph renders in the left panel.
+Tool: show_person_graph(user_id) — triggers
+  the left panel to load /graph/[user_id].
+
+PART 5 — Two-layer skills display (D57):
+Each skill node has two layers:
+  Layer 1 (outer ring): formal taxonomy
+    (DOS category, CPV code, certification)
+  Layer 2 (inner glow): real-world expertise
+    (free text parsed into keywords)
+Node tooltip shows both layers on hover.
+Layer 2 nodes connect to Layer 1 parents
+  via "specialises" edges.
+
+GATE TESTS FOR PHASE 6b:
+1. Complete onboarding → graph appears with
+   skills, certs, sectors as nodes ✅
+2. Add a win → green node appears in graph ✅
+3. Add a loss → red hollow node appears ✅
+4. Click a node → details panel shows info ✅
+5. Two-layer display: hover shows formal +
+   real-world labels ✅
+6. Graph persists across sessions (Zep) ✅
+
+DO NOT build team graph in Phase 6b.
+DO NOT build bid intelligence overlay in 6b.
+DO NOT build competitor graph in 6b.
+Those are Phase 6c, 6d, and Phase 7.
+
+REPORT after each PART. Do not proceed to
+next PART without confirming previous working.
+
+WHEN PHASE 6b IS COMPLETE:
+Update HANDOFF.md NEXT ACTION for Phase 6c.
+Phase 6c is the team graph:
+- Merge individual graphs when people join
+  a company or bid team
+- Coverage, gaps, strength visualised
+- Suggested connections to fill gaps
+Do not start 6c until 6b gate tests pass.
 
 ## LAST COMMITS (this session)
 
