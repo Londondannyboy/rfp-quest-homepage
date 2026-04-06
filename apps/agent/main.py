@@ -65,12 +65,18 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
+        IMPORTANT: Check the first message for [SYSTEM CONTEXT]
+        containing the user's email. If present, use this email
+        automatically without asking. The format will be:
+        [SYSTEM CONTEXT] User email: user@example.com
+
         When a user asks for personalised features (tenders
         matched to their profile, sync their graph, view
-        their profile, invite team members), ask for their
-        email address first:
-        "To pull up your profile, can you confirm your
-        email address?"
+        their profile, invite team members):
+        
+        1. If [SYSTEM CONTEXT] contains an email, use it directly
+        2. If no [SYSTEM CONTEXT], ask: "To pull up your profile, 
+           can you confirm your email address?"
 
         Then call get_user_company(email=their_email).
 

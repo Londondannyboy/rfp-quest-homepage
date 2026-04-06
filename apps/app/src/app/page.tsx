@@ -11,6 +11,7 @@ import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
 import Link from "next/link";
+import { authClient } from "@/lib/auth";
 
 
 export default function HomePage() {
@@ -18,8 +19,29 @@ export default function HomePage() {
   useExampleSuggestions();
 
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
+  const [contextSent, setContextSent] = useState(false);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
+
+  // Inject user email from Neon Auth session on mount
+  useEffect(() => {
+    if (!contextSent) {
+      authClient.getSession().then((data) => {
+        if (data?.user?.email) {
+          // Inject email as system context message
+          const contextMessage = `[SYSTEM CONTEXT] User email: ${data.user.email}`;
+          agent.addMessage({ 
+            id: crypto.randomUUID(), 
+            content: contextMessage, 
+            role: "user" 
+          });
+          setContextSent(true);
+        }
+      }).catch(() => {
+        // User not signed in, no context to inject
+      });
+    }
+  }, [contextSent, agent]);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
   const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);
@@ -53,12 +75,19 @@ export default function HomePage() {
     copilotkit.runAgent({ agent });
   };
 
-  // Hide TAKO_CHART: marker text from chat messages
+  // Hide TAKO_CHART: marker and [SYSTEM CONTEXT] messages from chat
   useEffect(() => {
     const observer = new MutationObserver(() => {
+      // Hide TAKO_CHART markers
       document.querySelectorAll('[data-testid="copilot-assistant-message"] p').forEach((p) => {
         if (p.textContent?.includes("TAKO_CHART:")) {
           (p as HTMLElement).style.display = "none";
+        }
+      });
+      // Hide [SYSTEM CONTEXT] messages completely
+      document.querySelectorAll('[data-testid="copilot-user-message"]').forEach((msg) => {
+        if (msg.textContent?.includes("[SYSTEM CONTEXT]")) {
+          (msg as HTMLElement).style.display = "none";
         }
       });
     });

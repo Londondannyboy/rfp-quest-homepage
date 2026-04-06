@@ -1854,3 +1854,30 @@ Company membership via person_profiles.company_id FK.
 Neon Auth Organizations evaluated for Phase 6c when
 team graph requires multi-user company context.
 REVERSIBLE: Yes.
+
+## D60 — DATE: 2026-04-06
+DECISION: Phase 6b split into Part 1 + Part 2.
+CONTEXT: Zep graph integration has two stages:
+Part 1 — sync_person_to_zep for profile sync
+Part 2 — add_bid_outcome HITL for career history
+OUTCOME: Part 1 deployed and working. Part 2
+implements conversational bid outcome collection
+with HITL confirmation cards for win/loss tracking.
+Green nodes for wins, red hollow nodes for losses.
+REVERSIBLE: No — core product feature.
+
+## D61 — DATE: 2026-04-06
+DECISION: Neon Auth email injected client-side.
+CONTEXT: User email needed by agent but shouldn't
+be asked for every session after OAuth signup.
+The localStorage approach was a hack. The correct
+fix uses authClient.getSession() to get the
+authenticated user's email from Neon Auth.
+OUTCOME: page.tsx injects [SYSTEM CONTEXT] message
+with user email on mount. Agent system prompt reads
+email from [SYSTEM CONTEXT] automatically on first
+message. MutationObserver hides the context message
+from chat UI. User never needs to provide email
+manually after Google OAuth signup.
+REVERSIBLE: Yes — could switch to server-side
+injection or middleware pattern if needed.
