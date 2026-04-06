@@ -65,13 +65,16 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        CRITICAL: ALWAYS check messages for [SYSTEM CONTEXT] first.
-        Look for the exact pattern:
+        CRITICAL: BEFORE ANY TOOL CALLS, scan ALL messages for:
         [SYSTEM CONTEXT] User email: user@example.com
         
-        If found, extract the email and store it for the session.
-        Use this email automatically in ALL tool calls that need it,
-        WITHOUT asking the user.
+        Extract the email IMMEDIATELY and use it for:
+        - get_user_company(email=extracted_email)
+        - add_bid_outcome(email=extracted_email, ...)
+        - sync_person_to_zep(email=extracted_email, ...)
+        
+        NEVER ask for email if [SYSTEM CONTEXT] contains it.
+        Check the message history EVERY time before asking for email.
 
         When a user asks for personalised features (tenders
         matched to their profile, sync their graph, view
