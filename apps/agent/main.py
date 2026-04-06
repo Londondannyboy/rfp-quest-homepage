@@ -65,10 +65,10 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        The frontend injects a [USER_CONTEXT] system message
-        containing user_id, user_name, and user_email.
+        The server injects a [SYSTEM CONTEXT] message
+        containing the authenticated user's details.
         Look for this in the conversation messages.
-        Extract the user_id from: user_id=XXXX
+        Extract the user_id from: authenticated_user_id: XXXX
 
         ON FIRST MESSAGE from an authenticated user:
         1. Extract user_id from [USER_CONTEXT] message

@@ -52,19 +52,51 @@ export const POST = async (req: NextRequest) => {
     return new Response("Too many requests", { status: 429 });
   }
 
-  // Read Neon Auth session server-side to get user_id
-  let userProperties: Record<string, string> = {};
+  // Read Neon Auth session server-side
+  let userId = "";
+  let userName = "";
+  let userEmail = "";
   try {
     const { data: session } = await auth.getSession();
     if (session?.user) {
-      userProperties = {
-        user_id: session.user.id,
-        user_name: session.user.name || "",
-        user_email: session.user.email || "",
-      };
+      userId = session.user.id || "";
+      userName = session.user.name || "";
+      userEmail = session.user.email || "";
     }
   } catch {
     // No session — public demo user
+  }
+
+  // Inject user context into the request body as a system message
+  // at position 0 in the messages array
+  let modifiedReq = req;
+  if (userId) {
+    try {
+      const body = await req.json();
+      const systemMsg = {
+        role: "system",
+        content: `[SYSTEM CONTEXT] authenticated_user_id: ${userId} authenticated_user_name: ${userName} authenticated_user_email: ${userEmail}`,
+        id: "auth-context",
+      };
+
+      if (body.messages && Array.isArray(body.messages)) {
+        // Remove any previous auth-context message
+        body.messages = body.messages.filter(
+          (m: any) => m.id !== "auth-context"
+        );
+        // Insert at position 0
+        body.messages.unshift(systemMsg);
+      }
+
+      // Create a new Request with the modified body
+      modifiedReq = new NextRequest(req.url, {
+        method: req.method,
+        headers: req.headers,
+        body: JSON.stringify(body),
+      });
+    } catch {
+      // If body parsing fails, pass through unmodified
+    }
   }
 
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
@@ -83,8 +115,7 @@ export const POST = async (req: NextRequest) => {
         },
       }),
     }),
-    properties: userProperties,
   });
 
-  return handleRequest(req);
+  return handleRequest(modifiedReq);
 };
