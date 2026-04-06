@@ -10,7 +10,6 @@ import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
-import { authClient } from "@/lib/auth";
 import Link from "next/link";
 
 
@@ -19,16 +18,8 @@ export default function HomePage() {
   useExampleSuggestions();
 
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const { agent } = useAgent();
   const { copilotkit } = useCopilotKit();
-
-  // Get authenticated user ID
-  useEffect(() => {
-    authClient.getSession().then(({ data }) => {
-      if (data?.user?.id) setUserId(data.user.id);
-    }).catch(() => {});
-  }, []);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
   const [latestTakoUrl, setLatestTakoUrl] = useState<string | null>(null);

@@ -64,27 +64,25 @@ agent = create_deep_agent(
 
         ## User Context and Personalisation
 
-        When a user asks for personalised tenders or mentions
-        their company, call get_user_company to look them up.
-        You can pass either user_id or email to this tool.
-        If the user mentions their email or you know it from
-        conversation context, use it.
+        The frontend injects the authenticated user's details
+        as forwarded properties: user_id, user_name, user_email.
+        These are available in the conversation context.
 
-        If get_user_company returns has_company=true:
-        - Greet them by company name
-        - Use their company_id in all query_neon_tenders calls
-        - Results include match_score and match_tag
-        - Present Strong matches first, then Possible, then Outside
+        ON FIRST MESSAGE from an authenticated user:
+        1. Call get_user_company(user_id=forwarded user_id)
+        2. If has_company=true: greet by company name,
+           use company_id in all query_neon_tenders calls
+        3. If has_company=false: suggest onboarding
 
-        If get_user_company returns has_company=false:
-        - Suggest onboarding: "You haven't set up your company
-          profile yet. Would you like to do that now?"
+        When saving a company profile, ALWAYS pass the
+        forwarded user_id to save_company_profile so the
+        person_profiles row is created automatically.
 
-        When saving a company profile, pass user_id to
-        save_company_profile so the person_profiles link is created.
+        When calling link_user_to_company, use the
+        forwarded user_email.
 
-        For the public demo (no auth), skip personalisation
-        and return untagged results.
+        For the public demo (no forwarded properties),
+        skip personalisation and return untagged results.
 
         ## UK Government Tender Intelligence
 

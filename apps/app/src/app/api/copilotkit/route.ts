@@ -5,12 +5,11 @@ import {
 } from "@copilotkit/runtime";
 import { LangGraphHttpAgent } from "@copilotkit/runtime/langgraph";
 import { NextRequest } from "next/server";
+import { auth } from "@/lib/auth/server";
 
 export const maxDuration = 60;
 
 // Simple in-memory sliding-window rate limiter (per IP)
-// Enable via RATE_LIMIT_ENABLED=true — off by default.
-// For high-traffic deployments, consider Redis-backed rate limiting instead.
 const RATE_LIMIT_ENABLED = process.env.RATE_LIMIT_ENABLED === "true";
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000;
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX) || 40;
@@ -25,7 +24,6 @@ function isRateLimited(ip: string): boolean {
   return timestamps.length > RATE_LIMIT_MAX;
 }
 
-// Prune stale entries every 5 min to prevent unbounded memory growth
 if (RATE_LIMIT_ENABLED) {
   setInterval(() => {
     const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
@@ -37,7 +35,6 @@ if (RATE_LIMIT_ENABLED) {
   }, 300_000);
 }
 
-// Normalize Render's fromService hostport (bare host:port) into a full URL
 const raw = process.env.LANGGRAPH_DEPLOYMENT_URL;
 const deploymentUrl = !raw
   ? "http://localhost:8123"
@@ -45,23 +42,36 @@ const deploymentUrl = !raw
     ? raw
     : `http://${raw}`;
 
-// 1. Define the agent connection to LangGraph
 const defaultAgent = new LangGraphHttpAgent({
   url: deploymentUrl,
 });
 
-// 3. Define the route and CopilotRuntime for the agent
 export const POST = async (req: NextRequest) => {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (isRateLimited(ip)) {
     return new Response("Too many requests", { status: 429 });
   }
 
+  // Read Neon Auth session server-side to get user_id
+  let userProperties: Record<string, string> = {};
+  try {
+    const { data: session } = await auth.getSession();
+    if (session?.user) {
+      userProperties = {
+        user_id: session.user.id,
+        user_name: session.user.name || "",
+        user_email: session.user.email || "",
+      };
+    }
+  } catch {
+    // No session — public demo user
+  }
+
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
     endpoint: "/api/copilotkit",
     serviceAdapter: new ExperimentalEmptyAdapter(),
     runtime: new CopilotRuntime({
-      agents: { default: defaultAgent, },
+      agents: { default: defaultAgent },
       a2ui: { injectA2UITool: true },
       ...(process.env.MCP_SERVER_URL && {
         mcpApps: {
@@ -73,6 +83,7 @@ export const POST = async (req: NextRequest) => {
         },
       }),
     }),
+    properties: userProperties,
   });
 
   return handleRequest(req);
