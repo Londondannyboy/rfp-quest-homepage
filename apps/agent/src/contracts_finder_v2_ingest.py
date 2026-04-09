@@ -266,8 +266,8 @@ def upsert_batch(conn, parsed_notices):
     return inserted
 
 
-def fetch_and_insert_window(conn, date_from, date_to, cumulative):
-    """Fetch notices for a window with adaptive narrowing if > 1000 hits."""
+def fetch_and_insert_window(conn_unused, date_from, date_to, cumulative):
+    """Fetch notices for a window with adaptive narrowing. Fresh DB per insert."""
     notices, hit_count = fetch_notices(date_from, date_to)
 
     if hit_count > 1000:
@@ -283,7 +283,9 @@ def fetch_and_insert_window(conn, date_from, date_to, cumulative):
             # Can't narrow further — process what we have
             print(f"  WARNING: {hit_count} hits in 1 day ({date_from.date()}), processing first 1000", flush=True)
             parsed = [parse_notice(n) for n in notices]
+            conn = get_db()
             inserted = upsert_batch(conn, parsed)
+            conn.close()
             cumulative += inserted
             print(f"  {date_from.date()} → {date_to.date()}: {hit_count} hits, +{inserted} new ({cumulative} total)", flush=True)
             return cumulative
@@ -292,7 +294,7 @@ def fetch_and_insert_window(conn, date_from, date_to, cumulative):
         chunk_start = date_from
         while chunk_start < date_to:
             chunk_end = min(chunk_start + timedelta(days=narrow), date_to)
-            cumulative = fetch_and_insert_window(conn, chunk_start, chunk_end, cumulative)
+            cumulative = fetch_and_insert_window(None, chunk_start, chunk_end, cumulative)
             chunk_start = chunk_end
             time.sleep(REQUEST_DELAY)
         return cumulative
@@ -302,7 +304,9 @@ def fetch_and_insert_window(conn, date_from, date_to, cumulative):
         return cumulative
 
     parsed = [parse_notice(n) for n in notices]
+    conn = get_db()
     inserted = upsert_batch(conn, parsed)
+    conn.close()
     cumulative += inserted
     print(f"  {date_from.date()} → {date_to.date()}: {hit_count} hits, +{inserted} new ({cumulative} total)", flush=True)
     return cumulative
