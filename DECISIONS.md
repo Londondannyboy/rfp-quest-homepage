@@ -1971,3 +1971,19 @@ IMPLEMENTATION:
 - Frontend calls LANGGRAPH_DEPLOYMENT_URL/graph/{user_id}
 - Parses Zep edges into React Force Graph 3D format
 REVERSIBLE: Yes — could revert to hardcoded data if needed.
+
+## D67 — DATE: 2026-04-06
+DECISION: Continue using CopilotKit HITL system, do not integrate LangChain's new interrupt primitive.
+CONTEXT: LangChain released new HITL middleware with interrupt primitive (January 2025) offering approve/edit/reject patterns and policy-based configuration. Evaluated integration with current CopilotKit v2 + Deep Agents system.
+RESEARCH FINDINGS:
+- LangChain interrupt primitive: configurable policies, thread-based state persistence, approve/edit/reject decisions
+- CopilotKit compatibility: technically possible but has known interrupt corruption bug
+- Current system: 9 working HITL hooks (onboarding flow + bid decisions) in production
+TRIED AND REJECTED: Integration would require major refactoring with no clear UX improvement
+OUTCOME: Keep existing CopilotKit useHumanInTheLoop implementation. Current system meets all requirements, is stable in production, and provides excellent UX for the 7-card onboarding flow and bid analysis.
+REASONING:
+- Known bug: "interrupt workflow has additional execution turn that corrupts graph state"
+- Current HITL system works perfectly for project needs
+- No compelling benefit to justify refactoring risk
+- CopilotKit v2 is mandated per project requirements
+REVERSIBLE: Yes — could evaluate integration again if CopilotKit bug is fixed.
