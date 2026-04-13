@@ -70,11 +70,28 @@ All three parts verified in production:
    - Agent tells user to visit URL manually
    - Should auto-navigate or embed after sync
 
-## NEXT ACTION — Phase 6c
+3. **README out of date** — says 160K tenders, actual is 706K with 479K awards
 
-**Team graph**: When a second user joins a company via invite flow, their graph nodes merge with the company graph. Coverage gaps and shared skills visible.
+4. **No canonical supplier/buyer tables** — raw names inconsistent (183K distinct winners, 48 McKinsey variants)
 
-Read DECISIONS.md D49, D50, D57 before starting.
+5. **No sector tags** — agent matching relies on keyword overlap only
+
+6. **CPV codes unreliable** — many missing, miscoded, or parent-level only
+
+## NEXT ACTION — Phase 6c: Data Enrichment Pipeline
+
+Read DECISIONS.md D68, D69 before starting.
+Mandatory first step: run diagnosis queries against Neon to confirm
+current state of tenders table before writing any migration code.
+
+Diagnosis queries to run first:
+```sql
+SELECT COUNT(*) FROM tenders;
+SELECT COUNT(*) FROM tenders WHERE winner IS NOT NULL AND winner != '';
+SELECT COUNT(DISTINCT buyer_name) FROM tenders;
+SELECT COUNT(DISTINCT winner) FROM tenders WHERE winner IS NOT NULL;
+SELECT source, COUNT(*) FROM tenders GROUP BY source;
+```
 
 ## Key Files Modified
 

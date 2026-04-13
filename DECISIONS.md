@@ -2047,3 +2047,43 @@ REASONING:
 - No compelling benefit to justify refactoring risk
 - CopilotKit v2 is mandated per project requirements
 REVERSIBLE: Yes — could evaluate integration again if CopilotKit bug is fixed.
+
+---
+
+## D68 — DATE: 2026-04-13
+DECISION: Data enrichment is Phase 6c, not Phase 7.
+CONTEXT: 706K tenders validated against Tussell 2025 report. Raw data confirmed
+accurate but unstructured. Matching quality cannot improve without enriched
+supplier/buyer canonical tables and sector tagging.
+OUTCOME: Enrichment pipeline becomes Phase 6c. Team graph moves to Phase 6d.
+Bid intelligence overlay moves to Phase 6e.
+REVERSIBLE: Yes — sequencing decision only.
+
+---
+
+## D69 — DATE: 2026-04-13
+DECISION: Raw tenders table is immutable. Enrichment lives in separate tables.
+CONTEXT: 706K records took weeks to ingest across multiple loader runs with
+connection retry fixes (D34, D39). Any mutation risk is unacceptable.
+Lookup tables (supplier_lookup, buyer_lookup) map raw names to canonical forms.
+Agent JOINs at query time. Rollback = delete lookup row, raw data intact.
+OUTCOME: Six new tables: supplier_lookup, buyer_lookup, tender_categories,
+buyer_intelligence, tender_embeddings, tender_scores.
+REVERSIBLE: Yes — delete lookup tables, raw data untouched.
+
+---
+
+## D70 — DATE: 2026-04-13
+DECISION: Three-tier business model — SaaS + managed service + agency.
+CONTEXT: 706K tender records cross-referenced against Tussell 2025 Strategic
+Suppliers report. Data confirms Tussell findings and extends with 10 years of
+buyer-level, regional, and competitive intelligence. CRM players (Salesforce)
+don't have procurement data. Data players (Tussell, BiP) don't have AI agent
+or managed service layer. RFP.quest sits in the gap.
+UNIT ECONOMICS: Average UK public contract £2M. Service adds 5% win probability
+= £100K expected value. Charging £50K for agency tier = 2x ROI for client.
+TIERS:
+  1. Self-serve SaaS (£300/month) — platform, search, AI analysis
+  2. Managed service (£5-10K/month) — bid manager operates platform for you
+  3. Agency engagement (£25-50K per bid) — full pitch management, bid writing
+REVERSIBLE: Yes — can operate as pure SaaS if agency model doesn't scale.

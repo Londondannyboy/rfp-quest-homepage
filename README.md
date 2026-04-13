@@ -2,7 +2,7 @@ Based on OpenGenerativeUI by CopilotKit (MIT License)
 
 # RFP.quest Beta - UK Government Procurement Intelligence
 
-RFP.quest Beta is an AI-powered UK government procurement intelligence platform. Ask natural language questions about 160K+ tenders from Contracts Finder and Find a Tender, get instant analytics charts, and use AI bid/no-bid analysis with human-in-the-loop confirmation. Built on CopilotKit v2, LangGraph, and Claude Opus 4.6.
+RFP.quest Beta is an AI-powered UK government procurement intelligence platform. Ask natural language questions about 705K+ tenders with 479K award records including winner data from Contracts Finder and Find a Tender (2000–2026), get instant analytics charts, and use AI bid/no-bid analysis with human-in-the-loop confirmation. Built on CopilotKit v2, LangGraph, and Claude Opus 4.6.
 
 ## Live Demo
 
@@ -13,7 +13,8 @@ RFP.quest Beta is an AI-powered UK government procurement intelligence platform.
 
 ## Features
 
-- **UK Government Tender Intelligence**: 160K+ tenders from Contracts Finder and Find a Tender, stored in Neon for instant querying
+- **UK Government Tender Intelligence**: 705K+ tenders with 479K award records from Contracts Finder and Find a Tender (2000–2026), stored in Neon for instant querying
+- **Competitive Intelligence**: Award records cross-referenced by winner, buyer, region, value, and SME status. Validated against Tussell 2025 Strategic Suppliers report
 - **Generative UI**: AI-powered dynamic visualizations using CopilotKit v2 widgetRenderer
 - **Interactive Analytics**: Tako-powered charts with pre-computed category insights (NHS, Construction, IT, Education, Defence, Facilities, Transport, Social Care, Police)
 - **Bid Decision Analysis**: Human-in-the-loop tender evaluation with match scoring
@@ -254,7 +255,9 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 
 **Phase 6b (complete)**: 3D skills graph visualization — React Force Graph 3D at `/graph/[user_id]` shows individual professional networks. Interactive 3D force-directed graph with real-time Zep data (company, sector, won contracts). Dark theme, click to focus, drag to rotate. Built on Zep graph DB and React Force Graph 3D.
 
-**Phase 6c (next)**: Team graph merging — when multiple users join same company via invite flow, their graph nodes combine. Coverage gaps and shared skills automatically surface.
+**Phase 6c (next)**: Data enrichment pipeline — supplier_lookup and buyer_lookup canonical tables, CPV reclassification, sector tagging, buyer intelligence aggregates, pgvector embeddings. Transforms 705K raw records into queryable competitive intelligence.
+
+**Phase 6d**: Team graph merging — when multiple users join same company via invite flow, their graph nodes combine. Coverage gaps and shared skills automatically surface.
 
 ## License
 

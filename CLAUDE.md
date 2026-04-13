@@ -38,7 +38,10 @@ Session 2026-04-02:
 - CF v2 raw_ocds set to None — all fields parsed (D37)
 - Neon Pro plan activated, all 47 projects at 0.25 CU
   with scale-to-zero (D38)
-- Data quality audit: gaps identified, backfill planned
+- Data volume: 706K+ tenders, 479K award records with winner data (2000–2026)
+- Validated against Tussell 2025 Strategic Suppliers report — data confirmed accurate
+- Winner backfill from FAT raw_ocds: 110K awards extracted
+- Phase 6c: Data enrichment pipeline — see DECISIONS.md D67, D68
 
 Session 2026-04-03 (morning):
 - Phase 5c Priority 1.7 COMPLETE — pre-computed Tako insights
@@ -463,13 +466,22 @@ Phase 6b — Individual skills + career graph:
   Zep graph DB for entity relationships.
   Haiku background matching pipeline (D58).
 
-Phase 6c — Team graph:
+Phase 6c — Data Enrichment Pipeline (NEXT):
+  supplier_lookup: canonical company names → Companies House ID
+  buyer_lookup: canonical buyer entities → parent org, region, type
+  CPV reclassification: predict correct codes from title + description
+  Sector tagging: human-readable categories for agent querying
+  Buyer intelligence: aggregate stats from 479K awards per buyer
+  pgvector embeddings: title + description embedded for similarity search
+  All implemented as background Railway jobs — raw tenders table NEVER mutated.
+
+Phase 6d — Team graph:
   Graphs merge when people join a company or bid team.
   Coverage, gaps, and strength visualised in real time.
   Suggested connections: people who fill team gaps.
   pgvector similarity for connection recommendations.
 
-Phase 6d — Bid intelligence overlay:
+Phase 6e — Bid intelligence overlay:
   Tender requirements overlaid onto team graph.
   Competitor intelligence from awarded contracts (D51).
   Decision maker discovery via Tavily + Trigify (D47).
