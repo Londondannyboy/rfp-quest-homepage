@@ -644,6 +644,66 @@ Status: DEFER to Phase 7. Document the pattern now.
 
 ---
 
+## BUSINESS MODEL — DATE: 2026-04-12
+DECISION: Three-tier model — SaaS + managed service + agency.
+
+CONTEXT: 705K tender records, 479K awards with winner data,
+10 years of history. Cross-referenced against Tussell's 2025
+Strategic Suppliers report — our data confirms their findings
+and extends them with buyer-level, regional, and competitive
+intelligence that Tussell charges thousands/year for.
+
+THE MOAT: Nobody else has this dataset queryable in real-time
+with an AI agent on top. CRM players (Salesforce, HubSpot)
+don't have procurement data. Data players (Tussell, BiP) don't
+have the AI agent or managed service layer. RFP.quest sits in
+the gap between data and execution.
+
+THREE TIERS:
+1. Self-serve SaaS (£300/month)
+   The platform: search, AI analysis, tender cards, Tako charts.
+   What we've built. Phase 5-6 product.
+
+2. Managed service (£5-10K/month)
+   A bid manager operates the platform for you.
+   Pipeline management, bid/no-bid decisions powered by 705K
+   records. "We know NHS Yorkshire gave 60% of cleaning
+   contracts to local firms — here's how we position you."
+   Requires: company onboarding (Phase 6), buyer taxonomy.
+
+3. Agency engagement (£25-50K per bid)
+   Full pitch management. Tender response writing, competitive
+   analysis from the data, presentation coaching.
+   Network of bid managers, GTM managers, campaign managers.
+   Not employees — a marketplace/network model.
+
+UNIT ECONOMICS:
+- Average UK public contract: £2M
+- If service adds 5% to win probability: £100K expected value
+- Charging £50K for agency tier: 2x ROI for client
+- Provable with data: "companies matching buyer's historical
+  supplier profile win at 52% vs 46% average"
+
+COMPETITIVE POSITIONING:
+- Not a CRM (don't replace HubSpot/Salesforce)
+- Not a data provider (don't compete with Tussell on reports)
+- An "agency in disguise" with proprietary intelligence
+- The bid manager network is the execution layer
+- The data is the decision layer
+- Together = defensible competitive advantage
+
+NETWORK MODEL:
+- Connect to Quest: "I want you to run this bid"
+- Quest assigns a bid manager from the network
+- Bid manager uses the platform + data to run the pursuit
+- Quest takes margin on the engagement
+- Bid managers get deal flow they can't generate alone
+
+REVERSIBLE: Yes — can operate as pure SaaS if agency
+model doesn't scale. The data product stands alone.
+
+---
+
 ## D37 — DATE: 2026-04-02
 DECISION REVERSED — retain raw_ocds for CF v2.
 CONTEXT: Pro plan storage (10GB) makes cost negligible.
