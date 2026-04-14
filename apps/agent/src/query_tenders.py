@@ -1,6 +1,7 @@
 """
-Query tenders from Neon database — full-text search + personalised matching.
-pgvector similarity search will be added once embeddings are populated.
+Query tenders from Neon database — full-text search + enrichment JOINs + personalised matching.
+Joins supplier_lookup, buyer_lookup, tender_categories, buyer_intelligence
+for enriched results. All JOINs are LEFT — never excludes tenders lacking enrichment.
 """
 import os
 import json
@@ -8,6 +9,37 @@ import psycopg2
 import psycopg2.extras
 from langchain.tools import tool
 from typing import List, Dict, Any
+
+
+# Sector/vertical keywords for query filtering
+SECTOR_KEYWORDS = {
+    "Digital & Technology": ["digital", "technology", "it ", "software", "cyber", "cybersecurity"],
+    "Healthcare": ["health", "nhs", "medical", "clinical", "hospital"],
+    "Construction": ["construction", "building", "civil engineering"],
+    "Facilities Management": ["facilities", "cleaning", "maintenance", "fm "],
+    "Professional Services": ["consulting", "consultancy", "advisory", "audit", "legal"],
+    "Transport": ["transport", "rail", "bus ", "fleet", "vehicle"],
+    "Defence": ["defence", "military", "mod "],
+    "Education": ["education", "school", "university", "training"],
+    "Social Care": ["social care", "care home", "fostering"],
+    "Energy & Environment": ["energy", "renewable", "environmental"],
+    "Housing": ["housing", "social housing"],
+    "Financial Services": ["banking", "insurance", "pension", "financial"],
+}
+
+VERTICAL_KEYWORDS = {
+    "IT Services & Consulting": ["it services", "it consulting", "helpdesk"],
+    "Software & Licensing": ["software", "licensing", "saas"],
+    "Architecture, Engineering & Planning": ["architecture", "engineering", "planning"],
+    "Construction & Civil Engineering": ["construction", "civil engineering"],
+    "Health & Social Care Services": ["health service", "social care", "nhs"],
+    "Medical Equipment & Supplies": ["medical equipment", "medical device"],
+    "Business & Professional Services": ["consulting", "advisory", "management"],
+    "IT Hardware & Equipment": ["hardware", "laptop", "desktop", "server"],
+    "Telecoms Equipment & Services": ["telecoms", "broadband", "network"],
+    "Environmental & Waste Services": ["waste", "recycling", "environmental"],
+    "Security & Defence Equipment": ["security", "defence equipment", "surveillance"],
+}
 
 
 def _get_db_connection():
@@ -41,8 +73,6 @@ def _get_company_profile(conn, company_id: str) -> dict | None:
 def _score_match(tender: dict, profile: dict) -> tuple[int, str]:
     """Score a tender against a company profile. Returns (score 0-100, tag)."""
     score = 0
-
-    # Sector match (title contains sector keywords)
     sectors = profile.get("sectors") or []
     if isinstance(sectors, str):
         try:
@@ -56,56 +86,78 @@ def _score_match(tender: dict, profile: dict) -> tuple[int, str]:
         if s and (s in title_lower or s in buyer_lower):
             score += 40
             break
-
-    # Value range match
     value = float(tender.get("value_amount") or 0)
     min_val = profile.get("min_contract_value") or 0
     max_val = profile.get("max_contract_value") or 999999999
     if value > 0 and min_val <= value <= max_val:
         score += 25
     elif value > 0:
-        score += 5  # has a value but outside range
-
-    # Region match (buyer name contains region keywords)
+        score += 5
     region = (profile.get("region") or "").lower()
     if region and region in buyer_lower:
         score += 20
-
-    # SME suitability (lower value tenders more likely SME suitable)
     if profile.get("is_sme") and value > 0 and value < 5000000:
         score += 15
-
-    # Cap at 100
     score = min(score, 100)
-
     if score >= 60:
         tag = "Strong match"
     elif score >= 30:
         tag = "Possible match"
     else:
         tag = "Outside profile"
-
     return score, tag
+
+
+def _detect_sector_filter(query: str) -> str | None:
+    """Detect if query mentions a sector — return sector name or None."""
+    q = query.lower()
+    for sector, keywords in SECTOR_KEYWORDS.items():
+        if any(kw in q for kw in keywords):
+            return sector
+    return None
+
+
+def _detect_vertical_filter(query: str) -> str | None:
+    """Detect if query mentions a vertical — return vertical name or None."""
+    q = query.lower()
+    for vertical, keywords in VERTICAL_KEYWORDS.items():
+        if any(kw in q for kw in keywords):
+            return vertical
+    return None
+
+
+# Base SELECT with enrichment LEFT JOINs
+ENRICHED_SELECT = """
+    SELECT t.ocid, t.title, t.buyer_name, t.value_amount, t.tender_end_date,
+           t.status, t.stage, t.winner, t.is_sme_suitable,
+           tc.primary_sector, tc.vertical, tc.niche,
+           bl.canonical_name as canonical_buyer, bl.buyer_type, bl.parent_org,
+           bi.sme_award_rate, bi.total_contracts as buyer_total_contracts,
+           bi.top_suppliers as buyer_top_suppliers,
+           sl.canonical_name as canonical_supplier, sl.group_name as supplier_group
+    FROM tenders t
+    LEFT JOIN tender_categories tc ON t.ocid = tc.tender_ocid
+    LEFT JOIN buyer_lookup bl ON t.buyer_name = bl.raw_name
+    LEFT JOIN buyer_intelligence bi ON bl.canonical_name = bi.canonical_buyer_name
+    LEFT JOIN supplier_lookup sl ON t.winner = sl.raw_name
+"""
 
 
 @tool
 def query_neon_tenders(query: str, company_id: str = "") -> List[Dict[str, Any]]:
     """
-    Search for tenders in the Neon database by title, buyer, or description.
-    Use this as the primary lookup when a user asks about a specific tender.
-    Returns matching tenders from the Neon database.
+    Search for tenders in the Neon database by title, buyer, sector, or vertical.
+    Returns enriched results with sector classification, buyer intelligence,
+    and supplier grouping from the Phase 6c enrichment pipeline.
 
-    If company_id is provided, tenders are scored and tagged against the
-    company profile: Strong match, Possible match, or Outside profile.
+    If company_id is provided, tenders are scored against the company profile.
 
     Args:
-        query: Search string — tender title, buyer name, or keywords
+        query: Search string — tender title, buyer name, sector, or keywords
         company_id: Optional company profile ID for personalised matching
 
     Returns:
-        List of matching tender dictionaries with title, buyer, value, deadline, status, ocid.
-        If company_id provided, includes match_score and match_tag fields.
-        Returns empty list if database is unavailable or no matches found.
+        List of enriched tender dictionaries. Returns empty list if unavailable.
     """
     conn = _get_db_connection()
     if not conn:
@@ -114,57 +166,83 @@ def query_neon_tenders(query: str, company_id: str = "") -> List[Dict[str, Any]]
     try:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        # Load company profile if provided
         profile = None
         if company_id:
             profile = _get_company_profile(conn, company_id)
 
-        # Step 1: Full-text search on title
-        cur.execute(
-            """
-            SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage,
-                   ts_rank(to_tsvector('english', title), query) AS rank
-            FROM tenders, plainto_tsquery('english', %s) query
-            WHERE to_tsvector('english', title) @@ query
-            ORDER BY rank DESC,
-                     (value_amount IS NOT NULL AND value_amount > 0) DESC,
-                     published_date DESC NULLS LAST
-            LIMIT 20
-            """,
-            (query,)
-        )
-        results = cur.fetchall()
+        results = []
 
-        # Step 2: If no full-text matches, try ILIKE on individual words
+        # Check for sector/vertical filter
+        sector_filter = _detect_sector_filter(query)
+        vertical_filter = _detect_vertical_filter(query)
+
+        if sector_filter:
+            # Sector-filtered search
+            cur.execute(
+                ENRICHED_SELECT + """
+                WHERE tc.primary_sector = %s
+                ORDER BY (t.value_amount IS NOT NULL AND t.value_amount > 0) DESC,
+                         t.published_date DESC NULLS LAST
+                LIMIT 20
+                """,
+                (sector_filter,)
+            )
+            results = cur.fetchall()
+
+        elif vertical_filter:
+            # Vertical-filtered search
+            cur.execute(
+                ENRICHED_SELECT + """
+                WHERE tc.vertical = %s
+                ORDER BY (t.value_amount IS NOT NULL AND t.value_amount > 0) DESC,
+                         t.published_date DESC NULLS LAST
+                LIMIT 20
+                """,
+                (vertical_filter,)
+            )
+            results = cur.fetchall()
+
+        if not results:
+            # Full-text search with enrichment
+            cur.execute(
+                ENRICHED_SELECT + """
+                , plainto_tsquery('english', %s) query
+                WHERE to_tsvector('english', t.title) @@ query
+                ORDER BY ts_rank(to_tsvector('english', t.title), query) DESC,
+                         (t.value_amount IS NOT NULL AND t.value_amount > 0) DESC,
+                         t.published_date DESC NULLS LAST
+                LIMIT 20
+                """,
+                (query,)
+            )
+            results = cur.fetchall()
+
+        # Fallback: ILIKE on individual words
         if not results:
             words = [w for w in query.split() if len(w) > 2]
             if words:
                 ilike_conditions = " OR ".join(
-                    ["title ILIKE %s OR buyer_name ILIKE %s"] * len(words)
+                    ["t.title ILIKE %s OR t.buyer_name ILIKE %s"] * len(words)
                 )
                 ilike_params = []
                 for w in words:
                     ilike_params.extend([f"%{w}%", f"%{w}%"])
                 cur.execute(
-                    f"""
-                    SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
-                    FROM tenders
+                    ENRICHED_SELECT + f"""
                     WHERE {ilike_conditions}
-                    ORDER BY (value_amount IS NOT NULL AND value_amount > 0) DESC,
-                             published_date DESC NULLS LAST
+                    ORDER BY (t.value_amount IS NOT NULL AND t.value_amount > 0) DESC,
+                             t.published_date DESC NULLS LAST
                     LIMIT 20
                     """,
                     ilike_params,
                 )
                 results = cur.fetchall()
 
-        # Step 3: If still no matches, return most recent tenders (browse mode)
+        # Final fallback: browse mode
         if not results:
             cur.execute(
-                """
-                SELECT ocid, title, buyer_name, value_amount, tender_end_date, status, stage
-                FROM tenders
-                ORDER BY published_date DESC NULLS LAST
+                ENRICHED_SELECT + """
+                ORDER BY t.published_date DESC NULLS LAST
                 LIMIT 20
                 """
             )
@@ -173,7 +251,7 @@ def query_neon_tenders(query: str, company_id: str = "") -> List[Dict[str, Any]]
         cur.close()
         conn.close()
 
-        # Convert to plain dicts with serializable values
+        # Convert to enriched dicts
         tenders = []
         for row in results:
             tender = {
@@ -184,9 +262,19 @@ def query_neon_tenders(query: str, company_id: str = "") -> List[Dict[str, Any]]
                 "deadline": row["tender_end_date"].isoformat() if row["tender_end_date"] else "",
                 "status": row["status"] or "Open",
                 "stage": row["stage"] or "",
+                # Enrichment fields
+                "sector": row.get("primary_sector") or "",
+                "vertical": row.get("vertical") or "",
+                "niche": row.get("niche") or "",
+                "canonical_buyer": row.get("canonical_buyer") or "",
+                "buyer_type": row.get("buyer_type") or "",
+                "parent_org": row.get("parent_org") or "",
+                "sme_award_rate": round(float(row["sme_award_rate"]), 2) if row.get("sme_award_rate") else None,
+                "winner": row.get("winner") or "",
+                "supplier_group": row.get("supplier_group") or "",
+                "is_sme_suitable": row.get("is_sme_suitable") or False,
             }
 
-            # Add match scoring if company profile available
             if profile:
                 score, tag = _score_match(row, profile)
                 tender["match_score"] = score
@@ -194,7 +282,6 @@ def query_neon_tenders(query: str, company_id: str = "") -> List[Dict[str, Any]]
 
             tenders.append(tender)
 
-        # Sort by match score if personalised
         if profile:
             tenders.sort(key=lambda t: t.get("match_score", 0), reverse=True)
 
