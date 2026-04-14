@@ -18,7 +18,7 @@ pattern.
 
 ## PROJECT STATUS
 
-ACTIVE — Phase 6b COMPLETE, Phase 6c NEXT
+ACTIVE — Phase 6c COMPLETE, Phase 6d NEXT (SEO pages in progress)
 
 Session 2026-04-01:
 - Rich tenders schema (37+ columns, 9 indexes, D31)
@@ -182,9 +182,10 @@ DO NOT install packages that are not part of the
 current explicitly planned task. If a package seems 
 needed, stop and report before installing.
 
-DO NOT create SEO slug pages, Neon DB connections, or 
-react-markdown integrations in this repo — those belong 
-to a different project and a different phase.
+DO NOT create SEO slug pages without reading seo-pages-spec.md first.
+Run the mandatory diagnosis queries before writing any code.
+Build one step at a time — sector pages first, then suppliers, then buyers.
+See DECISIONS.md D71.
 
 DO NOT deploy to Vercel without first confirming that 
 LANGGRAPH_DEPLOYMENT_URL is set to the correct Railway 
