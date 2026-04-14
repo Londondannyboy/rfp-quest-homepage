@@ -31,30 +31,43 @@ SECTOR_RULES = {
         "telecoms", "telecommunications", "broadband", "internet",
         "saas", "platform", "database", "server", "laptop",
         "desktop", "printer", "microsoft", "oracle", "sap ",
+        "portal", "licensing", "erp", "crm", "ecommerce",
+        "integration", "hosting", "helpdesk", "service desk",
+        "cisco",
     ],
     "Healthcare": [
         "nhs", "hospital", "clinical", "health", "medical",
         "pharmaceutical", "pharmacy", "dental", "ambulance",
         "pathology", "radiology", "surgical", "patient",
         "mental health", "primary care", "gp ", "nursing",
+        "pump", "insulin", "prosthetic", "diagnostic",
+        "wound care", "clinical waste", "medical device",
+        "therapy", "physiotherapy",
     ],
     "Construction": [
         "construction", "building", "demolition", "civil engineering",
         "highways", "road", "bridge", "roofing", "scaffolding",
         "refurbishment", "renovation", "modular", "groundwork",
         "structural", "piling", "cladding",
+        "landscape", "drainage", "kitchen", "bathroom",
+        "refurb", "retrofit", "dilapidation", "civils",
+        "earthwork", "paving", "fencing",
     ],
     "Facilities Management": [
         "facilities", "cleaning", "maintenance", "fm ",
         "catering", "security guard", "waste management",
         "grounds maintenance", "pest control", "window cleaning",
         "janitorial", "portering",
+        "grounds", "waste", "recycling", "parking",
+        "reception", "porterage", "window clean",
     ],
     "Professional Services": [
         "consultancy", "advisory", "audit", "legal",
         "accountancy", "actuarial", "management consulting",
         "strategy", "programme management", "project management",
         "assurance", "due diligence",
+        "research", "evaluation", "assessment", "feasibility",
+        "appraisal", "investigation", "review", "benchmarking",
     ],
     "Transport": [
         "transport", "rail", "bus ", "fleet", "vehicle",
@@ -76,6 +89,8 @@ SECTOR_RULES = {
         "looked after", "children's services", "fostering",
         "adoption", "supported living", "respite",
         "safeguarding", "vulnerable",
+        "supporting families", "learning disability",
+        "substance misuse", "homelessness",
     ],
     "Energy & Environment": [
         "energy", "renewable", "solar", "wind farm",
@@ -138,10 +153,10 @@ def main():
             SELECT t.ocid, t.title, t.description
             FROM tenders t
             LEFT JOIN tender_categories tc ON t.ocid = tc.tender_ocid
-            WHERE tc.tender_ocid IS NULL
+            WHERE tc.tender_ocid IS NULL OR tc.primary_sector = 'Other'
             ORDER BY t.ocid
-            LIMIT %s
-        """, (BATCH_SIZE,))
+            LIMIT %s OFFSET %s
+        """, (BATCH_SIZE, offset))
         rows = cur.fetchall()
 
         if not rows:
@@ -165,7 +180,8 @@ def main():
             page_size=1000,
         )
         conn.commit()
-        print(f"  Batch {batch_num}: classified {classified} tenders ({classified*100//total}%)", flush=True)
+        print(f"  Batch {batch_num}: classified {classified} tenders", flush=True)
+        offset += BATCH_SIZE
         time.sleep(SLEEP_BETWEEN_BATCHES)
 
     cur.close()
