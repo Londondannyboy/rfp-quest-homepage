@@ -70,28 +70,28 @@ All three parts verified in production:
    - Agent tells user to visit URL manually
    - Should auto-navigate or embed after sync
 
-3. **README out of date** — says 160K tenders, actual is 706K with 479K awards
+3. **Haiku tags not yet run** — Level 4 taxonomy (micro-niche tags) needs LLM pass (~$18)
+4. **"Other" sector at 22.8%** — needs Haiku tags or keyword refinement to drop below 10%
+5. **tender_scores and tender_embeddings tables empty** — schema exists, populate in future session
 
-4. **No canonical supplier/buyer tables** — raw names inconsistent (183K distinct winners, 48 McKinsey variants)
+## Phase 6c — COMPLETE ✅ (2026-04-14)
 
-5. **No sector tags** — agent matching relies on keyword overlap only
+Six enrichment tables live:
+- supplier_lookup: 1,000 raw → 762 canonical, 117 strategic suppliers, group_name rollup
+- buyer_lookup: 2,000 raw → classified by parent_org, buyer_type, region
+- buyer_intelligence: 1,757 records with total_contracts, sme_award_rate, top_suppliers
+- tender_categories: 707K sector-classified, 664K with CPV vertical, 166K with niche
+- tender_scores: schema ready (pending)
+- tender_embeddings: schema ready (pending)
+- Weekly cron deployed on Railway (Sunday 4am UTC)
+- query_tenders.py updated with enrichment LEFT JOINs
+- Raw tenders table untouched: 707,251 rows
 
-6. **CPV codes unreliable** — many missing, miscoded, or parent-level only
+## NEXT ACTION — Phase 6c follow-up
 
-## NEXT ACTION — Phase 6c: Data Enrichment Pipeline
-
-Read DECISIONS.md D68, D69 before starting.
-Mandatory first step: run diagnosis queries against Neon to confirm
-current state of tenders table before writing any migration code.
-
-Diagnosis queries to run first:
-```sql
-SELECT COUNT(*) FROM tenders;
-SELECT COUNT(*) FROM tenders WHERE winner IS NOT NULL AND winner != '';
-SELECT COUNT(DISTINCT buyer_name) FROM tenders;
-SELECT COUNT(DISTINCT winner) FROM tenders WHERE winner IS NOT NULL;
-SELECT source, COUNT(*) FROM tenders GROUP BY source;
-```
+Update CLAUDE.md with new enrichment tables, then start SEO pages
+(sector/supplier/buyer) using seo-pages-spec.md.
+Do not start Haiku tags yet.
 
 ## Key Files Modified
 

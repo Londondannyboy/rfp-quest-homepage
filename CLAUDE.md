@@ -41,7 +41,13 @@ Session 2026-04-02:
 - Data volume: 706K+ tenders, 479K award records with winner data (2000–2026)
 - Validated against Tussell 2025 Strategic Suppliers report — data confirmed accurate
 - Winner backfill from FAT raw_ocds: 110K awards extracted
-- Phase 6c: Data enrichment pipeline — see DECISIONS.md D67, D68
+- Phase 6c COMPLETE 2026-04-14. Six enrichment tables live:
+  supplier_lookup (1K), buyer_lookup (2K), buyer_intelligence (1,757),
+  tender_categories (707K with 664K verticals, 166K niches),
+  tender_scores (pending), tender_embeddings (pending).
+  Weekly enrichment cron deployed on Railway (Sunday 4am UTC).
+  query_tenders.py updated with enrichment JOINs + sector/vertical filtering.
+  Raw tenders table untouched throughout (707,251 rows).
 
 Session 2026-04-03 (morning):
 - Phase 5c Priority 1.7 COMPLETE — pre-computed Tako insights
