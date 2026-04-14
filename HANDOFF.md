@@ -1,5 +1,5 @@
 # HANDOFF.md
-Session Date: 2026-04-06
+Session Date: 2026-04-14
 
 ## CURRENT STATE
 
@@ -87,11 +87,20 @@ Six enrichment tables live:
 - query_tenders.py updated with enrichment LEFT JOINs
 - Raw tenders table untouched: 707,251 rows
 
-## NEXT ACTION — Phase 6c follow-up
+## NEXT ACTION — SEO Pages (Step 1 only: Sector Pages)
 
-Update CLAUDE.md with new enrichment tables, then start SEO pages
-(sector/supplier/buyer) using seo-pages-spec.md.
-Do not start Haiku tags yet.
+Start SEO pages using seo-pages-spec.md. Run Step 1 only (sector pages).
+Do not start supplier or buyer pages in the same session.
+
+Mandatory diagnosis first — run these four gate test queries before
+writing any code:
+```sql
+SELECT COUNT(*) FROM tender_categories WHERE primary_sector != 'Other';
+SELECT COUNT(*) FROM supplier_lookup WHERE group_name IS NOT NULL;
+SELECT COUNT(*) FROM buyer_intelligence;
+SELECT COUNT(*) FROM tenders;
+```
+Report the numbers. Wait for confirmation before proceeding.
 
 ## Key Files Modified
 
@@ -126,4 +135,4 @@ apps/agent/
 - React Force Graph 3D requires dynamic import with `ssr: false`
 - Zep data structure: edges with source/target UUIDs + fact labels
 
-SIGN-OFF STATUS: SIGNED OFF 2026-04-06
+SIGN-OFF STATUS: DRAFT (pending Claude.ai review)

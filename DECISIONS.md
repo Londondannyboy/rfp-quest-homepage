@@ -2087,3 +2087,22 @@ TIERS:
   2. Managed service (£5-10K/month) — bid manager operates platform for you
   3. Agency engagement (£25-50K per bid) — full pitch management, bid writing
 REVERSIBLE: Yes — can operate as pure SaaS if agency model doesn't scale.
+
+---
+
+## D71 — DATE: 2026-04-14
+DECISION: SEO pages built from enrichment tables, not raw tenders.
+CONTEXT: Phase 6c created structured intelligence layer — 762 canonical
+suppliers with group rollups, 1,757 buyer intelligence records, 707K
+sector-classified tenders with CPV verticals and niches. SEO pages
+should render from these enrichment tables, not query raw tenders at
+build time.
+ARCHITECTURE:
+  /sectors/[slug] — 13 sector pages from tender_categories
+  /suppliers/[slug] — top 100 supplier group pages from supplier_lookup
+  /buyers/[slug] — top 200 buyer pages from buyer_intelligence
+  All with Tako charts, internal cross-linking, structured data schema.
+  Total: ~325 indexable pages from existing data.
+IMPLEMENTATION: seo_sector_data.py → seo_sector_pages table → Next.js
+  generateStaticParams. One step at a time — sectors first.
+REVERSIBLE: Yes — pages are generated from data, regenerate any time.

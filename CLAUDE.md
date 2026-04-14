@@ -1,6 +1,6 @@
 # CLAUDE.md — rfp-quest-homepage
 # Standard: See CLAUDE-STANDARD.md
-# Sign-off status: SIGNED OFF 2026-04-06
+# Sign-off status: DRAFT 2026-04-14
 
 ---
 
@@ -472,16 +472,16 @@ Phase 6b — Individual skills + career graph:
   Zep graph DB for entity relationships.
   Haiku background matching pipeline (D58).
 
-Phase 6c — Data Enrichment Pipeline (NEXT):
-  supplier_lookup: canonical company names → Companies House ID
-  buyer_lookup: canonical buyer entities → parent org, region, type
-  CPV reclassification: predict correct codes from title + description
-  Sector tagging: human-readable categories for agent querying
-  Buyer intelligence: aggregate stats from 479K awards per buyer
-  pgvector embeddings: title + description embedded for similarity search
-  All implemented as background Railway jobs — raw tenders table NEVER mutated.
+Phase 6c — Data Enrichment Pipeline: COMPLETE 2026-04-14
+  supplier_lookup: 1K raw → 762 canonical, 117 strategic, group_name rollup
+  buyer_lookup: 2K classified by parent_org, buyer_type, region
+  buyer_intelligence: 1,757 records with SME rates, top suppliers
+  tender_categories: 707K sector, 664K vertical, 166K niche (CPV-derived)
+  4-level taxonomy: Sector → Vertical → Niche → Tags (Haiku, pending)
+  Weekly cron on Railway (Sunday 4am UTC)
+  Raw tenders table untouched: 707,251 rows
 
-Phase 6d — Team graph:
+Phase 6d — Team graph (NEXT):
   Graphs merge when people join a company or bid team.
   Coverage, gaps, and strength visualised in real time.
   Suggested connections: people who fill team gaps.
