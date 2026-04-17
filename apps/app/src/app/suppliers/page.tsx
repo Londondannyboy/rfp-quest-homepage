@@ -49,9 +49,9 @@ async function getTopSuppliers(): Promise<SupplierListItem[]> {
         INNER JOIN tenders t ON sl.raw_name = t.winner
         WHERE sl.canonical_name IS NOT NULL
         GROUP BY sl.canonical_name, sl.group_name, sl.is_strategic_supplier
-        HAVING COUNT(t.ocid) >= 10  -- Only suppliers with significant wins
+        HAVING COUNT(t.ocid) >= 20  -- Only suppliers with significant wins (aligned with static generation)
         ORDER BY COUNT(t.ocid) DESC 
-        LIMIT 50
+        LIMIT 25  -- Reduced to match static generation count
       `;
       
       const result = await client.query(query);
@@ -76,7 +76,7 @@ async function getTopSuppliers(): Promise<SupplierListItem[]> {
 
 export const metadata: Metadata = {
   title: 'UK Government Suppliers | RFP.quest',
-  description: 'Discover top UK government suppliers and their contract wins. Track procurement opportunities from major suppliers like Softcat, Insight, WSP, and Computacenter.',
+  description: 'Discover top 25 UK government suppliers and their contract wins. Track procurement opportunities from major suppliers like Softcat, Insight, WSP, and Computacenter.',
   openGraph: {
     title: 'UK Government Suppliers | RFP.quest',
     description: 'Discover top UK government suppliers and their contract wins. Track procurement opportunities from major suppliers.',
@@ -182,7 +182,7 @@ export default async function SuppliersPage() {
         
         {/* Suppliers Grid */}
         <div className="mb-12">
-          <h2 className="text-3xl font-bold text-white mb-8">Top Government Suppliers</h2>
+          <h2 className="text-3xl font-bold text-white mb-8">Top 25 Government Suppliers</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {suppliers.map((supplier, index) => (
               <Link key={supplier.slug} href={`/suppliers/${supplier.slug}`}>

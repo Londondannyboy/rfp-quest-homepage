@@ -154,7 +154,7 @@ export async function generateStaticParams() {
     const client = await pool.connect();
     
     try {
-      // Get top 100 suppliers by tender count for static generation
+      // Get top 25 suppliers by tender count for static generation (optimized for build performance)
       const query = `
         SELECT sl.canonical_name
         FROM supplier_lookup sl
@@ -164,9 +164,9 @@ export async function generateStaticParams() {
           INNER JOIN tenders t ON sl2.raw_name = t.winner
           WHERE sl2.canonical_name IS NOT NULL
           GROUP BY sl2.canonical_name
-          HAVING COUNT(t.ocid) >= 5  -- Only suppliers with 5+ wins
+          HAVING COUNT(t.ocid) >= 20  -- Only suppliers with 20+ wins for static generation
           ORDER BY COUNT(t.ocid) DESC
-          LIMIT 100
+          LIMIT 25  -- Reduced to prevent DB connection exhaustion during build
         ) top_suppliers ON sl.canonical_name = top_suppliers.canonical_name
         GROUP BY sl.canonical_name
         ORDER BY sl.canonical_name
