@@ -6,15 +6,23 @@
 
 ## WHAT THIS PROJECT IS
 
-This is the RFP.quest Generative UI homepage. It uses 
-OpenGenerativeUI (CopilotKit v2 + LangChain Deep Agents) 
-to render AI-generated HTML, SVG, Three.js, and Chart.js 
-visualisations in sandboxed iframes. It fetches UK 
-government procurement data from two sources: Contracts 
-Finder REST v2 API and Find a Tender OCDS API, stored 
-in Neon for fast querying. CopilotKit v2 is mandatory 
-and cannot be replaced by any alternative framework or 
-pattern.
+**CRITICAL**: This is the **FULL RFP.quest PLATFORM REPLACEMENT**, not just a homepage.
+
+This project will completely supersede `/Users/dankeegan/rfp.quest` 
+(~87K lines) and take over the rfp.quest domain. It uses modern 
+CopilotKit v2 + LangChain Deep Agents architecture to render 
+AI-generated HTML, SVG, Three.js, and Chart.js visualizations 
+in sandboxed iframes. 
+
+It has the same Neon database access as the legacy platform 
+but with:
+- Modern Next.js 15 + CopilotKit v2 architecture  
+- Advanced SEO sector pages with realistic procurement values
+- 3D team skills graphs + Zep graph database integration
+- Neon Auth + company onboarding + bid intelligence
+- Professional UI with Tako analytics integration
+
+The legacy `/Users/dankeegan/rfp.quest` is retired code.
 
 ## PROJECT STATUS
 

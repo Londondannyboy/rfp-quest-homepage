@@ -3,12 +3,20 @@ Session Date: 2026-04-17
 
 ## CURRENT STATE
 
+### CRITICAL ARCHITECTURE NOTE
+**rfp-quest-homepage** IS THE FULL PLATFORM REPLACEMENT, not just a marketing site.
+- This project will completely supersede `/Users/dankeegan/rfp.quest` (~87K lines)
+- Same Neon database access, but modern CopilotKit v2 architecture
+- Will take over the rfp.quest domain when complete
+- The original `/Users/dankeegan/rfp.quest` is legacy code to be retired
+
 ### Deployment URLs
 - **Frontend**: https://rfp-quest-homepage.vercel.app
 - **Agent**: https://rfp-quest-generative-agent-production.up.railway.app  
 - **GitHub**: https://github.com/Londondannyboy/rfp-quest-homepage
 - **Branch**: main
 - **Latest commits**: 2fc730b, c6cade9, 75bcffb (value fix deployed)
+- **Target Domain**: rfp.quest (currently pointing to legacy platform)
 
 ### Phase 6b COMPLETE ✅
 All three parts verified in production:
