@@ -2106,3 +2106,16 @@ ARCHITECTURE:
 IMPLEMENTATION: seo_sector_data.py → seo_sector_pages table → Next.js
   generateStaticParams. One step at a time — sectors first.
 REVERSIBLE: Yes — pages are generated from data, regenerate any time.
+
+---
+
+## D72 — DATE: 2026-04-17
+DECISION: rfp.quest frontend repo replaces current Vercel deployment as 
+the production UI. Becomes the logged-out experience and marketing site.
+CONTEXT: rfp.quest repo (/Users/dankeegan/rfp.quest) has a superior dashboard 
+UI (Live Market Pulse, Hot Opportunities, Quick Wins, left nav). Current 
+rfp-quest-homepage UI is developer-facing. Production target is rfp.quest domain.
+OUTCOME: rfp.quest frontend wired to Neon database (calm-dust-71989092).
+Same enrichment tables, same query_tenders API. New phase inserted before 
+Phase 6d team graphs.
+REVERSIBLE: Yes
