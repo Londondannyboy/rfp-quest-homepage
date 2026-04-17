@@ -137,11 +137,12 @@ async function getSectorData(slug: string): Promise<SectorData | null> {
   }
 }
 
+// Use ISR to avoid build-time DB connection issues
+export const revalidate = 3600; // Revalidate every hour
+
 export async function generateStaticParams() {
-  // Return all sector slugs for static generation
-  return Object.keys(sectorMapping).map((slug) => ({
-    slug,
-  }));
+  // Return empty array - pages will be generated on-demand with ISR
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
