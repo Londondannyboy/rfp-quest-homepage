@@ -74,6 +74,9 @@ async function getTopSuppliers(): Promise<SupplierListItem[]> {
   }
 }
 
+// Use ISR to avoid build-time DB connection issues
+export const revalidate = 3600; // Revalidate every hour
+
 export const metadata: Metadata = {
   title: 'UK Government Suppliers | RFP.quest',
   description: 'Discover top 25 UK government suppliers and their contract wins. Track procurement opportunities from major suppliers like Softcat, Insight, WSP, and Computacenter.',

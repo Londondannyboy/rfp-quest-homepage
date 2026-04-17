@@ -145,46 +145,12 @@ async function getSupplierData(slug: string): Promise<SupplierData | null> {
   }
 }
 
+// Use ISR instead of static generation to avoid build-time DB connection issues
+export const revalidate = 3600; // Revalidate every hour
+
 export async function generateStaticParams() {
-  try {
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-    });
-    
-    const client = await pool.connect();
-    
-    try {
-      // Get top 25 suppliers by tender count for static generation (optimized for build performance)
-      const query = `
-        SELECT sl.canonical_name
-        FROM supplier_lookup sl
-        INNER JOIN (
-          SELECT sl2.canonical_name, COUNT(t.ocid) as tender_count
-          FROM supplier_lookup sl2
-          INNER JOIN tenders t ON sl2.raw_name = t.winner
-          WHERE sl2.canonical_name IS NOT NULL
-          GROUP BY sl2.canonical_name
-          HAVING COUNT(t.ocid) >= 20  -- Only suppliers with 20+ wins for static generation
-          ORDER BY COUNT(t.ocid) DESC
-          LIMIT 25  -- Reduced to prevent DB connection exhaustion during build
-        ) top_suppliers ON sl.canonical_name = top_suppliers.canonical_name
-        GROUP BY sl.canonical_name
-        ORDER BY sl.canonical_name
-      `;
-      
-      const result = await client.query(query);
-      
-      return result.rows.map((row) => ({
-        slug: slugify(row.canonical_name),
-      }));
-      
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error generating static params for suppliers:', error);
-    return [];
-  }
+  // Return empty array - pages will be generated on-demand with ISR
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
