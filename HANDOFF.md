@@ -165,18 +165,20 @@ Mandatory diagnosis confirmed: 708,616 tenders (continued growth from 707,251)
 **SEO Features**: OpenGraph, Twitter cards, internal cross-linking, realistic values
 **Performance**: Sub-second load times with ISR caching
 
-## NEXT ACTION — rfp.quest Frontend Wiring
+## NEXT ACTION — Wire rfp.quest dashboard to Neon
 
-Project directory: /Users/dankeegan/rfp.quest
-This is a SEPARATE REPO from rfp-quest-homepage.
+Project: /Users/dankeegan/rfp.quest (Next.js 15, already has DATABASE_URL)
+Dashboard: src/app/dashboard/page.tsx
 
-Step 1 — Read only, no code:
-- Report framework, current data source, dashboard file path
-- Report existing environment variables
-- Report current deployment URL
-- Do NOT modify any files until reporting back
+1. Replace Live Market Pulse static numbers with real Neon queries:
+   - Open tenders count: SELECT COUNT(*) FROM tenders WHERE status = 'Open'
+   - Total value: SELECT SUM(value_amount) FROM tenders WHERE status = 'Open'
+   - Closing this week: WHERE tender_end_date BETWEEN NOW() AND NOW() + INTERVAL '7 days'
+2. Hot Opportunities: top 5 tenders by value closing within 14 days
+3. Quick Wins: top 5 tenders WHERE value_amount < 100000 AND is_sme_suitable = true
 
-Step 2 — After reporting, wait for confirmation before proceeding.
+DATABASE_URL already set. Do not change auth, routing, or styling.
+Commit each section separately.
 
 ## Key Files Modified
 
