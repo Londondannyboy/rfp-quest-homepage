@@ -12,12 +12,15 @@ import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2"
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
 import Link from "next/link";
 import { authClient } from "@/lib/auth";
+import { MarketPulse } from "@/components/market-pulse";
+import type { MarketPulseData } from "@/app/api/market-pulse/route";
 
 
 export default function HomePage() {
   const [demoDrawerOpen, setDemoDrawerOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [userContext, setUserContext] = useState<any>(null);
+  const [marketPulseData, setMarketPulseData] = useState<MarketPulseData | null>(null);
   
   useGenerativeUIExamples(userContext);
   useExampleSuggestions();
@@ -79,7 +82,20 @@ export default function HomePage() {
       }
     };
 
+    const fetchMarketPulse = async () => {
+      try {
+        const response = await fetch('/api/market-pulse');
+        if (response.ok) {
+          const data = await response.json();
+          setMarketPulseData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch market pulse:', error);
+      }
+    };
+
     getUserContext();
+    fetchMarketPulse();
   }, []);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
@@ -253,6 +269,9 @@ export default function HomePage() {
               </div>
             </div>
           )}
+
+          {/* Market Pulse Banner */}
+          <MarketPulse initialData={marketPulseData} />
 
           {/* Two-panel layout: chart left, chat right (stacks on mobile) */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
