@@ -21,6 +21,8 @@ export default function HomePage() {
   const [authReady, setAuthReady] = useState(false);
   const [userContext, setUserContext] = useState<any>(null);
   const [marketPulseData, setMarketPulseData] = useState<MarketPulseData | null>(null);
+  const [queryCount, setQueryCount] = useState(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
   
   useGenerativeUIExamples(userContext);
   useExampleSuggestions();
@@ -126,6 +128,16 @@ export default function HomePage() {
 
   const handleTryDemo = (demo: DemoItem) => {
     setDemoDrawerOpen(false);
+    
+    // Rate limiting for non-authenticated users
+    if (!userContext?.authenticated) {
+      if (queryCount >= 3) {
+        setIsRateLimited(true);
+        return;
+      }
+      setQueryCount(prev => prev + 1);
+    }
+    
     agent.addMessage({ id: crypto.randomUUID(), content: demo.prompt, role: "user" });
     copilotkit.runAgent({ agent });
   };
@@ -299,12 +311,40 @@ export default function HomePage() {
             <div className={latestTakoUrl ? "lg:w-[480px] lg:shrink-0" : "flex-1"}>
               {authReady ? (
                 <ExampleLayout chatContent={
-                  <CopilotChat
-                    labels={{
-                      welcomeMessageText: "Welcome to RFP.quest Beta. Ask me about UK government tenders, or try a demo from the gallery.",
-                      chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
-                    }}
-                  />
+                  isRateLimited ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center p-6 max-w-md">
+                        <div className="mb-4">
+                          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                            style={{ background: "var(--color-glass, rgba(255,255,255,0.7))", border: "1px solid var(--color-border-glass)" }}>
+                            <span className="text-2xl">🔒</span>
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2" style={{ color: "var(--color-text-primary)" }}>
+                            Sign in to continue — it's free
+                          </h3>
+                          <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>
+                            You've reached the limit for anonymous queries. Sign in to get unlimited access to RFP.quest.
+                          </p>
+                          <Link 
+                            href="/auth" 
+                            className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium text-white no-underline transition-all duration-150 hover:-translate-y-px"
+                            style={{ background: "linear-gradient(135deg, var(--color-lilac-dark), var(--color-mint-dark))" }}
+                          >
+                            Sign in for free
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <CopilotChat
+                      labels={{
+                        welcomeMessageText: userContext?.authenticated ? 
+                          "Welcome back to RFP.quest Beta. Ask me about UK government tenders, or try a demo from the gallery." :
+                          `Welcome to RFP.quest Beta. Ask me about UK government tenders, or try a demo from the gallery. (${3 - queryCount} free queries remaining)`,
+                        chatDisclaimerText: "Visualizations are AI-generated. You can retry the same prompt or ask the AI to refine the result.",
+                      }}
+                    />
+                  )
                 } />
               ) : (
                 <div className="flex items-center justify-center h-full">
