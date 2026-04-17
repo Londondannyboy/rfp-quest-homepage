@@ -48,12 +48,26 @@ async function getSectorData(slug: string): Promise<SectorData | null> {
     const client = await pool.connect();
     
     try {
-      // Get sector statistics
+      // Get sector statistics - filter out problematic values
       const sectorStatsQuery = `
         SELECT primary_sector as sector_name,
                COUNT(*) as tender_count,
-               SUM(CASE WHEN t.value_amount > 0 THEN t.value_amount ELSE 0 END) as total_value,
-               AVG(CASE WHEN t.value_amount > 0 THEN t.value_amount ELSE NULL END) as avg_value
+               SUM(CASE 
+                 WHEN t.value_amount > 0 
+                 AND t.value_amount <= 1000000000  -- Cap at £1B (exclude framework ceilings)
+                 AND t.value_amount != 999999999999  -- Exclude £999B placeholder values
+                 AND (t.stage IN ('contract', 'award') OR t.stage IS NULL)  -- Focus on actual contracts/awards
+                 THEN t.value_amount 
+                 ELSE 0 
+               END) as total_value,
+               AVG(CASE 
+                 WHEN t.value_amount > 0 
+                 AND t.value_amount <= 1000000000  -- Cap at £1B
+                 AND t.value_amount != 999999999999  -- Exclude placeholders
+                 AND (t.stage IN ('contract', 'award') OR t.stage IS NULL)  -- Focus on actual contracts/awards
+                 THEN t.value_amount 
+                 ELSE NULL 
+               END) as avg_value
         FROM tender_categories tc
         LEFT JOIN tenders t ON tc.tender_ocid = t.ocid
         WHERE tc.primary_sector = $1
