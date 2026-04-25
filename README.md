@@ -255,9 +255,11 @@ Vercel's default 10-second timeout from cutting off Opus generation.
 
 **Phase 6b (complete)**: 3D skills graph visualization — React Force Graph 3D at `/graph/[user_id]` shows individual professional networks. Interactive 3D force-directed graph with real-time Zep data (company, sector, won contracts). Dark theme, click to focus, drag to rotate. Built on Zep graph DB and React Force Graph 3D.
 
-**Phase 6c (complete)**: Data enrichment pipeline — supplier_lookup (762 canonical), buyer_lookup (2K), buyer_intelligence (1,757), tender_categories (707K with 664K verticals). 4-level taxonomy: Sector → Vertical → Niche → Tags.
+**Phase 6c (complete)**: Data enrichment pipeline — supplier_lookup (762 canonical), buyer_lookup (2K), buyer_intelligence (1,757), tender_categories (707K with 664K verticals). SEO sector + supplier pages with realistic procurement values. 4-level taxonomy: Sector → Vertical → Niche → Tags.
 
-**Phase 6d (next)**: Team graph merging — when multiple users join same company via invite flow, their graph nodes combine. Coverage gaps and shared skills automatically surface.
+**Phase 6c-UI (complete)**: Live Market Pulse banner with real-time stats from Neon database, glassmorphism design, rate limiting for non-authenticated users (3 queries), auth conversion funnel.
+
+**Phase 6d (next)**: Homepage redesign then team graph merging — stats-first landing page for non-authenticated users, then team graph functionality where multiple users joining same company via invite flow have their graph nodes combine. Coverage gaps and shared skills automatically surface.
 
 ## License
 

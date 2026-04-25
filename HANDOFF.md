@@ -190,7 +190,7 @@ Rate Limiting for Non-Auth Users:
 ## NEXT ACTION — Homepage redesign
 
 File: apps/app/src/app/page.tsx
-1. Convert page to server component — fetch market pulse data server-side at render time
+1. Create apps/app/src/app/homepage-shell.tsx as a new server component that fetches market pulse data from Neon directly and passes it as props. Do NOT convert page.tsx to a server component — it uses React hooks and must remain a client component.
 2. Non-auth layout: hero with live stats (open tenders, total value, closing this week, top sector), sector grid, sign-in CTA
 3. Auth layout: existing chat + dashboard (unchanged)
 4. Style using existing CSS variables from globals.css — no new packages
