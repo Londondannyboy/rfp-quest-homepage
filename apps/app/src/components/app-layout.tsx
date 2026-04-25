@@ -9,11 +9,6 @@ import { GridIcon } from "@/components/demo-gallery/grid-icon";
 import { DesktopTipModal } from "@/components/desktop-tip-modal";
 import { StableIframe } from "@/components/generative-ui/stable-iframe";
 
-// Local interface for simple demo suggestions
-interface DemoSuggestion {
-  text: string;
-  icon: string;
-}
 import { CopilotChat, useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
 import Link from "next/link";
@@ -126,18 +121,6 @@ export function AppLayout() {
     setLatestTakoUrl(newest);
   }, [agent.state?.messages]);
 
-  // Demo suggestions
-  const demoItems: DemoSuggestion[] = [
-    { text: "Show me recent UK government tenders", icon: "🏛️" },
-    { text: "Analyse tender: Service Wing Demolition (RAAC)", icon: "🔍" },
-    { text: "Show me NHS contract spend by year", icon: "🏥" },
-    { text: "Find construction contracts over £1M", icon: "🏗️" },
-    { text: "What defence contracts close this month?", icon: "🛡️" },
-    { text: "Show me education procurement trends", icon: "📚" },
-    { text: "Find IT contracts in London", icon: "💻" },
-    { text: "Analyse transport procurement patterns", icon: "🚗" },
-    { text: "Show me social care contract opportunities", icon: "🤝" }
-  ];
 
   // Rate limiting for demo gallery
   const handleDemoClick = (text: string) => {
@@ -408,8 +391,7 @@ export function AppLayout() {
       <DemoGallery 
         open={demoDrawerOpen}
         onClose={() => setDemoDrawerOpen(false)}
-        onItemClick={handleDemoClick}
-        items={demoItems}
+        onTryDemo={(demo) => handleDemoClick(demo.prompt)}
       />
 
       {/* Explainer Cards Portal */}

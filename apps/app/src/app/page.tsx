@@ -1,8 +1,6 @@
 import { cookies } from 'next/headers';
 import { neon } from '@neondatabase/serverless';
-import { CopilotKit } from "@copilotkit/react-core/v2";
 import { MarketingLayout } from "@/components/marketing/marketing-layout";
-import { AppLayout } from "@/components/app-layout";
 import type { MarketPulseData } from "@/app/api/market-pulse/route";
 
 const sql = neon(process.env.DATABASE_URL!);
@@ -120,21 +118,15 @@ export default async function HomePage() {
     isUserAuthenticated(),
   ]);
 
-  // For now, always show marketing layout with CopilotKit wrapper
+  // For now, always show marketing layout with simple wrapper
   // This ensures instant loading and proper SEO
   return (
-    <CopilotKit 
-      runtimeUrl="/api/copilotkit"
-      agent="uk_tenders"
-    >
-      <div className="min-h-screen">
-        {/* Check for auth cookie or URL params to decide layout */}
-        <MarketingLayoutWithAppFallback 
-          marketPulseData={marketPulseData} 
-          sectorStats={sectorStats} 
-        />
-      </div>
-    </CopilotKit>
+    <div className="min-h-screen">
+      <MarketingLayoutWithAppFallback 
+        marketPulseData={marketPulseData} 
+        sectorStats={sectorStats} 
+      />
+    </div>
   );
 }
 
