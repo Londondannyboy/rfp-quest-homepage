@@ -283,7 +283,7 @@ export default function HomePage() {
           )}
 
           {/* Market Pulse Banner */}
-          <MarketPulse initialData={marketPulseData} />
+          <MarketPulse initialData={marketPulseData || undefined} />
 
           {/* Two-panel layout: chart left, chat right (stacks on mobile) */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
