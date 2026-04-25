@@ -13,6 +13,7 @@ import { SignedIn, SignedOut } from "@neondatabase/neon-js/auth/react/ui";
 import Link from "next/link";
 import { authClient } from "@/lib/auth";
 import { MarketPulse } from "@/components/market-pulse";
+import { MarketingLayout } from "@/components/marketing/marketing-layout";
 import type { MarketPulseData } from "@/app/api/market-pulse/route";
 
 
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [authReady, setAuthReady] = useState(false);
   const [userContext, setUserContext] = useState<any>(null);
   const [marketPulseData, setMarketPulseData] = useState<MarketPulseData | null>(null);
+  const [sectorStats, setSectorStats] = useState<Array<{name: string; count: number; value: number}>>([]);
   const [queryCount, setQueryCount] = useState(0);
   const [isRateLimited, setIsRateLimited] = useState(false);
   
@@ -96,8 +98,29 @@ export default function HomePage() {
       }
     };
 
+    const fetchSectorStats = async () => {
+      try {
+        // For now, create mock data since we need a new API endpoint
+        // This should be replaced with a real API call
+        const mockSectorStats = [
+          { name: 'Digital & Technology', count: 1200, value: 450000000 },
+          { name: 'Healthcare', count: 980, value: 320000000 },
+          { name: 'Construction', count: 850, value: 680000000 },
+          { name: 'Education', count: 720, value: 280000000 },
+          { name: 'Defence', count: 650, value: 890000000 },
+          { name: 'Facilities Management', count: 600, value: 220000000 },
+          { name: 'Transport', count: 550, value: 420000000 },
+          { name: 'Social Care', count: 480, value: 180000000 },
+        ];
+        setSectorStats(mockSectorStats);
+      } catch (error) {
+        console.error('Failed to fetch sector stats:', error);
+      }
+    };
+
     getUserContext();
     fetchMarketPulse();
+    fetchSectorStats();
   }, []);
 
   // Detect Tako chart URLs in agent messages — show latest chart only
@@ -173,6 +196,11 @@ export default function HomePage() {
     return () => window.removeEventListener("message", handler);
   }, [agent, copilotkit]);
 
+
+  // Show marketing layout for non-authenticated users
+  if (!userContext?.authenticated && authReady && marketPulseData && sectorStats.length > 0) {
+    return <MarketingLayout marketPulseData={marketPulseData} sectorStats={sectorStats} />;
+  }
 
   return (
     <>

@@ -5,9 +5,10 @@ import type { MarketPulseData } from "@/app/api/market-pulse/route";
 
 interface MarketPulseProps {
   initialData?: MarketPulseData;
+  compact?: boolean;
 }
 
-export function MarketPulse({ initialData }: MarketPulseProps) {
+export function MarketPulse({ initialData, compact = false }: MarketPulseProps) {
   const [data, setData] = useState<MarketPulseData | null>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +66,54 @@ export function MarketPulse({ initialData }: MarketPulseProps) {
 
   if (error || !data) {
     return null; // Fail silently to not break the page
+  }
+
+  if (compact) {
+    return (
+      <div 
+        className="rounded-lg px-4 py-2 mb-4"
+        style={{
+          background: "var(--color-glass)",
+          border: "1px solid var(--color-border-glass)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div className="flex items-center justify-center gap-6 text-center">
+          <div>
+            <div className="text-sm font-bold" style={{ color: "var(--color-text-primary)" }}>
+              {data.open_count.toLocaleString()}
+            </div>
+            <div className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Open
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold" style={{ color: "var(--color-mint-dark)" }}>
+              {formatValue(data.total_value)}
+            </div>
+            <div className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Value
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold" style={{ color: "var(--color-lilac-dark)" }}>
+              {data.closing_this_week}
+            </div>
+            <div className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Closing
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-bold" style={{ color: "var(--color-text-primary)" }}>
+              {data.top_sector}
+            </div>
+            <div className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+              Top Sector
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
