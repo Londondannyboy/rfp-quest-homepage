@@ -187,96 +187,15 @@ Rate Limiting for Non-Auth Users:
 - Rate limit only applies to demo clicks, not direct chat input
 - Market pulse uses client-side fetch (not server-side for SEO)
 
-## Phase 6e — UNIFIED PLATFORM STRATEGY
+## NEXT ACTION — Homepage redesign
 
-**CRITICAL PIVOT**: Single platform serving both marketing and app needs.
+File: apps/app/src/app/page.tsx
+1. Convert page to server component — fetch market pulse data server-side at render time
+2. Non-auth layout: hero with live stats (open tenders, total value, closing this week, top sector), sector grid, sign-in CTA
+3. Auth layout: existing chat + dashboard (unchanged)
+4. Style using existing CSS variables from globals.css — no new packages
+5. Reference visual: /Users/dankeegan/rfp.quest src/app/dashboard/page.tsx for layout inspiration only — do not copy code
 
-**Architecture Decision**: 
-- rfp-quest-homepage becomes the ONLY platform 
-- Same URL, same codebase, state-driven interface
-- Before login: Marketing site with live stats
-- After login: Full app with chat interface
-
-### Implementation Plan:
-
-**Phase 6e-1: Marketing Homepage**
-1. Replace chat-first homepage with marketing layout
-2. Prominent live market pulse (real Neon data)
-3. SEO-optimized landing with "Sign in to unlock AI" CTAs
-4. Preserve existing chat functionality behind auth
-
-**Phase 6e-2: Content Migration**
-1. Migrate 37+ SEO pages from legacy rfp.quest
-2. Connect to same Neon database for tender/sector content
-3. Maintain all current SEO rankings and content
-
-**Phase 6e-3: Dual-Mode Interface**
-1. Login state reveals chat interface and dashboard
-2. Marketing content minimizes/contextualizes
-3. Same URL preserves SEO while enabling full app features
-
-**Phase 6e-4: Domain Switch**
-1. Point rfp.quest → rfp-quest-homepage Vercel
-2. Legacy becomes redirect/archive
-
-**Component Enhancement**: Use 21st.dev for professional marketing components
-
-**Deferred**: 
-- Rate limiting fix (chat access gated by login)
-- A2UI v0.9 migration (post-launch optimization)
-
-## Key Files Modified
-
-```
-apps/app/src/app/
-├── page.tsx                              # getUserContext, company header
-├── api/
-│   ├── company-context/route.ts         # New - fetches company profile
-│   ├── graph/[user_id]/route.ts         # New - returns Zep graph data
-│   └── user-context/route.ts            # Deprecated - not needed
-├── graph/[user_id]/page.tsx             # New - React Force Graph 3D
-└── hooks/
-    └── use-generative-ui-examples.tsx   # getUserContext frontend tool
-
-apps/agent/
-├── main.py                               # System prompt updated for getUserContext
-└── src/
-    ├── zep_graph.py                      # sync_person_to_zep, add_bid_outcome
-    └── onboard_company.py                # Company profile management
-```
-
-## Testing URLs
-- Main app: https://rfp-quest-homepage.vercel.app
-- Dan's graph: https://rfp-quest-homepage.vercel.app/graph/c161a50e-b713-4abc-8d43-d652e8be1b96
-- Auth: https://rfp-quest-homepage.vercel.app/auth
-- Account: https://rfp-quest-homepage.vercel.app/account
-
-## Session Notes
-- getUserContext pattern is mandatory - no message injection
-- Always use `pnpm add`, never `npm install` in apps/app
-- DATABASE_URL must be set in Vercel for graph API to work
-- React Force Graph 3D requires dynamic import with `ssr: false`
-- Zep data structure: edges with source/target UUIDs + fact labels
+Do not install new packages. Do not touch agent or Railway.
 
 SIGN-OFF STATUS: DRAFT (pending Claude.ai review)
-
-## Session 2026-04-17 Summary
-
-**Phase 6d Complete**: Live Market Pulse & Rate Limiting Implemented
-- Market pulse banner: 4 real-time stats from Neon database
-- Glassmorphism design using existing CSS variables
-- Rate limiting: 3 queries for anonymous users, unlimited for authenticated
-- New API endpoint: `/api/market-pulse` with proper TypeScript interfaces
-
-**Known Issues Identified** (acceptable for production):
-- Rate limiting bypass: works on demo clicks but not direct chat input
-- SEO concern: market pulse client-side fetch means empty initial HTML
-
-**Files Modified**:
-- `apps/app/src/app/api/market-pulse/route.ts` - New API endpoint
-- `apps/app/src/components/market-pulse.tsx` - Banner component  
-- `apps/app/src/app/page.tsx` - Integration + rate limiting
-
-**Ready for Domain Switch**: Platform has live market data and user conversion funnel in place.
-
-**Next Session Priority**: Fix rate limiting gap and point rfp.quest domain to Vercel.
