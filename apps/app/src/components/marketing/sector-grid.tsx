@@ -124,37 +124,86 @@ export function SectorGrid({ sectorStats }: SectorGridProps) {
           ))}
         </div>
 
-        {/* CTA section */}
+        {/* Ultra-modern CTA section */}
         <div 
-          className="text-center p-8 rounded-xl"
+          className="relative text-center p-12 rounded-3xl overflow-hidden"
           style={{
-            background: `linear-gradient(135deg, var(--color-glass-subtle) 0%, var(--color-glass) 100%)`,
+            background: 'var(--color-glass-dark)',
             border: '1px solid var(--color-border-glass)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: 'var(--shadow-xl)',
           }}
         >
-          <h3 
-            className="text-2xl font-bold mb-4"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Ready to discover personalized opportunities?
-          </h3>
-          <p 
-            className="text-lg mb-6"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            Sign in to unlock AI-powered tender analysis, match scoring, and bid intelligence
-          </p>
-          <button
-            onClick={handleSignInClick}
-            className="px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all duration-200 hover:scale-105"
+          {/* Animated background gradient */}
+          <div 
+            className="absolute inset-0 opacity-30"
             style={{
-              background: `linear-gradient(135deg, var(--color-lilac-dark) 0%, var(--color-lilac) 100())`,
-              boxShadow: 'var(--shadow-glow-lilac)',
+              background: `
+                linear-gradient(135deg, var(--color-mint-light) 0%, transparent 30%, var(--color-lilac-light) 70%, transparent 100%)
+              `,
+              animation: 'pulse 4s ease-in-out infinite alternate',
             }}
-          >
-            Sign in with Google
-          </button>
+          />
+          
+          <div className="relative">
+            {/* Badge */}
+            <div 
+              className="inline-flex items-center px-4 py-2 rounded-full mb-6 text-sm font-medium"
+              style={{
+                background: 'var(--color-glass)',
+                border: '1px solid var(--color-border-glass)',
+                backdropFilter: 'blur(20px)',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              <span className="mr-2">🚀</span>
+              Unlock Full Platform
+            </div>
+            
+            <h3 className="text-3xl md:text-4xl font-black mb-6 leading-tight">
+              <span 
+                className="bg-gradient-to-r bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-lilac-dark) 100%)`,
+                }}
+              >
+                Ready for personalized
+              </span>
+              <br />
+              <span 
+                className="bg-gradient-to-r bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, var(--color-mint-dark) 0%, var(--color-text-primary) 100%)`,
+                }}
+              >
+                opportunities?
+              </span>
+            </h3>
+            
+            <p 
+              className="text-xl mb-8 max-w-2xl mx-auto leading-relaxed"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Sign in to unlock AI-powered tender analysis, intelligent match scoring, and strategic bid intelligence
+            </p>
+            
+            <button
+              onClick={handleSignInClick}
+              className="group relative px-10 py-5 rounded-2xl text-white font-bold text-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 shadow-lg"
+              style={{
+                background: `linear-gradient(135deg, var(--color-lilac-dark) 0%, var(--color-lilac) 50%, var(--color-mint) 100%)`,
+                boxShadow: '0 10px 40px -10px rgba(186, 164, 238, 0.5)',
+              }}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <span>Sign in with Google</span>
+                <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </button>
+          </div>
         </div>
       </div>
     </section>
