@@ -3,6 +3,21 @@
 
 ---
 
+## D73 — DATE: 2026-04-25
+DECISION: Unified Platform Strategy - Single codebase serves both marketing and app functionality.
+CONTEXT: Originally planned separate domains (rfp.quest marketing + app.rfp.quest app), but this complicates SEO preservation and user experience.
+ARCHITECTURE: 
+- rfp-quest-homepage becomes the ONLY platform
+- Login state drives interface mode (marketing vs app)
+- Before login: SEO-optimized marketing with live stats
+- After login: Full chat/dashboard functionality appears
+- Same URL preserves SEO rankings while enabling modern UX
+COMPONENT STRATEGY: Use 21st.dev for professional marketing components
+MIGRATION: Legacy rfp.quest content moves TO rfp-quest-homepage, not vice versa
+RATIONALE: Simpler architecture, better SEO preservation, unified user journey
+
+---
+
 ## D1 — DATE: 2026-03-28
 DECISION: Build generative UI as a separate app cloned 
 from OpenGenerativeUI, not integrated into the existing 

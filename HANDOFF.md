@@ -187,14 +187,43 @@ Rate Limiting for Non-Auth Users:
 - Rate limit only applies to demo clicks, not direct chat input
 - Market pulse uses client-side fetch (not server-side for SEO)
 
-## NEXT ACTION — Fix rate limiting and domain switch
+## Phase 6e — UNIFIED PLATFORM STRATEGY
 
-1. Fix rate limit to intercept all messages sent to agent (not just demo clicks)
-2. Point rfp.quest domain at Vercel deployment
-3. Optional: Convert market pulse to server-side component for SEO
+**CRITICAL PIVOT**: Single platform serving both marketing and app needs.
 
-Rate limiting gap allows bypass via direct chat input.
-Market pulse client-side fetch means Googlebot sees empty stat cards.
+**Architecture Decision**: 
+- rfp-quest-homepage becomes the ONLY platform 
+- Same URL, same codebase, state-driven interface
+- Before login: Marketing site with live stats
+- After login: Full app with chat interface
+
+### Implementation Plan:
+
+**Phase 6e-1: Marketing Homepage**
+1. Replace chat-first homepage with marketing layout
+2. Prominent live market pulse (real Neon data)
+3. SEO-optimized landing with "Sign in to unlock AI" CTAs
+4. Preserve existing chat functionality behind auth
+
+**Phase 6e-2: Content Migration**
+1. Migrate 37+ SEO pages from legacy rfp.quest
+2. Connect to same Neon database for tender/sector content
+3. Maintain all current SEO rankings and content
+
+**Phase 6e-3: Dual-Mode Interface**
+1. Login state reveals chat interface and dashboard
+2. Marketing content minimizes/contextualizes
+3. Same URL preserves SEO while enabling full app features
+
+**Phase 6e-4: Domain Switch**
+1. Point rfp.quest → rfp-quest-homepage Vercel
+2. Legacy becomes redirect/archive
+
+**Component Enhancement**: Use 21st.dev for professional marketing components
+
+**Deferred**: 
+- Rate limiting fix (chat access gated by login)
+- A2UI v0.9 migration (post-launch optimization)
 
 ## Key Files Modified
 
