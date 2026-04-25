@@ -56,68 +56,137 @@ export function SectorGrid({ sectorStats }: SectorGridProps) {
   return (
     <section id="live-pulse" className="py-16 px-6">
       <div className="max-w-6xl mx-auto">
-        {/* Section header */}
-        <div className="text-center mb-12">
-          <h2 
-            className="text-4xl font-bold mb-4"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Live Market Pulse
+        {/* Ultra-modern section header */}
+        <div className="text-center mb-16">
+          <h2 className="text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight">
+            <span 
+              className="bg-gradient-to-r bg-clip-text text-transparent"
+              style={{
+                backgroundImage: `linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-mint-dark) 100%)`,
+              }}
+            >
+              Market
+            </span>
+            <br />
+            <span 
+              className="bg-gradient-to-r bg-clip-text text-transparent"
+              style={{
+                backgroundImage: `linear-gradient(135deg, var(--color-lilac-dark) 0%, var(--color-text-primary) 100%)`,
+              }}
+            >
+              Pulse
+            </span>
           </h2>
           <p 
-            className="text-xl"
+            className="text-xl md:text-2xl font-medium max-w-3xl mx-auto leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            Explore opportunities by sector • Updated in real-time
+            Explore live opportunities by sector • Updated in real-time from government sources
           </p>
         </div>
 
-        {/* Sector grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {sectorStats.map((sector) => (
+        {/* Ultra-modern sector grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {sectorStats.map((sector, index) => (
             <button
               key={sector.name}
               onClick={() => handleSectorClick(sector.name)}
-              className="p-6 rounded-xl text-left transition-all duration-200 hover:scale-105 hover:shadow-lg group"
+              className="relative group p-8 rounded-3xl text-left transition-all duration-500 hover:scale-105 hover:-translate-y-3 overflow-hidden"
               style={{
-                background: 'var(--color-container)',
-                border: '1px solid var(--color-border)',
-                boxShadow: 'var(--shadow-md)',
+                background: 'var(--color-glass-dark)',
+                border: '1px solid var(--color-border-glass)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: 'var(--shadow-lg)',
               }}
             >
-              <div className="text-3xl mb-3">
-                {getSectorIcon(sector.name)}
-              </div>
-              <h3 
-                className="font-semibold text-lg mb-2 group-hover:text-mint-dark transition-colors"
-                style={{ color: 'var(--color-text-primary)' }}
-              >
-                {sector.name}
-              </h3>
-              <div className="space-y-1">
-                <div 
-                  className="text-2xl font-bold"
-                  style={{ color: 'var(--color-mint-dark)' }}
-                >
-                  {sector.count.toLocaleString()}
+              {/* Gradient accent at the top */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-1 rounded-full"
+                style={{ 
+                  background: index % 2 === 0 
+                    ? 'linear-gradient(90deg, var(--color-mint-light) 0%, var(--color-mint-dark) 100%)' 
+                    : 'linear-gradient(90deg, var(--color-lilac-light) 0%, var(--color-lilac-dark) 100%)'
+                }}
+              />
+              
+              {/* Animated background glow */}
+              <div 
+                className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none rounded-3xl"
+                style={{ 
+                  background: index % 2 === 0 
+                    ? 'linear-gradient(135deg, var(--color-mint-light) 0%, var(--color-mint-dark) 100%)' 
+                    : 'linear-gradient(135deg, var(--color-lilac-light) 0%, var(--color-lilac-dark) 100%)',
+                  filter: 'blur(20px)'
+                }}
+              />
+              
+              <div className="relative z-10">
+                {/* Enhanced icon */}
+                <div className="text-4xl mb-4 transform transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110">
+                  {getSectorIcon(sector.name)}
                 </div>
-                <div 
-                  className="text-sm"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  open tenders
+                
+                {/* Sector name with gradient on hover */}
+                <h3 className="font-bold text-xl mb-4 leading-tight transition-all duration-300">
+                  <span 
+                    className="group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300"
+                    style={{ 
+                      color: 'var(--color-text-primary)',
+                      backgroundImage: index % 2 === 0 
+                        ? `linear-gradient(135deg, var(--color-mint-dark) 0%, var(--color-mint) 100%)` 
+                        : `linear-gradient(135deg, var(--color-lilac-dark) 0%, var(--color-lilac) 100%)`
+                    }}
+                  >
+                    {sector.name}
+                  </span>
+                </h3>
+                
+                {/* Modern stats layout */}
+                <div className="space-y-3">
+                  <div className="flex items-baseline gap-2">
+                    <div 
+                      className="text-3xl font-black bg-gradient-to-br bg-clip-text text-transparent"
+                      style={{ 
+                        backgroundImage: index % 2 === 0 
+                          ? 'linear-gradient(135deg, var(--color-mint-light) 0%, var(--color-mint-dark) 100%)' 
+                          : 'linear-gradient(135deg, var(--color-lilac-light) 0%, var(--color-lilac-dark) 100%)'
+                      }}
+                    >
+                      {sector.count.toLocaleString()}
+                    </div>
+                    <div 
+                      className="text-sm font-medium uppercase tracking-wide"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Tenders
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-baseline gap-2">
+                    <div 
+                      className="text-xl font-bold bg-gradient-to-br bg-clip-text text-transparent"
+                      style={{ 
+                        backgroundImage: index % 2 === 0 
+                          ? 'linear-gradient(135deg, var(--color-lilac-light) 0%, var(--color-lilac-dark) 100%)' 
+                          : 'linear-gradient(135deg, var(--color-mint-light) 0%, var(--color-mint-dark) 100%)'
+                      }}
+                    >
+                      {formatValue(sector.value)}
+                    </div>
+                    <div 
+                      className="text-xs font-medium uppercase tracking-wide"
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      Total Value
+                    </div>
+                  </div>
                 </div>
-                <div 
-                  className="text-lg font-semibold"
-                  style={{ color: 'var(--color-lilac-dark)' }}
-                >
-                  {formatValue(sector.value)}
-                </div>
-                <div 
-                  className="text-xs"
-                  style={{ color: 'var(--color-text-tertiary)' }}
-                >
-                  total value
+                
+                {/* Hover arrow indicator */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--color-text-secondary)' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                 </div>
               </div>
             </button>
