@@ -45,7 +45,7 @@ Status: CRITICAL CLARIFICATION REQUIRED
 ## DATA ACCESS
 
 **CRITICAL**: Both platforms access the same Neon database:
-- **Database URL**: `postgresql://neondb_owner:npg_0d2XCUrcNjJF@ep-late-moon-am8dor93-pooler.c-5.us-east-1.aws.neon.tech/neondb`
+- **Database URL**: See Vercel/Railway environment variables
 - **Tables**: 707,251 tenders + 6 enrichment tables
 - **Content**: UK government procurement data (2000-2026)
 
