@@ -20,6 +20,7 @@ function formatValue(value: number): string {
 }
 
 export function HeroSection({ marketPulseData }: HeroSectionProps) {
+  // Force recompile - ultra-modern styling active
   const handleSignInClick = () => {
     window.location.href = '/auth';
   };
